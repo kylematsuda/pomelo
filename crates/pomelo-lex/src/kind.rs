@@ -1,5 +1,5 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum Kind {
+pub enum LexemeKind {
     Whitespace,
     Comment { terminated: bool },
     Eq,
@@ -29,9 +29,9 @@ pub enum Kind {
     Unknown,
 }
 
-impl Kind {
+impl LexemeKind {
     pub fn from_char(c: char) -> Option<Self> {
-        use Kind::*;
+        use LexemeKind::*;
 
         let token = match c {
             '=' => Eq,

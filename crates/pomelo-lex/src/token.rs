@@ -1,10 +1,10 @@
 use crate::cursor::{Cursor, EOF_CHAR};
-use crate::Kind;
+use crate::LexemeKind;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Token {
     len: usize,
-    kind: Kind,
+    kind: LexemeKind,
 }
 
 #[derive(Debug, Clone)]
@@ -14,7 +14,7 @@ pub(crate) struct LexedStr<'a> {
 }
 
 impl Token {
-    pub fn new(len: usize, kind: Kind) -> Self {
+    pub fn new(len: usize, kind: LexemeKind) -> Self {
         Self { len, kind }
     }
 }
@@ -99,13 +99,13 @@ impl<'a> Cursor<'a> {
 
             '(' => match self.first() {
                 '*' => self.comment(),
-                _ => Kind::LParen,
+                _ => LexemeKind::LParen,
             },
 
             '#' => match self.first() {
                 '"' => self.literal_char(),
                 c if is_ident_symb(c) => self.ident_symb(),
-                _ => Kind::Hash,
+                _ => LexemeKind::Hash,
             },
 
             '"' => self.literal_string(),
@@ -123,7 +123,7 @@ impl<'a> Cursor<'a> {
                 } else if c1 == '>' {
                     self.arrow(c)
                 } else {
-                    Kind::from_char(c).expect("non-compound reserved symbols are covered by Kind")
+                    LexemeKind::from_char(c).expect("non-compound reserved symbols are covered by Kind")
                 }
             }
 
@@ -134,28 +134,28 @@ impl<'a> Cursor<'a> {
                 if c1 == '.' && c2 == '.' {
                     self.ellipsis()
                 } else {
-                    Kind::from_char(c).expect("non-compound reserved symbols are covered by Kind")
+                    LexemeKind::from_char(c).expect("non-compound reserved symbols are covered by Kind")
                 }
             }
 
             c if is_reserved_symbol_start(c) => {
-                Kind::from_char(c).expect("non-compound reserved symbols are covered by Kind")
+                LexemeKind::from_char(c).expect("non-compound reserved symbols are covered by Kind")
             }
             c if is_ident_alpha_start(c) => self.ident_alpha(),
             c if is_ident_symb(c) => self.ident_symb(),
             c if is_number_start(c) => self.number(c),
-            _ => Kind::Unknown,
+            _ => LexemeKind::Unknown,
         };
 
         Token::new(self.len_consumed(), kind)
     }
 
-    fn whitespace(&mut self) -> Kind {
+    fn whitespace(&mut self) -> LexemeKind {
         self.eat_while(is_whitespace);
-        Kind::Whitespace
+        LexemeKind::Whitespace
     }
 
-    fn comment(&mut self) -> Kind {
+    fn comment(&mut self) -> LexemeKind {
         assert_eq!(self.bump().unwrap(), '*');
 
         while let Some(c) = self.bump() {
@@ -163,34 +163,34 @@ impl<'a> Cursor<'a> {
                 '*' => {
                     if self.first() == ')' {
                         self.bump();
-                        return Kind::Comment { terminated: true };
+                        return LexemeKind::Comment { terminated: true };
                     }
                 }
                 _ => {}
             }
         }
         // EOF reached
-        Kind::Comment { terminated: false }
+        LexemeKind::Comment { terminated: false }
     }
 
-    fn literal_char(&mut self) -> Kind {
+    fn literal_char(&mut self) -> LexemeKind {
         assert_eq!(self.bump().unwrap(), '"');
 
         match self.bump() {
-            Some(EOF_CHAR) | None => return Kind::Char { terminated: false },
+            Some(EOF_CHAR) | None => return LexemeKind::Char { terminated: false },
             _ => {}
         }
 
         match self.bump() {
-            Some('"') => return Kind::Char { terminated: true },
-            _ => return Kind::Char { terminated: false },
+            Some('"') => return LexemeKind::Char { terminated: true },
+            _ => return LexemeKind::Char { terminated: false },
         }
     }
 
-    fn literal_string(&mut self) -> Kind {
+    fn literal_string(&mut self) -> LexemeKind {
         while let Some(c) = self.bump() {
             match c {
-                '"' => return Kind::String { terminated: true },
+                '"' => return LexemeKind::String { terminated: true },
 
                 // Handle escape sequences
                 '\\' => {
@@ -201,41 +201,41 @@ impl<'a> Cursor<'a> {
             }
         }
         // EOF reached
-        Kind::String { terminated: false }
+        LexemeKind::String { terminated: false }
     }
 
-    fn number_negation(&mut self) -> Kind {
+    fn number_negation(&mut self) -> LexemeKind {
         let first = self.bump().expect("a digit follows the ~");
         self.number(first)
     }
 
-    fn arrow(&mut self, c: char) -> Kind {
+    fn arrow(&mut self, c: char) -> LexemeKind {
         self.bump();
 
         match c {
-            '-' => Kind::ThinArrow,
-            '=' => Kind::ThickArrow,
+            '-' => LexemeKind::ThinArrow,
+            '=' => LexemeKind::ThickArrow,
             _ => unreachable!(),
         }
     }
 
-    fn ellipsis(&mut self) -> Kind {
+    fn ellipsis(&mut self) -> LexemeKind {
         assert_eq!(self.bump().unwrap(), '.');
         assert_eq!(self.bump().unwrap(), '.');
-        Kind::Ellipsis
+        LexemeKind::Ellipsis
     }
 
-    fn ident_alpha(&mut self) -> Kind {
+    fn ident_alpha(&mut self) -> LexemeKind {
         self.eat_while(is_ident_alpha_cont);
-        Kind::Ident
+        LexemeKind::Ident
     }
 
-    fn ident_symb(&mut self) -> Kind {
+    fn ident_symb(&mut self) -> LexemeKind {
         self.eat_while(is_ident_symb);
-        Kind::Ident
+        LexemeKind::Ident
     }
 
-    fn number(&mut self, first: char) -> Kind {
+    fn number(&mut self, first: char) -> LexemeKind {
         match first {
             '0' => match self.first() {
                 'x' => return self.hexadecimal(),
@@ -247,7 +247,7 @@ impl<'a> Cursor<'a> {
         self.decimal_or_real()
     }
 
-    fn decimal_or_real(&mut self) -> Kind {
+    fn decimal_or_real(&mut self) -> LexemeKind {
         let mut is_real = false;
 
         while !self.is_eof() {
@@ -284,27 +284,27 @@ impl<'a> Cursor<'a> {
         }
 
         if is_real {
-            Kind::Real
+            LexemeKind::Real
         } else {
-            Kind::Int
+            LexemeKind::Int
         }
     }
 
-    fn exponent(&mut self) -> Kind {
+    fn exponent(&mut self) -> LexemeKind {
         if self.first() == '~' {
             self.bump();
         }
         self.eat_while(|c| char::is_ascii_digit(&c));
-        Kind::Real
+        LexemeKind::Real
     }
 
-    fn hexadecimal(&mut self) -> Kind {
+    fn hexadecimal(&mut self) -> LexemeKind {
         assert_eq!(self.bump().unwrap(), 'x');
         self.eat_while(|c| char::is_ascii_hexdigit(&c));
-        Kind::Int
+        LexemeKind::Int
     }
 
-    fn word(&mut self) -> Kind {
+    fn word(&mut self) -> LexemeKind {
         assert_eq!(self.bump().unwrap(), 'w');
         if self.first() == 'x' {
             self.bump();
@@ -312,6 +312,6 @@ impl<'a> Cursor<'a> {
         } else {
             self.eat_while(|c| char::is_ascii_digit(&c));
         }
-        Kind::Word
+        LexemeKind::Word
     }
 }

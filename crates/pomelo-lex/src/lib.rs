@@ -4,7 +4,7 @@ mod cursor;
 mod tests;
 
 pub mod kind;
-pub use kind::Kind;
+pub use kind::LexemeKind;
 
 pub mod token;
 pub use token::Token;
