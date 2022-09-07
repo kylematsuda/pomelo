@@ -1,11 +1,5 @@
-[workspace]
-
-members = [
-    "crates/*"
-]
-
 [package]
-name = "pomelo"
+name = "pomelo-parse"
 version = "0.1.0"
 edition = "2021"
 
