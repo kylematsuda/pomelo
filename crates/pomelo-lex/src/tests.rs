@@ -15,7 +15,7 @@ fn whitespace() {
     check(
         "\n          \n\r\n\r\n\t\t\n\r\n \n \n \n \r \n     \n",
         expect![[r#"
-            Token { len: 37, kind: Whitespace }
+            LexToken { len: 37, kind: Whitespace }
         "#]],
     )
 }
@@ -25,25 +25,25 @@ fn just_a_paren_not_a_comment() {
     check(
         "( hi i am not quite a comment! *)",
         expect![[r#"
-            Token { len: 1, kind: LParen }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 2, kind: Ident }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 1, kind: Ident }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 2, kind: Ident }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 3, kind: Ident }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 5, kind: Ident }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 1, kind: Ident }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 7, kind: Ident }
-            Token { len: 1, kind: Ident }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 1, kind: Ident }
-            Token { len: 1, kind: RParen }
+            LexToken { len: 1, kind: LParen }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 2, kind: Ident }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 1, kind: Ident }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 2, kind: Ident }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 3, kind: Ident }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 5, kind: Ident }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 1, kind: Ident }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 7, kind: Ident }
+            LexToken { len: 1, kind: Ident }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 1, kind: Ident }
+            LexToken { len: 1, kind: RParen }
         "#]],
     )
 }
@@ -53,7 +53,7 @@ fn comment() {
     check(
         "(* hi i am a comment: %$%\\[{]}'`~*() *)",
         expect![[r#"
-            Token { len: 39, kind: Comment { terminated: true } }
+            LexToken { len: 39, kind: Comment { terminated: true } }
         "#]],
     )
 }
@@ -63,7 +63,7 @@ fn unterminated_comment() {
     check(
         "(* whoops i am unterminated!",
         expect![[r#"
-            Token { len: 28, kind: Comment { terminated: false } }
+            LexToken { len: 28, kind: Comment { terminated: false } }
         "#]],
     )
 }
@@ -73,14 +73,14 @@ fn char() {
     check(
         "#\"g\" #\"o\" #\"o\" #\"d\"",
         expect![[r#"
-        Token { len: 4, kind: Char { terminated: true } }
-        Token { len: 1, kind: Whitespace }
-        Token { len: 4, kind: Char { terminated: true } }
-        Token { len: 1, kind: Whitespace }
-        Token { len: 4, kind: Char { terminated: true } }
-        Token { len: 1, kind: Whitespace }
-        Token { len: 4, kind: Char { terminated: true } }
-    "#]],
+            LexToken { len: 4, kind: Char { terminated: true } }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 4, kind: Char { terminated: true } }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 4, kind: Char { terminated: true } }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 4, kind: Char { terminated: true } }
+        "#]],
     )
 }
 
@@ -89,9 +89,9 @@ fn char_unterminated() {
     check(
         "#\"w \"uh oh\"",
         expect![[r#"
-        Token { len: 4, kind: Char { terminated: false } }
-        Token { len: 7, kind: String { terminated: true } }
-    "#]],
+            LexToken { len: 4, kind: Char { terminated: false } }
+            LexToken { len: 7, kind: String { terminated: true } }
+        "#]],
     )
 }
 
@@ -102,22 +102,22 @@ fn char_too_long() {
     check(
         "#\"i am a char that is many chars\"",
         expect![[r#"
-        Token { len: 4, kind: Char { terminated: false } }
-        Token { len: 2, kind: Ident }
-        Token { len: 1, kind: Whitespace }
-        Token { len: 1, kind: Ident }
-        Token { len: 1, kind: Whitespace }
-        Token { len: 4, kind: Ident }
-        Token { len: 1, kind: Whitespace }
-        Token { len: 4, kind: Ident }
-        Token { len: 1, kind: Whitespace }
-        Token { len: 2, kind: Ident }
-        Token { len: 1, kind: Whitespace }
-        Token { len: 4, kind: Ident }
-        Token { len: 1, kind: Whitespace }
-        Token { len: 5, kind: Ident }
-        Token { len: 1, kind: String { terminated: false } }
-    "#]],
+            LexToken { len: 4, kind: Char { terminated: false } }
+            LexToken { len: 2, kind: Ident }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 1, kind: Ident }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 4, kind: Ident }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 4, kind: Ident }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 2, kind: Ident }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 4, kind: Ident }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 5, kind: Ident }
+            LexToken { len: 1, kind: String { terminated: false } }
+        "#]],
     )
 }
 
@@ -126,9 +126,9 @@ fn not_a_char_just_a_hash() {
     check(
         "# \"i am not a char\"",
         expect![[r#"
-        Token { len: 1, kind: Hash }
-        Token { len: 1, kind: Whitespace }
-        Token { len: 17, kind: String { terminated: true } }
+            LexToken { len: 1, kind: Hash }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 17, kind: String { terminated: true } }
         "#]],
     )
 }
@@ -138,8 +138,8 @@ fn single_hash_is_hash() {
     check(
         "# ",
         expect![[r#"
-        Token { len: 1, kind: Hash }
-        Token { len: 1, kind: Whitespace }
+            LexToken { len: 1, kind: Hash }
+            LexToken { len: 1, kind: Whitespace }
         "#]],
     )
 }
@@ -149,11 +149,11 @@ fn double_hash_is_ident() {
     check(
         "## #| #!",
         expect![[r#"
-        Token { len: 2, kind: Ident }
-        Token { len: 1, kind: Whitespace }
-        Token { len: 2, kind: Ident }
-        Token { len: 1, kind: Whitespace }
-        Token { len: 2, kind: Ident }
+            LexToken { len: 2, kind: Ident }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 2, kind: Ident }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 2, kind: Ident }
         "#]],
     )
 }
@@ -163,7 +163,7 @@ fn string() {
     check(
         "\"hi i am a string\"",
         expect![[r#"
-            Token { len: 18, kind: String { terminated: true } }
+            LexToken { len: 18, kind: String { terminated: true } }
         "#]],
     )
 }
@@ -173,7 +173,7 @@ fn unterminated_string() {
     check(
         "\"whoops i am unterminated!",
         expect![[r#"
-            Token { len: 26, kind: String { terminated: false } }
+            LexToken { len: 26, kind: String { terminated: false } }
         "#]],
     )
 }
@@ -183,10 +183,10 @@ fn eq() {
     check(
         "= - ",
         expect![[r#"
-        Token { len: 1, kind: Eq }
-        Token { len: 1, kind: Whitespace }
-        Token { len: 1, kind: Minus }
-        Token { len: 1, kind: Whitespace }
+            LexToken { len: 1, kind: Eq }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 1, kind: Minus }
+            LexToken { len: 1, kind: Whitespace }
         "#]],
     )
 }
@@ -196,9 +196,9 @@ fn eq_arrows() {
     check(
         "=> ->",
         expect![[r#"
-        Token { len: 2, kind: ThickArrow }
-        Token { len: 1, kind: Whitespace }
-        Token { len: 2, kind: ThinArrow }
+            LexToken { len: 2, kind: ThickArrow }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 2, kind: ThinArrow }
         "#]],
     )
 }
@@ -208,11 +208,11 @@ fn eq_weird_idents() {
     check(
         "===> -<> -!><",
         expect![[r#"
-            Token { len: 4, kind: Ident }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 3, kind: Ident }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 4, kind: Ident }
+            LexToken { len: 4, kind: Ident }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 3, kind: Ident }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 4, kind: Ident }
         "#]],
     )
 }
@@ -222,19 +222,19 @@ fn eq_mixed() {
     check(
         "= - ==> <= => =!>< ->",
         expect![[r#"
-            Token { len: 1, kind: Eq }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 1, kind: Minus }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 3, kind: Ident }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 2, kind: Ident }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 2, kind: ThickArrow }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 4, kind: Ident }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 2, kind: ThinArrow }
+            LexToken { len: 1, kind: Eq }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 1, kind: Minus }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 3, kind: Ident }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 2, kind: Ident }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 2, kind: ThickArrow }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 4, kind: Ident }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 2, kind: ThinArrow }
         "#]],
     )
 }
@@ -244,15 +244,15 @@ fn dot_vs_ellipsis() {
     check(
         ". .. ... ....",
         expect![[r#"
-        Token { len: 1, kind: Dot }
-        Token { len: 1, kind: Whitespace }
-        Token { len: 1, kind: Dot }
-        Token { len: 1, kind: Dot }
-        Token { len: 1, kind: Whitespace }
-        Token { len: 3, kind: Ellipsis }
-        Token { len: 1, kind: Whitespace }
-        Token { len: 3, kind: Ellipsis }
-        Token { len: 1, kind: Dot }
+            LexToken { len: 1, kind: Dot }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 1, kind: Dot }
+            LexToken { len: 1, kind: Dot }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 3, kind: Ellipsis }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 3, kind: Ellipsis }
+            LexToken { len: 1, kind: Dot }
         "#]],
     )
 }
@@ -262,24 +262,24 @@ fn reserved_symb() {
     check(
         "()[]{},:;..._| => -> #",
         expect![[r#"
-            Token { len: 1, kind: LParen }
-            Token { len: 1, kind: RParen }
-            Token { len: 1, kind: LBracket }
-            Token { len: 1, kind: RBracket }
-            Token { len: 1, kind: LBrace }
-            Token { len: 1, kind: RBrace }
-            Token { len: 1, kind: Comma }
-            Token { len: 1, kind: Colon }
-            Token { len: 1, kind: Semicolon }
-            Token { len: 3, kind: Ellipsis }
-            Token { len: 1, kind: Underscore }
-            Token { len: 1, kind: Pipe }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 2, kind: ThickArrow }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 2, kind: ThinArrow }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 1, kind: Hash }
+            LexToken { len: 1, kind: LParen }
+            LexToken { len: 1, kind: RParen }
+            LexToken { len: 1, kind: LBracket }
+            LexToken { len: 1, kind: RBracket }
+            LexToken { len: 1, kind: LBrace }
+            LexToken { len: 1, kind: RBrace }
+            LexToken { len: 1, kind: Comma }
+            LexToken { len: 1, kind: Colon }
+            LexToken { len: 1, kind: Semicolon }
+            LexToken { len: 3, kind: Ellipsis }
+            LexToken { len: 1, kind: Underscore }
+            LexToken { len: 1, kind: Pipe }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 2, kind: ThickArrow }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 2, kind: ThinArrow }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 1, kind: Hash }
         "#]],
     )
 }
@@ -289,19 +289,19 @@ fn alphanumeric_ident() {
     check(
         "and i am all15 alpha_numeric' 'and happy100",
         expect![[r#"
-            Token { len: 3, kind: Ident }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 1, kind: Ident }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 2, kind: Ident }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 5, kind: Ident }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 14, kind: Ident }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 4, kind: Ident }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 8, kind: Ident }
+            LexToken { len: 3, kind: Ident }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 1, kind: Ident }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 2, kind: Ident }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 5, kind: Ident }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 14, kind: Ident }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 4, kind: Ident }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 8, kind: Ident }
         "#]],
     )
 }
@@ -316,28 +316,28 @@ fn bad_alphanumeric_ident() {
     check(
         "_cant 10start .1with numbers! or$ include* %symbols ",
         expect![[r#"
-            Token { len: 1, kind: Underscore }
-            Token { len: 4, kind: Ident }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 2, kind: Int }
-            Token { len: 5, kind: Ident }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 1, kind: Dot }
-            Token { len: 1, kind: Int }
-            Token { len: 4, kind: Ident }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 7, kind: Ident }
-            Token { len: 1, kind: Ident }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 2, kind: Ident }
-            Token { len: 1, kind: Ident }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 7, kind: Ident }
-            Token { len: 1, kind: Ident }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 1, kind: Ident }
-            Token { len: 7, kind: Ident }
-            Token { len: 1, kind: Whitespace }
+            LexToken { len: 1, kind: Underscore }
+            LexToken { len: 4, kind: Ident }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 2, kind: Int }
+            LexToken { len: 5, kind: Ident }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 1, kind: Dot }
+            LexToken { len: 1, kind: Int }
+            LexToken { len: 4, kind: Ident }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 7, kind: Ident }
+            LexToken { len: 1, kind: Ident }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 2, kind: Ident }
+            LexToken { len: 1, kind: Ident }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 7, kind: Ident }
+            LexToken { len: 1, kind: Ident }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 1, kind: Ident }
+            LexToken { len: 7, kind: Ident }
+            LexToken { len: 1, kind: Whitespace }
         "#]],
     )
 }
@@ -347,19 +347,19 @@ fn ints() {
     check(
         "10 ~20 39 0xFA 1 120 ~0xFFFFFC",
         expect![[r#"
-            Token { len: 2, kind: Int }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 3, kind: Int }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 2, kind: Int }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 4, kind: Int }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 1, kind: Int }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 3, kind: Int }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 9, kind: Int }
+            LexToken { len: 2, kind: Int }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 3, kind: Int }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 2, kind: Int }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 4, kind: Int }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 1, kind: Int }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 3, kind: Int }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 9, kind: Int }
         "#]],
     )
 }
@@ -369,21 +369,21 @@ fn bad_ints() {
     check(
         "10a0 2b 3F x0F AA 00xA",
         expect![[r#"
-            Token { len: 2, kind: Int }
-            Token { len: 2, kind: Ident }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 1, kind: Int }
-            Token { len: 1, kind: Ident }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 1, kind: Int }
-            Token { len: 1, kind: Ident }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 3, kind: Ident }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 2, kind: Ident }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 2, kind: Int }
-            Token { len: 2, kind: Ident }
+            LexToken { len: 2, kind: Int }
+            LexToken { len: 2, kind: Ident }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 1, kind: Int }
+            LexToken { len: 1, kind: Ident }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 1, kind: Int }
+            LexToken { len: 1, kind: Ident }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 3, kind: Ident }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 2, kind: Ident }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 2, kind: Int }
+            LexToken { len: 2, kind: Ident }
         "#]],
     )
 }
@@ -393,17 +393,17 @@ fn reals() {
     check(
         "10.0 2.2 3.0e7 0.5e~3 1.5 120.0",
         expect![[r#"
-            Token { len: 4, kind: Real }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 3, kind: Real }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 5, kind: Real }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 6, kind: Real }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 3, kind: Real }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 5, kind: Real }
+            LexToken { len: 4, kind: Real }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 3, kind: Real }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 5, kind: Real }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 6, kind: Real }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 3, kind: Real }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 5, kind: Real }
         "#]],
     )
 }
@@ -413,25 +413,25 @@ fn bad_reals() {
     check(
         "10. .2 3.0e7.0 5e~3 15 1.0.2",
         expect![[r#"
-            Token { len: 2, kind: Int }
-            Token { len: 1, kind: Dot }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 1, kind: Dot }
-            Token { len: 1, kind: Int }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 5, kind: Real }
-            Token { len: 1, kind: Dot }
-            Token { len: 1, kind: Int }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 1, kind: Int }
-            Token { len: 1, kind: Ident }
-            Token { len: 2, kind: Int }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 2, kind: Int }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 3, kind: Real }
-            Token { len: 1, kind: Dot }
-            Token { len: 1, kind: Int }
+            LexToken { len: 2, kind: Int }
+            LexToken { len: 1, kind: Dot }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 1, kind: Dot }
+            LexToken { len: 1, kind: Int }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 5, kind: Real }
+            LexToken { len: 1, kind: Dot }
+            LexToken { len: 1, kind: Int }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 1, kind: Int }
+            LexToken { len: 1, kind: Ident }
+            LexToken { len: 2, kind: Int }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 2, kind: Int }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 3, kind: Real }
+            LexToken { len: 1, kind: Dot }
+            LexToken { len: 1, kind: Int }
         "#]],
     )
 }
@@ -441,19 +441,19 @@ fn words() {
     check(
         "0w10 0wx20 0w39 0wxFA 0w1 0w120 0wxFFFFFC",
         expect![[r#"
-            Token { len: 4, kind: Word }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 5, kind: Word }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 4, kind: Word }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 5, kind: Word }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 3, kind: Word }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 5, kind: Word }
-            Token { len: 1, kind: Whitespace }
-            Token { len: 9, kind: Word }
+            LexToken { len: 4, kind: Word }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 5, kind: Word }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 4, kind: Word }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 5, kind: Word }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 3, kind: Word }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 5, kind: Word }
+            LexToken { len: 1, kind: Whitespace }
+            LexToken { len: 9, kind: Word }
         "#]],
     )
 }

@@ -1,20 +1,20 @@
 use crate::cursor::{Cursor, EOF_CHAR};
-use crate::LexemeKind;
+use crate::LexKind;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct Token {
+pub struct LexToken {
     len: usize,
-    kind: LexemeKind,
+    kind: LexKind,
 }
 
 #[derive(Debug, Clone)]
 pub(crate) struct LexedStr<'a> {
     input: &'a str,
-    tokens: Vec<Token>,
+    tokens: Vec<LexToken>,
 }
 
-impl Token {
-    pub fn new(len: usize, kind: LexemeKind) -> Self {
+impl LexToken {
+    pub fn new(len: usize, kind: LexKind) -> Self {
         Self { len, kind }
     }
 }
@@ -27,7 +27,7 @@ impl<'a> LexedStr<'a> {
         }
     }
 
-    pub(crate) fn lex(mut self) -> Vec<Token> {
+    pub(crate) fn lex(mut self) -> Vec<LexToken> {
         let mut cursor = Cursor::new(self.input);
 
         while !cursor.is_eof() {
@@ -89,7 +89,7 @@ fn is_number_start(c: char) -> bool {
 }
 
 impl<'a> Cursor<'a> {
-    fn next_token(&mut self) -> Token {
+    fn next_token(&mut self) -> LexToken {
         self.reset_len_consumed();
 
         let c = self.bump().expect("caller checks Cursor::is_eof");
@@ -99,20 +99,24 @@ impl<'a> Cursor<'a> {
 
             '(' => match self.first() {
                 '*' => self.comment(),
-                _ => LexemeKind::LParen,
+                _ => LexKind::LParen,
             },
 
             '#' => match self.first() {
                 '"' => self.literal_char(),
                 c if is_ident_symb(c) => self.ident_symb(),
-                _ => LexemeKind::Hash,
+                _ => LexKind::Hash,
             },
 
             '"' => self.literal_string(),
 
-            '~' => if self.first().is_ascii_digit() {
-                self.number_negation()
-            } else { self.ident_symb() }
+            '~' => {
+                if self.first().is_ascii_digit() {
+                    self.number_negation()
+                } else {
+                    self.ident_symb()
+                }
+            }
 
             '=' | '-' => {
                 let c1 = self.first();
@@ -123,7 +127,8 @@ impl<'a> Cursor<'a> {
                 } else if c1 == '>' {
                     self.arrow(c)
                 } else {
-                    LexemeKind::from_char(c).expect("non-compound reserved symbols are covered by Kind")
+                    LexKind::from_char(c)
+                        .expect("non-compound reserved symbols are covered by Kind")
                 }
             }
 
@@ -134,28 +139,29 @@ impl<'a> Cursor<'a> {
                 if c1 == '.' && c2 == '.' {
                     self.ellipsis()
                 } else {
-                    LexemeKind::from_char(c).expect("non-compound reserved symbols are covered by Kind")
+                    LexKind::from_char(c)
+                        .expect("non-compound reserved symbols are covered by Kind")
                 }
             }
 
             c if is_reserved_symbol_start(c) => {
-                LexemeKind::from_char(c).expect("non-compound reserved symbols are covered by Kind")
+                LexKind::from_char(c).expect("non-compound reserved symbols are covered by Kind")
             }
             c if is_ident_alpha_start(c) => self.ident_alpha(),
             c if is_ident_symb(c) => self.ident_symb(),
             c if is_number_start(c) => self.number(c),
-            _ => LexemeKind::Unknown,
+            _ => LexKind::Unknown,
         };
 
-        Token::new(self.len_consumed(), kind)
+        LexToken::new(self.len_consumed(), kind)
     }
 
-    fn whitespace(&mut self) -> LexemeKind {
+    fn whitespace(&mut self) -> LexKind {
         self.eat_while(is_whitespace);
-        LexemeKind::Whitespace
+        LexKind::Whitespace
     }
 
-    fn comment(&mut self) -> LexemeKind {
+    fn comment(&mut self) -> LexKind {
         assert_eq!(self.bump().unwrap(), '*');
 
         while let Some(c) = self.bump() {
@@ -163,34 +169,34 @@ impl<'a> Cursor<'a> {
                 '*' => {
                     if self.first() == ')' {
                         self.bump();
-                        return LexemeKind::Comment { terminated: true };
+                        return LexKind::Comment { terminated: true };
                     }
                 }
                 _ => {}
             }
         }
         // EOF reached
-        LexemeKind::Comment { terminated: false }
+        LexKind::Comment { terminated: false }
     }
 
-    fn literal_char(&mut self) -> LexemeKind {
+    fn literal_char(&mut self) -> LexKind {
         assert_eq!(self.bump().unwrap(), '"');
 
         match self.bump() {
-            Some(EOF_CHAR) | None => return LexemeKind::Char { terminated: false },
+            Some(EOF_CHAR) | None => return LexKind::Char { terminated: false },
             _ => {}
         }
 
         match self.bump() {
-            Some('"') => return LexemeKind::Char { terminated: true },
-            _ => return LexemeKind::Char { terminated: false },
+            Some('"') => return LexKind::Char { terminated: true },
+            _ => return LexKind::Char { terminated: false },
         }
     }
 
-    fn literal_string(&mut self) -> LexemeKind {
+    fn literal_string(&mut self) -> LexKind {
         while let Some(c) = self.bump() {
             match c {
-                '"' => return LexemeKind::String { terminated: true },
+                '"' => return LexKind::String { terminated: true },
 
                 // Handle escape sequences
                 '\\' => {
@@ -201,41 +207,41 @@ impl<'a> Cursor<'a> {
             }
         }
         // EOF reached
-        LexemeKind::String { terminated: false }
+        LexKind::String { terminated: false }
     }
 
-    fn number_negation(&mut self) -> LexemeKind {
+    fn number_negation(&mut self) -> LexKind {
         let first = self.bump().expect("a digit follows the ~");
         self.number(first)
     }
 
-    fn arrow(&mut self, c: char) -> LexemeKind {
+    fn arrow(&mut self, c: char) -> LexKind {
         self.bump();
 
         match c {
-            '-' => LexemeKind::ThinArrow,
-            '=' => LexemeKind::ThickArrow,
+            '-' => LexKind::ThinArrow,
+            '=' => LexKind::ThickArrow,
             _ => unreachable!(),
         }
     }
 
-    fn ellipsis(&mut self) -> LexemeKind {
+    fn ellipsis(&mut self) -> LexKind {
         assert_eq!(self.bump().unwrap(), '.');
         assert_eq!(self.bump().unwrap(), '.');
-        LexemeKind::Ellipsis
+        LexKind::Ellipsis
     }
 
-    fn ident_alpha(&mut self) -> LexemeKind {
+    fn ident_alpha(&mut self) -> LexKind {
         self.eat_while(is_ident_alpha_cont);
-        LexemeKind::Ident
+        LexKind::Ident
     }
 
-    fn ident_symb(&mut self) -> LexemeKind {
+    fn ident_symb(&mut self) -> LexKind {
         self.eat_while(is_ident_symb);
-        LexemeKind::Ident
+        LexKind::Ident
     }
 
-    fn number(&mut self, first: char) -> LexemeKind {
+    fn number(&mut self, first: char) -> LexKind {
         match first {
             '0' => match self.first() {
                 'x' => return self.hexadecimal(),
@@ -247,7 +253,7 @@ impl<'a> Cursor<'a> {
         self.decimal_or_real()
     }
 
-    fn decimal_or_real(&mut self) -> LexemeKind {
+    fn decimal_or_real(&mut self) -> LexKind {
         let mut is_real = false;
 
         while !self.is_eof() {
@@ -260,51 +266,51 @@ impl<'a> Cursor<'a> {
                         self.bump();
                         self.bump();
                     } else {
-                        // We might have a erroneous number with two decimal 
+                        // We might have a erroneous number with two decimal
                         // places, e.g., "123.56.78". This is lexed as
                         // ["123.56", ".", "78"]
                         break;
                     }
-                },
+                }
                 'e' | 'E' => {
                     if is_real && (self.second().is_ascii_digit() || self.second() == '~') {
                         self.bump();
-                        return self.exponent();                
+                        return self.exponent();
                     } else {
-                        // Numbers without a decimal point cannot have 
+                        // Numbers without a decimal point cannot have
                         // exponents; e.g., "1e7" is illegal.
                         break;
                     }
-                },
+                }
                 c if c.is_ascii_digit() => {
                     self.bump();
-                },
+                }
                 _ => break,
             }
         }
 
         if is_real {
-            LexemeKind::Real
+            LexKind::Real
         } else {
-            LexemeKind::Int
+            LexKind::Int
         }
     }
 
-    fn exponent(&mut self) -> LexemeKind {
+    fn exponent(&mut self) -> LexKind {
         if self.first() == '~' {
             self.bump();
         }
         self.eat_while(|c| char::is_ascii_digit(&c));
-        LexemeKind::Real
+        LexKind::Real
     }
 
-    fn hexadecimal(&mut self) -> LexemeKind {
+    fn hexadecimal(&mut self) -> LexKind {
         assert_eq!(self.bump().unwrap(), 'x');
         self.eat_while(|c| char::is_ascii_hexdigit(&c));
-        LexemeKind::Int
+        LexKind::Int
     }
 
-    fn word(&mut self) -> LexemeKind {
+    fn word(&mut self) -> LexKind {
         assert_eq!(self.bump().unwrap(), 'w');
         if self.first() == 'x' {
             self.bump();
@@ -312,6 +318,6 @@ impl<'a> Cursor<'a> {
         } else {
             self.eat_while(|c| char::is_ascii_digit(&c));
         }
-        LexemeKind::Word
+        LexKind::Word
     }
 }
