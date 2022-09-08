@@ -1,5 +1,7 @@
 pub mod grammar;
 
+pub mod syntax;
+
 pub mod parser;
 pub use parser::{Parser, Marker, CompletedMarker};
 

@@ -7,7 +7,6 @@ edition = "2021"
 
 [dependencies]
 pomelo-lex = { path = "../pomelo-lex" }
-pomelo-syntax = { path = "../pomelo-syntax" }
 nom = "7"
 thiserror = "1"
 miette = "5"
