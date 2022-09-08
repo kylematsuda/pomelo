@@ -185,7 +185,7 @@ fn eq() {
         expect![[r#"
             LexToken { len: 1, kind: Eq }
             LexToken { len: 1, kind: Whitespace }
-            LexToken { len: 1, kind: Minus }
+            LexToken { len: 1, kind: Ident }
             LexToken { len: 1, kind: Whitespace }
         "#]],
     )
@@ -224,7 +224,7 @@ fn eq_mixed() {
         expect![[r#"
             LexToken { len: 1, kind: Eq }
             LexToken { len: 1, kind: Whitespace }
-            LexToken { len: 1, kind: Minus }
+            LexToken { len: 1, kind: Ident }
             LexToken { len: 1, kind: Whitespace }
             LexToken { len: 3, kind: Ident }
             LexToken { len: 1, kind: Whitespace }

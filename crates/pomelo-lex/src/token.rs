@@ -118,17 +118,27 @@ impl<'a> Cursor<'a> {
                 }
             }
 
-            '=' | '-' => {
+            '=' => {
                 let c1 = self.first();
                 let c2 = self.second();
 
-                if is_ident_symb(c1) && is_ident_symb(c2) {
+                if c1 == '>' && !is_ident_symb(c2) {
+                    self.arrow(c)
+                } else if is_ident_symb(c1) {
                     self.ident_symb()
-                } else if c1 == '>' {
+                } else {
+                    LexKind::Eq
+                }
+            }
+
+            '-' => {
+                let c1 = self.first();
+                let c2 = self.second();
+
+                if c1 == '>' && !is_ident_symb(c2) {
                     self.arrow(c)
                 } else {
-                    LexKind::from_char(c)
-                        .expect("non-compound reserved symbols are covered by Kind")
+                    self.ident_symb()
                 }
             }
 
@@ -139,8 +149,7 @@ impl<'a> Cursor<'a> {
                 if c1 == '.' && c2 == '.' {
                     self.ellipsis()
                 } else {
-                    LexKind::from_char(c)
-                        .expect("non-compound reserved symbols are covered by Kind")
+                    LexKind::Dot
                 }
             }
 
