@@ -7,6 +7,9 @@ edition = "2021"
 
 [dependencies]
 pomelo-lex = { path = "../pomelo-lex" }
-nom = "7"
+rowan = "0.15"
 thiserror = "1"
 miette = "5"
+
+[dev-dependencies]
+expect-test = "1.4" 

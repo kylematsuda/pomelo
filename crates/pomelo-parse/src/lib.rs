@@ -1,35 +1,33 @@
 pub mod grammar;
 
 pub mod syntax;
+pub use syntax::SyntaxKind;
+
+pub mod language;
+pub use language::{SyntaxElement, SyntaxNode};
 
 pub mod parser;
-pub use parser::{Parser, Marker, CompletedMarker};
+pub use parser::{Checkpoint, NodeGuard, Parser};
+
+#[cfg(test)]
+pub(crate) mod tests;
 
 use thiserror::Error;
 
 #[derive(Debug, Clone, Error)]
-pub enum LpError {
-    #[error("LexError at {}-{}: {msg}", .span.0, .span.1)]
-    LexError { msg: &'static str, span: (usize, usize) },
-    #[error("ParseError at {}-{}: {msg}", .span.0, .span.1)]
-    ParseError { msg: &'static str, span: (usize, usize) }
+#[error("Error@{pos}: {msg}")]
+pub struct Error {
+    msg: String,
+    text: String,
+    pos: usize,
 }
 
-impl LpError {
-    pub fn from_lex(msg: &'static str, span: (usize, usize)) -> Self {
-        Self::LexError { msg, span }
-    }
-
-    pub fn from_parse(msg: &'static str, span: (usize, usize)) -> Self {
-        Self::ParseError { msg, span }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        let result = 2 + 2;
-        assert_eq!(result, 4);
+impl Error {
+    pub fn new(msg: impl Into<String>, text: impl Into<String>, pos: usize) -> Self {
+        Self {
+            msg: msg.into(),
+            text: text.into(),
+            pos,
+        }
     }
 }

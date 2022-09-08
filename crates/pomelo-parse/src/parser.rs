@@ -1,135 +1,279 @@
-use pomelo_lex::{lex, LexToken};
-use pomelo_syntax::{GreenNodeBuilder, SyntaxKind, Token};
+use crate::Error;
+use crate::{SyntaxElement, SyntaxKind, SyntaxNode};
 
-use crate::LpError;
+use std::cell::RefCell;
+use std::fmt;
+use std::rc::Rc;
 
-use std::iter::Peekable;
-use std::slice::Iter;
+use rowan::{GreenNode, GreenNodeBuilder};
 
-#[derive(Debug, Clone)]
-pub struct Input(Vec<Token>, Vec<LpError>);
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Token {
+    kind: SyntaxKind,
+    text: String,
+}
 
-impl Input {
-    pub fn from_lexed<'a>(src: &'a str, lex_tokens: &'a [LexToken]) -> Self {
-        let mut pos = 0;
-        let mut tokens = vec![];
-        let mut errs = vec![];
-
-        for t in lex_tokens { 
-            let len = t.len();
-            let (tok, err) = Token::convert(&src[pos..pos+len], t.kind()); 
-
-            tokens.push(tok);
-            if let Some(e) = err {
-                let e = LpError::from_lex(e, (pos, pos + len)); 
-                errs.push(e);
-            }
-            pos += len;
+impl Token {
+    pub fn new(kind: SyntaxKind, text: impl Into<String>) -> Self {
+        Self {
+            kind,
+            text: text.into(),
         }
-        Self(tokens, errs)
+    }
+
+    pub fn kind(&self) -> SyntaxKind {
+        self.kind
+    }
+
+    pub fn text(&self) -> &str {
+        &self.text
+    }
+
+    fn from_lex_token(
+        lex: pomelo_lex::LexToken,
+        src: &str,
+        offset: usize,
+    ) -> (Self, Option<crate::Error>) {
+        let text = &src[offset..offset + lex.len()];
+        let (kind, opt_err_msg) = SyntaxKind::from_lexed(lex.kind(), text);
+
+        let opt_err = if let Some(msg) = opt_err_msg {
+            Some(Error::new(msg, text, offset))
+        } else {
+            None
+        };
+
+        (Self::new(kind, text), opt_err)
     }
 }
 
 #[derive(Debug, Clone)]
-pub enum Event {
-    Start { kind: SyntaxKind },
-    Token { kind: SyntaxKind, text: String },
-    Finish,
-    Error { msg: String, span: (usize, usize) },
+pub struct SyntaxTree {
+    node: GreenNode,
+    errors: Vec<Error>,
 }
 
-impl Event {
-    pub fn tombstone() -> Self {
-        Self::Start { kind: SyntaxKind::TOMBSTONE }
+impl SyntaxTree {
+    pub fn syntax(&self) -> SyntaxNode {
+        SyntaxNode::new_root(self.node.clone())
+    }
+
+    pub fn errors(&self) -> impl Iterator<Item = &Error> {
+        self.errors.iter()
+    }
+
+    pub fn has_errors(&self) -> bool {
+        self.errors.len() != 0
     }
 }
 
-/// This closely follows the impl in rust-analyzer
-#[derive(Debug, Clone)]
-pub struct Parser<'i> {
-    tokens: Peekable<Iter<'i, Token>>,
-    events: Vec<Event>,
+impl fmt::Display for SyntaxTree {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fn pretty_print(
+            f: &mut fmt::Formatter<'_>,
+            indent: usize,
+            element: SyntaxElement,
+        ) -> fmt::Result {
+            write!(f, "{:indent$}", "", indent = indent)?;
+            match element {
+                rowan::NodeOrToken::Node(node) => {
+                    writeln!(f, "{:?}", node)?;
+                    for c in node.children_with_tokens() {
+                        pretty_print(f, indent + 2, c)?;
+                    }
+                    Ok(())
+                }
+                rowan::NodeOrToken::Token(token) => match token.kind() {
+                    // Don't show whitespace text when formatting the tree
+                    SyntaxKind::WHITESPACE => {
+                        writeln!(f, "{:?}@{:?}", token.kind(), token.text_range())
+                    }
+                    _ => writeln!(f, "{:?}", token),
+                },
+            }
+        }
+        // Ignore errors for now!
+        pretty_print(f, 0, SyntaxElement::Node(self.syntax()))
+    }
 }
 
-impl<'i> Parser<'i> {
-    pub fn new(input: &'i Input) -> Self {
-        Self { tokens: input.0.iter().peekable(), events: Vec::new() }
+#[derive(Debug, Clone)]
+pub struct Parser {
+    current_pos: usize,
+    /// Tokens are stored in reverse order
+    tokens: Vec<Token>,
+    errors: Vec<Error>,
+    builder: Rc<RefCell<GreenNodeBuilder<'static>>>,
+}
+
+impl Parser {
+    pub fn new(src: &str) -> Self {
+        let mut tokens = Vec::new();
+        let mut errors = Vec::new();
+
+        let lex_tokens = pomelo_lex::lex(src);
+
+        let mut offset = 0;
+        for lex_tok in lex_tokens {
+            let lex_tok_len = lex_tok.len();
+
+            let (token, opt_err) = Token::from_lex_token(lex_tok, src, offset);
+            tokens.push(token);
+
+            if let Some(err) = opt_err {
+                errors.push(err);
+            }
+
+            offset += lex_tok_len;
+        }
+        tokens.reverse(); // Do this so we can pop tokens off the back of the vector efficiently
+
+        let builder = Rc::new(RefCell::new(GreenNodeBuilder::default()));
+
+        Self {
+            current_pos: 0,
+            tokens,
+            errors,
+            builder,
+        }
+    }
+
+    pub fn peek(&self) -> SyntaxKind {
+        self.peek_nth(0)
+    }
+
+    /// n = 0 is self.peek()
+    pub fn peek_nth(&self, n: usize) -> SyntaxKind {
+        self.tokens
+            .iter()
+            .rev()
+            .nth(n)
+            .map(Token::kind)
+            .unwrap_or(SyntaxKind::EOF)
+    }
+
+    fn peek_token(&self) -> Option<&Token> {
+        self.tokens.last()
     }
 
     pub fn eat(&mut self, kind: SyntaxKind) -> bool {
-        if self.at(kind) {
-            let (kind, text) = self.bump().into_parts(); 
-            self.events.push(Event::Token { kind, text });
+        if kind == self.peek() {
+            let token = self.pop();
+            self.push_token(token);
             true
         } else {
-            false 
+            false
         }
     }
 
-    pub fn eat_any(&mut self) {   
-        let (kind, text) = self.bump().into_parts(); 
-        self.events.push(Event::Token { kind, text });
+    pub fn eat_any(&mut self) -> SyntaxKind {
+        let token = self.pop();
+        let kind = token.kind();
+        self.push_token(token);
+        kind
     }
 
-    pub fn bump(&mut self) -> Token {
-        self.tokens.next().map(Token::clone)
-            .unwrap_or(Token::new(SyntaxKind::EOF, ""))
+    pub fn eat_trivia(&mut self) -> bool {
+        let mut eaten = false;
+
+        while !self.is_eof() {
+            if self.peek().is_trivia() {
+                self.eat_any();
+                eaten = true;
+            } else {
+                break;
+            }
+        }
+        eaten
+    }
+
+    pub fn expect(&mut self, kind: SyntaxKind) {
+        if !self.eat(kind) {
+            self.error(format!("expected {:?}", kind))
+        }
+    }
+
+    pub fn error(&mut self, msg: impl Into<String> + Clone) {
+        let pos = self.current_pos;
+        let text = self.peek_token().map(|t| t.text()).unwrap_or("").to_owned();
+
+        self.errors.push(Error::new(msg.clone(), text, pos));
+
+        // Push into syntax tree as well for now
+        self.push_token(Token::new(SyntaxKind::ERROR, msg))
+    }
+
+    fn pop(&mut self) -> Token {
+        match self.tokens.pop() {
+            Some(t) => {
+                self.current_pos += t.text().len();
+                t
+            }
+            None => Token::new(SyntaxKind::EOF, ""),
+        }
     }
 
     pub fn is_eof(&mut self) -> bool {
-        self.at(SyntaxKind::EOF)
-    }
-
-    pub fn at(&mut self, kind: SyntaxKind) -> bool {
-        self.peek() == kind
-    }
-
-    pub fn peek(&mut self) -> SyntaxKind {
-        self.tokens.peek().map(|t| t.kind()).unwrap_or(SyntaxKind::EOF)
+        self.peek() == SyntaxKind::EOF
     }
 
     #[must_use]
-    pub fn start(&mut self) -> Marker {
-        self.events.push(Event::tombstone());
-        Marker { pos: self.events.len() - 1 } 
-    }
-
-    pub fn abandon(&mut self, m: Marker) {
-        if m.pos == self.events.len() - 1 {
-            match self.events.pop() {
-                Some(Event::Start { kind: SyntaxKind::TOMBSTONE }) => (),
-                _ => unreachable!()
-            }
+    pub fn start_node(&mut self, kind: SyntaxKind) -> NodeGuard {
+        self.builder.borrow_mut().start_node(kind.into());
+        NodeGuard {
+            builder: self.builder.clone(),
         }
     }
 
-    pub fn complete(&mut self, m: Marker, kind: SyntaxKind) -> CompletedMarker {
-        self.events.push(Event::Finish);
+    #[must_use]
+    pub fn checkpoint(&self) -> Checkpoint {
+        Checkpoint(self.builder.borrow().checkpoint())
+    }
 
-        let e = &mut self.events[m.pos];
-
-        match e {
-            Event::Start { .. } => { 
-                *e = Event::Start { kind }; 
-            }
-            _ => unreachable!()
+    #[must_use]
+    pub fn start_node_at(&mut self, checkpoint: Checkpoint, kind: SyntaxKind) -> NodeGuard {
+        self.builder
+            .borrow_mut()
+            .start_node_at(checkpoint.0, kind.into());
+        NodeGuard {
+            builder: self.builder.clone(),
         }
-
-        CompletedMarker { pos: m.pos, kind }
     }
 
-    pub fn error(&mut self, msg: String, span: (usize, usize)) {
-        self.events.push(Event::Error { msg, span })
+    pub fn push_token(&mut self, token: Token) {
+        self.builder
+            .borrow_mut()
+            .token(token.kind().into(), token.text())
+    }
+
+    pub fn parse(self) -> SyntaxTree {
+        self.parse_inner(crate::grammar::declaration)
+    }
+
+    /// For testing
+    pub(crate) fn parse_inner<F>(mut self, mut f: F) -> SyntaxTree
+    where
+        F: FnMut(&mut Parser),
+    {
+        f(&mut self);
+
+        SyntaxTree {
+            node: self.builder.take().finish(),
+            errors: self.errors,
+        }
     }
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct Marker {
-    pos: usize,
+#[derive(Debug)]
+pub struct Checkpoint(rowan::Checkpoint);
+
+#[derive(Debug, Clone)]
+pub struct NodeGuard {
+    builder: Rc<RefCell<GreenNodeBuilder<'static>>>,
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct CompletedMarker {
-    pos: usize,
-    kind: SyntaxKind,
+impl Drop for NodeGuard {
+    fn drop(&mut self) {
+        self.builder.borrow_mut().finish_node();
+    }
 }

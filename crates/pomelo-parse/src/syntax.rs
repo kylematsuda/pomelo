@@ -1,10 +1,11 @@
 use pomelo_lex::LexKind;
 
 #[allow(bad_style)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[repr(u16)]
 pub enum SyntaxKind {
     // Sentinel variants
-    TOMBSTONE,
+    TOMBSTONE = 0,
     EOF,
     UNKNOWN,
     ERROR,
@@ -71,6 +72,7 @@ pub enum SyntaxKind {
     SCON_EXP,
     VID_EXP,
     RECORD_EXP,
+    RECORD_SEL_EXP,
     LET_DEC,
     PAREN_EXP,
 
@@ -119,7 +121,6 @@ pub enum SyntaxKind {
     SCON_PAT,
     VID_PAT,
     RECORD_PAT,
-    PAREN_PAT,
 
     PAT_ROW,
     PAT_ROW_PAT,
@@ -147,8 +148,7 @@ pub enum SyntaxKind {
     IF_EXP,
     ORELSE_EXP,
     ANDALSO_EXP,
-    CASE_SEQ_EXP,
-    LET_SEQ_EXP,
+    SEQ_EXP,
     WHILE_EXP,
     LIST_EXP,
 
@@ -167,6 +167,7 @@ pub enum SyntaxKind {
     // Derived function-value bindings and declarations
     DERIV_FUN_BIND,
     FVAL_BIND,
+    FVAL_BIND_ROW,
 
     DERIV_DEC,
     FUN_DEC,
@@ -180,11 +181,12 @@ pub enum SyntaxKind {
     CHAR,
     STRING,
 
-    // Identifier types 
+    // Identifier types
     IDENT, // Generic identifier that hasn't been resolved
     VID,
     LONG_VID,
     TY_VAR,
+    TY_VAR_SEQ,
     TY_CON,
     LONG_TY_CON,
     LAB,
@@ -196,6 +198,34 @@ pub enum SyntaxKind {
 }
 
 impl SyntaxKind {
+    pub fn is_special_constant(&self) -> bool {
+        use SyntaxKind::*;
+        matches!(self, INT | REAL | WORD | CHAR | STRING)
+    }
+
+    pub fn is_trivia(&self) -> bool {
+        use SyntaxKind::*;
+        matches!(self, WHITESPACE | COMMENT)
+    }
+
+    pub fn is_dec_kw(&self) -> bool {
+        use SyntaxKind::*;
+        matches!(
+            self,
+            VAL_KW
+                | FUN_KW
+                | TYPE_KW
+                | DATATYPE_KW
+                | ABSTYPE_KW
+                | EXCEPTION_KW
+                | LOCAL_KW
+                | OPEN_KW
+                | INFIX_KW
+                | INFIXR_KW
+                | NONFIX_KW
+        )
+    }
+
     pub fn from_keyword(s: &str) -> Option<Self> {
         use SyntaxKind::*;
 
@@ -263,7 +293,7 @@ impl SyntaxKind {
         Some(symb)
     }
 
-    pub fn convert(lexkind: LexKind, text: &str) -> (Self, Option<&'static str>) {
+    pub fn from_lexed(lexkind: LexKind, text: &str) -> (Self, Option<&'static str>) {
         use LexKind::*;
         use SyntaxKind::*;
 
@@ -276,7 +306,7 @@ impl SyntaxKind {
                     err = Some("unterminated comment");
                 }
                 COMMENT
-            },
+            }
             Eq => EQ,
             Colon => COLON,
             Semicolon => SEMICOLON,
@@ -291,7 +321,7 @@ impl SyntaxKind {
             Comma => COMMA,
             Dot => DOT,
             Ellipsis => ELLIPSIS,
-            Underscore => UNDERSCORE, 
+            Underscore => UNDERSCORE,
             ThickArrow => THICK_ARROW,
             ThinArrow => THIN_ARROW,
             Int => INT,
@@ -302,24 +332,24 @@ impl SyntaxKind {
                     err = Some("unterminated character constant");
                 }
                 CHAR
-            },
+            }
             String { terminated } => {
                 if !terminated {
                     err = Some("unterminated string constant");
                 }
                 STRING
-            },
+            }
             Unknown => {
                 err = Some("unknown input character");
                 UNKNOWN
-            },
+            }
             Ident => match Self::from_keyword(text) {
                 Some(k) => k,
                 None => match text.chars().next() {
                     Some(c) if c == '\'' => TY_VAR,
                     _ => IDENT,
                 },
-            }
+            },
         };
         (kind, err)
     }
