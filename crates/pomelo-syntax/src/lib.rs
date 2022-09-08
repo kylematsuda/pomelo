@@ -11,6 +11,7 @@ pub mod pretty_print;
 pub use pretty_print::pretty_print;
 
 use std::rc::Rc;
+use pomelo_lex::LexKind;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GreenElement {
@@ -100,6 +101,15 @@ impl Token {
 
     pub fn text(&self) -> &str {
         &self.text
+    }
+
+    pub fn into_parts(self) -> (SyntaxKind, String) {
+        (self.kind, self.text)
+    }
+
+    pub fn convert<'a>(text: &'a str, lexkind: LexKind) -> (Self, Option<&'static str>) {
+        let (kind, opt_err) = SyntaxKind::convert(lexkind, text);
+        (Self::new(kind, text), opt_err)
     }
 }
 

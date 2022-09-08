@@ -1,9 +1,13 @@
-#![allow(bad_style)]
+use pomelo_lex::LexKind;
+
+#[allow(bad_style)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum SyntaxKind {
     // Sentinel variants
     TOMBSTONE,
     EOF,
+    UNKNOWN,
+    ERROR,
 
     // Unevaluated
     WHITESPACE,
@@ -59,12 +63,13 @@ pub enum SyntaxKind {
     THIN_ARROW,
     HASH,
 
+    // Needed punctuation
+    DOT,
+
     // Core Grammar: Expressions, Matches, Declarations, and Bindings
     AT_EXP,
     SCON_EXP,
-    SCON,
     VID_EXP,
-    LONGVID,
     RECORD_EXP,
     LET_DEC,
     PAREN_EXP,
@@ -126,10 +131,9 @@ pub enum SyntaxKind {
     LAYERED_PAT,
 
     TY,
-    TY_VAR,
     RECORD_TY_EXP,
-    TY_CONS,
-    FUN_TY_EXPR,
+    TY_CON_EXP,
+    FUN_TY_EXP,
     PAREN_TY,
 
     TY_ROW,
@@ -168,6 +172,27 @@ pub enum SyntaxKind {
     FUN_DEC,
     DATATYPE_WITHTYPE_DEC,
     ABSTYPE_WITHTYPE_DEC,
+
+    // Special constant types
+    INT,
+    REAL,
+    WORD,
+    CHAR,
+    STRING,
+
+    // Identifier types 
+    IDENT, // Generic identifier that hasn't been resolved
+    VID,
+    LONG_VID,
+    TY_VAR,
+    TY_CON,
+    LONG_TY_CON,
+    LAB,
+    STR_ID,
+    LONG_STR_ID,
+
+    // Program level
+    FILE,
 }
 
 impl SyntaxKind {
@@ -232,8 +257,70 @@ impl SyntaxKind {
             "=>" => THICK_ARROW,
             "->" => THIN_ARROW,
             "#" => HASH,
+            "." => DOT,
             _ => return None,
         };
         Some(symb)
+    }
+
+    pub fn convert(lexkind: LexKind, text: &str) -> (Self, Option<&'static str>) {
+        use LexKind::*;
+        use SyntaxKind::*;
+
+        let mut err = None;
+
+        let kind = match lexkind {
+            Whitespace => WHITESPACE,
+            Comment { terminated } => {
+                if !terminated {
+                    err = Some("unterminated comment");
+                }
+                COMMENT
+            },
+            Eq => EQ,
+            Colon => COLON,
+            Semicolon => SEMICOLON,
+            LParen => L_PAREN,
+            RParen => R_PAREN,
+            LBracket => L_BRACKET,
+            RBracket => R_BRACKET,
+            LBrace => L_BRACE,
+            RBrace => R_BRACE,
+            Pipe => PIPE,
+            Hash => HASH,
+            Comma => COMMA,
+            Dot => DOT,
+            Ellipsis => ELLIPSIS,
+            Underscore => UNDERSCORE, 
+            ThickArrow => THICK_ARROW,
+            ThinArrow => THIN_ARROW,
+            Int => INT,
+            Word => WORD,
+            Real => REAL,
+            Char { terminated } => {
+                if !terminated {
+                    err = Some("unterminated character constant");
+                }
+                CHAR
+            },
+            String { terminated } => {
+                if !terminated {
+                    err = Some("unterminated string constant");
+                }
+                STRING
+            },
+            Unknown => {
+                err = Some("unknown input character");
+                UNKNOWN
+            },
+            Ident => match Self::from_keyword(text) {
+                Some(k) => k,
+                None => match text.chars().next() {
+                    Some(c) if c == '\'' => TY_VAR,
+                    _ => IDENT,
+                },
+            }
+        };
+        (kind, err)
     }
 }
