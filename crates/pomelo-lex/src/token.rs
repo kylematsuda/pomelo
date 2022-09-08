@@ -7,6 +7,16 @@ pub struct LexToken {
     kind: LexKind,
 }
 
+impl LexToken {
+    pub fn kind(&self) -> LexKind {
+        self.kind
+    }
+
+    pub fn len(&self) -> usize {
+        self.len
+    }
+}
+
 #[derive(Debug, Clone)]
 pub(crate) struct LexedStr<'a> {
     input: &'a str,
