@@ -396,11 +396,11 @@ mod tests {
                     LET_DEC@0..80
                       LET_KW@0..3 "let"
                       WHITESPACE@3..21
-                      DEC@21..30
-                        VAL_DEC@21..30
+                      DEC@21..43
+                        VAL_DEC@21..43
                           VAL_KW@21..24 "val"
                           WHITESPACE@24..25
-                          VAL_BIND@25..30
+                          VAL_BIND@25..43
                             PAT@25..26
                               AT_PAT@25..26
                                 VID_PAT@25..26
@@ -413,7 +413,7 @@ mod tests {
                               AT_EXP@29..30
                                 SCON_EXP@29..30
                                   INT@29..30 "1"
-                      WHITESPACE@30..43
+                            WHITESPACE@30..43
                       IN_KW@43..45 "in"
                       WHITESPACE@45..63
                       EXP@63..64
@@ -448,11 +448,11 @@ mod tests {
                     LET_DEC@0..258
                       LET_KW@0..3 "let"
                       WHITESPACE@3..21
-                      DEC@21..30
-                        VAL_DEC@21..30
+                      DEC@21..47
+                        VAL_DEC@21..47
                           VAL_KW@21..24 "val"
                           WHITESPACE@24..25
-                          VAL_BIND@25..30
+                          VAL_BIND@25..47
                             PAT@25..26
                               AT_PAT@25..26
                                 VID_PAT@25..26
@@ -465,7 +465,7 @@ mod tests {
                               AT_EXP@29..30
                                 SCON_EXP@29..30
                                   INT@29..30 "1"
-                      WHITESPACE@30..47
+                            WHITESPACE@30..47
                       DEC@47..63
                         VAL_DEC@47..63
                           VAL_KW@47..50 "val"
@@ -485,11 +485,11 @@ mod tests {
                                   STRING@58..63 "\"are\""
                       SEMICOLON@63..64 ";"
                       WHITESPACE@64..81
-                      DEC@81..98
-                        VAL_DEC@81..98
+                      DEC@81..115
+                        VAL_DEC@81..115
                           VAL_KW@81..84 "val"
                           WHITESPACE@84..85
-                          VAL_BIND@85..98
+                          VAL_BIND@85..115
                             PAT@85..89
                               AT_PAT@85..89
                                 VID_PAT@85..89
@@ -503,7 +503,7 @@ mod tests {
                                 VID_EXP@92..98
                                   LONG_VID@92..98
                                     IDENT@92..98 "random"
-                      WHITESPACE@98..115
+                            WHITESPACE@98..115
                       DEC@115..134
                         FUN_DEC@115..134
                           FUN_KW@115..118 "fun"
@@ -528,11 +528,11 @@ mod tests {
                               WHITESPACE@133..134
                       SEMICOLON@134..135 ";"
                       WHITESPACE@135..152
-                      DEC@152..167
-                        VAL_DEC@152..167
+                      DEC@152..185
+                        VAL_DEC@152..185
                           VAL_KW@152..155 "val"
                           WHITESPACE@155..156
-                          VAL_BIND@156..167
+                          VAL_BIND@156..185
                             PAT@156..160
                               AT_PAT@156..160
                                 VID_PAT@156..160
@@ -546,12 +546,12 @@ mod tests {
                                 VID_EXP@163..167
                                   LONG_VID@163..167
                                     IDENT@163..167 "some"
-                      WHITESPACE@167..185
-                      DEC@185..208
-                        VAL_DEC@185..208
+                            WHITESPACE@167..185
+                      DEC@185..221
+                        VAL_DEC@185..221
                           VAL_KW@185..188 "val"
                           WHITESPACE@188..189
-                          VAL_BIND@189..208
+                          VAL_BIND@189..221
                             PAT@189..193
                               AT_PAT@189..193
                                 VID_PAT@189..193
@@ -564,7 +564,7 @@ mod tests {
                               AT_EXP@196..208
                                 SCON_EXP@196..208
                                   STRING@196..208 "\"semicolons\""
-                      WHITESPACE@208..221
+                            WHITESPACE@208..221
                       IN_KW@221..223 "in"
                       WHITESPACE@223..241
                       EXP@241..242

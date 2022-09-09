@@ -1,6 +1,6 @@
 use crate::{Parser, SyntaxKind};
 
-/// Be careful - this function eats trailing trivia
+/// This function does not eat trailing trivia
 pub(crate) fn sequential<F>(p: &mut Parser, parse_function: F, delimiter: SyntaxKind)
 where
     F: Fn(&mut Parser),
@@ -8,10 +8,9 @@ where
     parse_function(p);
     p.eat_trivia();
 
-    while p.eat(delimiter) {
+    while p.eat_through_trivia(delimiter) {
         p.eat_trivia();
         parse_function(p);
-        p.eat_trivia();
     }
 }
 

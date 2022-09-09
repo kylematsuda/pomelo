@@ -587,7 +587,7 @@ mod tests {
                     UNIT_EXP@0..2
                       L_PAREN@0..1 "("
                       R_PAREN@1..2 ")"
-            "#]]
+            "#]],
         )
     }
 
@@ -652,7 +652,7 @@ mod tests {
                               DOT@37..38 "."
                               IDENT@38..40 "id"
                       R_PAREN@40..41 ")"
-            "##]]
+            "##]],
         )
     }
 
@@ -717,7 +717,7 @@ mod tests {
                               DOT@37..38 "."
                               IDENT@38..40 "id"
                       R_BRACKET@40..41 "]"
-            "##]]
+            "##]],
         )
     }
 
@@ -800,7 +800,7 @@ mod tests {
                                 R_BRACKET@46..47 "]"
                           R_PAREN@47..48 ")"
                       R_BRACKET@48..49 "]"
-            "##]]
+            "##]],
         )
     }
 }
