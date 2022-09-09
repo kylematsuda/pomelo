@@ -127,7 +127,7 @@ pub enum SyntaxKind {
 
     PAT,
     CONS_PAT,
-    INFIX_VAL_CONS_PAT,
+    INFIX_CONS_PAT,
     TY_PAT,
     LAYERED_PAT,
 
@@ -276,6 +276,16 @@ impl SyntaxKind {
             || matches!(
                 self,
                 OP_KW | IDENT | L_BRACE | HASH | L_PAREN | L_BRACKET | LET_KW
+            )
+    }
+
+    pub fn is_atomic_pat_start(&self) -> bool {
+        use SyntaxKind::*;
+
+        self.is_special_constant()
+            || matches!(
+                self,
+                OP_KW | IDENT | L_BRACE | L_PAREN | L_BRACKET | UNDERSCORE
             )
     }
 

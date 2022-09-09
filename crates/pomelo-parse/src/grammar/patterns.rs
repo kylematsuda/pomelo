@@ -4,9 +4,113 @@ use crate::{Parser, SyntaxKind};
 use SyntaxKind::*;
 
 pub(crate) fn pattern(p: &mut Parser) {
-    let _ng = p.start_node(PAT);
-    atomic_pattern(p);
+    match p.peek() {
+        OP_KW | IDENT => layered_pat(p),
+        _ => typed_pat(p),
+    }
 }
+
+fn layered_pat(p: &mut Parser) {
+    let mut lookahead = 0;
+    // Optional <op>
+    if p.peek() == OP_KW { lookahead += 1; }
+
+    // Next we expect a <vid>
+    let k = p.peek_next_nontrivia(lookahead);
+    if k == IDENT {
+        lookahead += 1;
+    } else {
+        typed_pat(p);
+        return;
+    }
+
+    // Next, we expect "as" or ":".
+    // If neither of these are present, 
+    // then this is not a layered pat.
+    let k = p.peek_next_nontrivia(lookahead);
+    if k == AS_KW || k == COLON {
+        do_layered_pat(p);
+    } else {
+        typed_pat(p);
+    }
+}
+
+fn do_layered_pat(p: &mut Parser) {
+    let _ng = p.start_node(PAT);
+    let _ng_inner = p.start_node(LAYERED_PAT);
+
+    p.eat(OP_KW);
+    p.eat_trivia();
+
+    grammar::vid(p);
+    p.eat_trivia();
+
+    if p.eat(COLON) {
+        p.eat_trivia();
+        grammar::ty(p);
+        p.eat_trivia();
+    }
+
+    p.expect(AS_KW);
+    pattern(p);
+}
+
+fn typed_pat(p: &mut Parser) {
+    grammar::precedence_climber(
+        p,
+        PAT,
+        TY_PAT,
+        infixed_pat,
+        |p| p.eat_through_trivia(COLON),
+        grammar::ty
+    )
+}
+
+fn infixed_pat(p: &mut Parser) {
+    grammar::precedence_climber(
+        p,
+        PAT,
+        INFIX_CONS_PAT,
+        at_pat_or_constructed,
+        |p| p.peek_next_nontrivia(0) == IDENT,
+        |p| {
+            p.eat_trivia();
+            grammar::vid(p);
+            p.eat_trivia();
+
+            at_pat_or_constructed(p);
+        }
+    )
+}
+
+fn at_pat_or_constructed(p: &mut Parser) {
+    let _ng = p.start_node(PAT); 
+
+    let outer = p.checkpoint();
+    let inner = p.checkpoint();
+
+    match p.peek() {
+       OP_KW | IDENT => {
+            p.eat(OP_KW);
+            p.eat_trivia();
+
+            grammar::longvid(p);
+
+            // Parse <op><longvid> <atpat>
+            if p.peek_next_nontrivia(0).is_atomic_pat_start() {
+                let _ng_cons = p.start_node_at(outer, CONS_PAT);
+                atomic_pattern(p);
+            } else {
+                // Oops, we've just parsed an <atpat>.
+                // Correctly wrap it in AT_PAT + VID_PAT
+                let _ng_at = p.start_node_at(outer, AT_PAT);
+                let _ng_vid = p.start_node_at(inner, VID_PAT);
+            }
+        }
+        _ => atomic_pattern(p)
+    }
+}
+
 
 pub(crate) fn atomic_pattern(p: &mut Parser) {
     let _ng = p.start_node(AT_PAT);
