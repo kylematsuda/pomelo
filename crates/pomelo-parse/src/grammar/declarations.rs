@@ -3,7 +3,32 @@ use crate::{Parser, SyntaxKind};
 
 use SyntaxKind::*;
 
+
 pub(crate) fn declaration(p: &mut Parser) {
+    let outer = p.checkpoint();
+    let inner = p.checkpoint();
+    declaration_inner(p);
+
+    let is_seq = |k: SyntaxKind| k.is_dec_kw() || k == SEMICOLON;
+    if is_seq(p.peek_next_nontrivia(0)) {
+        let _ng = p.start_node_at(outer, DEC);
+        let _nng = p.start_node_at(inner, SEQ_DEC);
+
+        p.eat_trivia();
+        p.eat(SEMICOLON);
+        p.eat_trivia();
+        declaration_inner(p);
+
+        while is_seq(p.peek_next_nontrivia(0)) {
+            p.eat_trivia();
+            p.eat(SEMICOLON);
+            p.eat_trivia();
+            declaration_inner(p);
+        }
+    }
+}
+
+pub(crate) fn declaration_inner(p: &mut Parser) {
     let _ng = p.start_node(DEC);
 
     match p.peek() {
@@ -13,13 +38,11 @@ pub(crate) fn declaration(p: &mut Parser) {
         DATATYPE_KW => unimplemented!(),
         ABSTYPE_KW => unimplemented!(),
         EXCEPTION_KW => unimplemented!(),
-        LOCAL_KW => unimplemented!(),
-        OPEN_KW => unimplemented!(),
-        // Here, need to handle sequential declaration
-        INFIX_KW => unimplemented!(),
-        INFIXR_KW => unimplemented!(),
-        NONFIX_KW => unimplemented!(),
-        _ => p.error("expected declaration"),
+        LOCAL_KW => local_declaration(p),
+        OPEN_KW => open_declaration(p),
+        // Sequential decs are handled in `declaration()` 
+        INFIX_KW | INFIXR_KW | NONFIX_KW => infix_or_nonfix(p),
+        _ => {} // can be empty...
     }
 }
 
@@ -55,4 +78,53 @@ pub(crate) fn typbind(p: &mut Parser) {
     p.expect(EQ);
     p.eat_trivia();
     grammar::ty(p);
+}
+
+fn local_declaration(p: &mut Parser) {
+    let _ng = p.start_node(LOCAL_DEC);
+
+    assert!(p.eat(LOCAL_KW));
+    p.eat_trivia();
+
+    declaration(p);
+    p.eat_trivia();
+
+    p.expect(IN_KW);
+    p.eat_trivia();
+
+    declaration(p);
+    p.eat_trivia();
+
+    p.expect(END_KW);
+}
+
+fn open_declaration(p: &mut Parser) {}
+
+fn infix_or_nonfix(p: &mut Parser) {
+    let checkpoint = p.checkpoint();
+
+    let kind = if p.eat(INFIX_KW) {
+        INFIX_DEC
+    } else if p.eat(INFIXR_KW) {
+        INFIXR_DEC
+    } else if p.eat(NONFIX_KW) {
+        NONFIX_DEC
+    } else {
+        unreachable!()
+    };
+    p.eat_trivia();
+
+    let _ng = p.start_node_at(checkpoint, kind);
+
+    if kind == INFIX_DEC || kind == INFIXR_DEC {
+        // Optionally parse a fixity
+        if p.peek() == INT {
+            let _ng = p.start_node(FIXITY);
+            p.expect(INT);
+        }
+    }
+    p.eat_trivia();
+
+    p.expect(IDENT); // need at least 1 IDENT
+    while p.eat_through_trivia(IDENT) {}
 }

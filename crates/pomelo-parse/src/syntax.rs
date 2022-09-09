@@ -103,6 +103,7 @@ pub enum SyntaxKind {
     INFIX_DEC,
     INFIXR_DEC,
     NONFIX_DEC,
+    FIXITY,
 
     VAL_BIND,
 
@@ -163,11 +164,9 @@ pub enum SyntaxKind {
     TUPLE_TY_EXP,
 
     // Derived function-value bindings and declarations
-    DERIV_FUN_BIND,
     FVAL_BIND,
     FVAL_BIND_ROW,
 
-    DERIV_DEC,
     FUN_DEC,
     DATATYPE_WITHTYPE_DEC,
     ABSTYPE_WITHTYPE_DEC,
