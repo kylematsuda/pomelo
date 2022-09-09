@@ -984,17 +984,13 @@ mod tests {
                             LONG_TY_CON@28..31
                               IDENT@28..31 "int"
                         WHITESPACE@31..32
-                        TY@32..41
-                          TY_CON_EXP@32..41
-                            TY@32..36
-                              TY_CON_EXP@32..36
-                                LONG_TY_CON@32..36
-                                  IDENT@32..36 "list"
-                            WHITESPACE@36..37
-                            TY@37..41
-                              TY_CON_EXP@37..41
-                                LONG_TY_CON@37..41
-                                  IDENT@37..41 "list"
+                        TY@32..36
+                          TY_CON_EXP@32..36
+                            LONG_TY_CON@32..36
+                              IDENT@32..36 "list"
+                        WHITESPACE@36..37
+                        LONG_TY_CON@37..41
+                          IDENT@37..41 "list"
             "#]],
         )
     }

@@ -152,7 +152,7 @@ impl Parser {
             .unwrap_or(SyntaxKind::EOF)
     }
 
-    /// Starts at an offset of `skip` from the current token.
+    /// Peeks past `skip` nontrivia tokens, then peeks at the next one.
     pub fn peek_next_nontrivia(&self, skip: usize) -> SyntaxKind {
         self.peek_token_next_nontrivia(skip)
             .map(Token::kind)
@@ -163,13 +163,13 @@ impl Parser {
         self.tokens.last()
     }
 
-    /// Starts at an offset of `skip` from the current token.
+    /// Peeks past `skip` nontrivia tokens, then peeks at the next one.
     pub fn peek_token_next_nontrivia(&self, skip: usize) -> Option<&Token> {
         self.tokens
             .iter()
             .rev()
+            .filter(|t| !t.kind().is_trivia())
             .skip(skip)
-            .skip_while(|t| t.kind().is_trivia())
             .next()
     }
 

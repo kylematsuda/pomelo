@@ -1,26 +1,130 @@
 use crate::grammar;
-use crate::{parser::Token, Checkpoint, Parser, SyntaxKind};
+use crate::{parser::Token, Parser, SyntaxKind};
 
 use SyntaxKind::*;
 
 pub(crate) fn ty(p: &mut Parser) {
-    let _ng = p.start_node(TY);
-    let outer = p.checkpoint();
-    let inner = p.checkpoint();
+    fun_ty(p)
+}
 
-    match p.peek() {
-        TY_VAR => {
-            let tycon = p.checkpoint();
-            p.eat(TY_VAR);
+fn fun_ty(p: &mut Parser) {
+    grammar::precedence_climber(
+        p,
+        TY,
+        FUN_TY_EXP,
+        tuple_ty,
+        |p| p.eat_through_trivia(THIN_ARROW),
+        tuple_ty,
+    )
+}
 
-            if p.peek_next_nontrivia(0) == TY_VAR {
-                tycon_exp(p, tycon);
+fn tuple_ty(p: &mut Parser) {
+    grammar::precedence_climber(
+        p,
+        TY,
+        TUPLE_TY_EXP,
+        tycon_seq,
+        |p| {
+            // This is a little convoluted.
+            // At the lexing stage, we don't know 
+            // how to determine the function of '*':
+            // as an operator/identifier, or as part of
+            // a tuple type expression. As a result,
+            // '*' does not have it's own LexKind.
+            let t = p.peek_token_next_nontrivia(0);
+            match t.map(Token::kind).unwrap_or(EOF) {
+                // Only take the IDENT if it holds a "*"
+                IDENT if Some("*") == t.map(Token::text) => {
+                    p.eat_trivia();
+                    assert_eq!(p.eat_mapped(STAR), IDENT);
+                    true
+                },
+                _ => false
+            }
+        },
+        tycon_seq,
+    )
+}
+
+fn tycon_seq(p: &mut Parser) {
+    let ty_checkpoint = p.checkpoint();
+    let con_checkpoint = p.checkpoint();
+
+    tycon_ty(p);
+
+    let continue_if = |k: SyntaxKind| {
+        k.is_ty_atom() || k == IDENT
+    };
+
+    if continue_if(p.peek_next_nontrivia(0)) {
+        let _ng_ty = p.start_node_at(ty_checkpoint, TY);
+        let _ng_con = p.start_node_at(con_checkpoint, TY_CON_EXP);
+
+        while continue_if(p.peek_next_nontrivia(0)) {
+            // Need to detect if we're on the final <longtycon>
+            // TODO: refactor! this is super ugly
+            if p.peek_next_nontrivia(0) == IDENT && is_last_tycon(p) {
+                p.eat_trivia();
+                longtycon(p);
+                return;
+            } else {
+                p.eat_trivia();
+                tycon_ty(p);
             }
         }
-        IDENT => {
-            let tycon = p.checkpoint();
-            tycon_exp(p, tycon);
+    }
+}
+
+fn is_last_tycon(p: &Parser) -> bool {
+    let mut lookahead = 1;
+
+    let mut dotted = false;
+    loop {
+        match p.peek_next_nontrivia(lookahead) {
+            EOF => return true,
+            k if k.is_ty_atom() => return false,
+            DOT => { dotted = true; }
+            IDENT => {
+                if !dotted {
+                    return false; 
+                }
+            },
+            _ => return true, 
         }
+        lookahead += 1;
+    }
+}
+
+fn tycon_ty(p: &mut Parser) {
+    let ty_checkpoint = p.checkpoint();
+    let con_checkpoint = p.checkpoint();
+
+    let mut count = 0;
+    while p.peek_next_nontrivia(0).is_ty_atom() {
+        ty_atom(p);
+        p.eat_trivia();
+        count += 1;
+    }
+
+    if count == 1 {
+        // May be a single TY.
+        // In this, case, no need to nest it inside a TY_CON_EXP.
+        if p.peek_next_nontrivia(0) != IDENT {
+            return;
+        }
+    }
+    p.eat_trivia();
+
+    let _ng_ty = p.start_node_at(ty_checkpoint, TY);
+    let _ng_con = p.start_node_at(con_checkpoint, TY_CON_EXP);
+    longtycon(p);
+}
+
+fn ty_atom(p: &mut Parser) {
+    let _ng = p.start_node(TY);
+
+    match p.peek() {
+        TY_VAR => p.expect(TY_VAR),
         L_BRACE => record_ty(p),
         L_PAREN => {
             p.expect(L_PAREN);
@@ -30,37 +134,9 @@ pub(crate) fn ty(p: &mut Parser) {
             p.eat_trivia();
 
             p.expect(R_PAREN);
-        }
+        },
         _ => p.error("expected type expression"),
     }
-
-    let t = p.peek_token_next_nontrivia(0);
-    match t.map(Token::kind).unwrap_or(EOF) {
-        IDENT if t.map(Token::text) == Some("*") => tuple_type(p, outer, inner),
-        THIN_ARROW => function_type(p, outer, inner),
-        TY_VAR | IDENT | L_BRACE | L_PAREN => extend_tycon_exp(p, outer, inner),
-        _ => {}
-    }
-}
-
-fn tycon_exp(p: &mut Parser, checkpoint: Checkpoint) {
-    let _ng = p.start_node_at(checkpoint, TY_CON_EXP);
-    p.eat_trivia();
-
-    while p.eat_through_trivia(TY_VAR) {}
-    p.eat_trivia();
-
-    longtycon(p);
-}
-
-fn extend_tycon_exp(p: &mut Parser, outer: Checkpoint, inner: Checkpoint) {
-    let _ng = p.start_node_at(outer, TY_CON_EXP);
-    {
-        let _ng = p.start_node_at(inner, TY);
-    } // enclose the last type parsed
-    p.eat_trivia();
-
-    ty(p);
 }
 
 pub(crate) fn tyvarseq(p: &mut Parser) {
@@ -113,32 +189,4 @@ fn tyrow(p: &mut Parser) {
     p.eat_trivia();
 
     ty(p);
-}
-
-fn tuple_type(p: &mut Parser, outer: Checkpoint, inner: Checkpoint) {
-    let _ng = p.start_node_at(outer, TUPLE_TY_EXP);
-    {
-        let _ng = p.start_node_at(inner, TY);
-    } // enclose the last type parsed
-    p.eat_trivia();
-
-    // This remaps the IDENT token into a STAR
-    assert_eq!(p.eat_mapped(STAR), IDENT);
-    p.eat_trivia();
-
-    ty(p)
-}
-
-fn function_type(p: &mut Parser, outer: Checkpoint, inner: Checkpoint) {
-    let _ng = p.start_node_at(outer, FUN_TY_EXP);
-    {
-        let _ng = p.start_node_at(inner, TY);
-    } // enclose the last type parsed
-    p.eat_trivia();
-
-    // This remaps the IDENT token into a STAR
-    assert!(p.eat(THIN_ARROW));
-    p.eat_trivia();
-
-    ty(p)
 }
