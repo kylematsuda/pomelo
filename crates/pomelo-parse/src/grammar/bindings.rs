@@ -9,20 +9,31 @@ pub(crate) fn valbind(p: &mut Parser) {
     // Optionally eat a REC
     // TODO: a "val rec" can only bind to an "fn" expression.
     // Should probably handle this correctly... once we parse "fn"s
-    p.eat(REC_KW);
+    let rec = p.eat(REC_KW);
     p.eat_trivia();
 
-    grammar::sequential(p, valbind_inner, AND_KW);
+    grammar::sequential(p, |p| valbind_inner(p, rec), AND_KW);
 }
 
-fn valbind_inner(p: &mut Parser) {
+fn valbind_inner(p: &mut Parser, rec: bool) {
     grammar::pattern(p);
     p.eat_trivia();
 
     p.expect(EQ);
     p.eat_trivia();
 
-    grammar::expression(p);
+    if !rec {
+        grammar::expression(p);
+    } else {
+        // We may only eat an fn-match expression
+        if p.peek() != FN_KW {
+            p.error("val rec can only take bindings of form <pat> = fn <match>");
+            return;
+        } else {
+            let _ng = p.start_node(EXP);
+            grammar::fn_match(p);
+        }
+    }
 }
 
 pub(crate) fn fvalbind(p: &mut Parser) {
@@ -192,18 +203,16 @@ mod tests {
 
     #[test]
     fn valbind_rec() {
-        // This is possible given the BNF but it is not valid
-        // TODO! fix this. should only take fn exps on the rhs
         check_with_f(
             false,
             crate::grammar::declaration,
-            "val rec simple = valbind",
+            "val rec simple = fn x => x",
             expect![[r#"
-                DEC@0..24
-                  VAL_DEC@0..24
+                DEC@0..26
+                  VAL_DEC@0..26
                     VAL_KW@0..3 "val"
                     WHITESPACE@3..4
-                    VAL_BIND@4..24
+                    VAL_BIND@4..26
                       REC_KW@4..7 "rec"
                       WHITESPACE@7..8
                       PAT@8..14
@@ -214,11 +223,53 @@ mod tests {
                       WHITESPACE@14..15
                       EQ@15..16 "="
                       WHITESPACE@16..17
-                      EXP@17..24
-                        AT_EXP@17..24
-                          VID_EXP@17..24
-                            LONG_VID@17..24
-                              IDENT@17..24 "valbind"
+                      EXP@17..26
+                        FN_EXP@17..26
+                          FN_KW@17..19 "fn"
+                          WHITESPACE@19..20
+                          MATCH@20..26
+                            MRULE@20..26
+                              PAT@20..21
+                                AT_PAT@20..21
+                                  VID_PAT@20..21
+                                    LONG_VID@20..21
+                                      IDENT@20..21 "x"
+                              WHITESPACE@21..22
+                              THICK_ARROW@22..24 "=>"
+                              WHITESPACE@24..25
+                              EXP@25..26
+                                AT_EXP@25..26
+                                  VID_EXP@25..26
+                                    LONG_VID@25..26
+                                      IDENT@25..26 "x"
+            "#]],
+        )
+    }
+
+    #[test]
+    fn bad_valbind_rec() {
+        // val rec can only bind a fn-match exp
+        check_with_f(
+            true,
+            crate::grammar::declaration,
+            "val rec simple = bad",
+            expect![[r#"
+                DEC@0..17
+                  VAL_DEC@0..17
+                    VAL_KW@0..3 "val"
+                    WHITESPACE@3..4
+                    VAL_BIND@4..17
+                      REC_KW@4..7 "rec"
+                      WHITESPACE@7..8
+                      PAT@8..14
+                        AT_PAT@8..14
+                          VID_PAT@8..14
+                            LONG_VID@8..14
+                              IDENT@8..14 "simple"
+                      WHITESPACE@14..15
+                      EQ@15..16 "="
+                      WHITESPACE@16..17
+                      ERROR@17..17 ""
             "#]],
         )
     }
