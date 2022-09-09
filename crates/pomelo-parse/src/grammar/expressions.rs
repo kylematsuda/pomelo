@@ -1,5 +1,5 @@
 use crate::grammar;
-use crate::{Checkpoint, Parser, SyntaxKind};
+use crate::{Parser, SyntaxKind};
 
 use SyntaxKind::*;
 
@@ -58,8 +58,37 @@ fn keyword_or_infexp(p: &mut Parser) {
     }
 }
 
+/// This one is done a bit differently for now...
+/// It seems like it will be easier to parser any expression 
+/// containing infix operators as a flat sequence of terms.
+///
+/// This way, we can assign operator precedence later when we 
+/// have resolved it.
 fn infexp(p: &mut Parser) {
-    precedence_climber(p, INFIX_EXP, appexp, |p| p.eat_through_trivia(IDENT), appexp);
+    let exp_checkpoint = p.checkpoint();
+    let inf_checkpoint = p.checkpoint();
+
+    appexp(p);
+
+    if p.peek_next_nontrivia(0) == IDENT {
+        let _ng_exp = p.start_node_at(exp_checkpoint, EXP);
+        let _ng_inf = p.start_node_at(inf_checkpoint, INFIX_EXP);
+
+        p.eat_trivia();
+        grammar::vid(p);
+        p.eat_trivia();
+
+        appexp(p);
+
+        while p.peek_next_nontrivia(0) == IDENT {
+            p.eat_trivia();
+            grammar::vid(p);
+            p.eat_trivia();
+
+            appexp(p);
+        }
+
+    }
 }
 
 fn appexp(p: &mut Parser) {
