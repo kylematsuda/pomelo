@@ -154,7 +154,8 @@ fn let_dec(p: &mut Parser) {
     p.expect(LET_KW);
     p.eat_trivia();
 
-    let pred = |p: &mut Parser| p.eat_through_trivia(SEMICOLON) || p.peek_next_nontrivia(0).is_dec_kw();
+    let pred =
+        |p: &mut Parser| p.eat_through_trivia(SEMICOLON) || p.peek_next_nontrivia(0).is_dec_kw();
     grammar::sequential_with(p, grammar::declaration, pred);
     p.eat_trivia();
 
@@ -802,47 +803,89 @@ mod tests {
         check_with_f(
             false,
             super::expression,
-            "[1, 2, 3, 4, 5] : int list",
+            "[[1], [2], [3], [4], [5]] : int list list",
             expect![[r#"
-                EXP@0..18
-                  TY_EXP@0..18
-                    EXP@0..15
-                      AT_EXP@0..15
-                        LIST_EXP@0..15
+                EXP@0..41
+                  TY_EXP@0..41
+                    EXP@0..25
+                      AT_EXP@0..25
+                        LIST_EXP@0..25
                           L_BRACKET@0..1 "["
-                          EXP@1..2
-                            AT_EXP@1..2
-                              SCON_EXP@1..2
-                                INT@1..2 "1"
-                          COMMA@2..3 ","
-                          WHITESPACE@3..4
-                          EXP@4..5
-                            AT_EXP@4..5
-                              SCON_EXP@4..5
-                                INT@4..5 "2"
-                          COMMA@5..6 ","
-                          WHITESPACE@6..7
-                          EXP@7..8
-                            AT_EXP@7..8
-                              SCON_EXP@7..8
-                                INT@7..8 "3"
-                          COMMA@8..9 ","
-                          WHITESPACE@9..10
-                          EXP@10..11
-                            AT_EXP@10..11
-                              SCON_EXP@10..11
-                                INT@10..11 "4"
-                          COMMA@11..12 ","
-                          WHITESPACE@12..13
-                          EXP@13..14
-                            AT_EXP@13..14
-                              SCON_EXP@13..14
-                                INT@13..14 "5"
-                          R_BRACKET@14..15 "]"
-                    WHITESPACE@15..16
-                    COLON@16..17 ":"
-                    WHITESPACE@17..18
-                    TY@18..18
+                          EXP@1..4
+                            AT_EXP@1..4
+                              LIST_EXP@1..4
+                                L_BRACKET@1..2 "["
+                                EXP@2..3
+                                  AT_EXP@2..3
+                                    SCON_EXP@2..3
+                                      INT@2..3 "1"
+                                R_BRACKET@3..4 "]"
+                          COMMA@4..5 ","
+                          WHITESPACE@5..6
+                          EXP@6..9
+                            AT_EXP@6..9
+                              LIST_EXP@6..9
+                                L_BRACKET@6..7 "["
+                                EXP@7..8
+                                  AT_EXP@7..8
+                                    SCON_EXP@7..8
+                                      INT@7..8 "2"
+                                R_BRACKET@8..9 "]"
+                          COMMA@9..10 ","
+                          WHITESPACE@10..11
+                          EXP@11..14
+                            AT_EXP@11..14
+                              LIST_EXP@11..14
+                                L_BRACKET@11..12 "["
+                                EXP@12..13
+                                  AT_EXP@12..13
+                                    SCON_EXP@12..13
+                                      INT@12..13 "3"
+                                R_BRACKET@13..14 "]"
+                          COMMA@14..15 ","
+                          WHITESPACE@15..16
+                          EXP@16..19
+                            AT_EXP@16..19
+                              LIST_EXP@16..19
+                                L_BRACKET@16..17 "["
+                                EXP@17..18
+                                  AT_EXP@17..18
+                                    SCON_EXP@17..18
+                                      INT@17..18 "4"
+                                R_BRACKET@18..19 "]"
+                          COMMA@19..20 ","
+                          WHITESPACE@20..21
+                          EXP@21..24
+                            AT_EXP@21..24
+                              LIST_EXP@21..24
+                                L_BRACKET@21..22 "["
+                                EXP@22..23
+                                  AT_EXP@22..23
+                                    SCON_EXP@22..23
+                                      INT@22..23 "5"
+                                R_BRACKET@23..24 "]"
+                          R_BRACKET@24..25 "]"
+                    WHITESPACE@25..26
+                    COLON@26..27 ":"
+                    WHITESPACE@27..28
+                    TY@28..41
+                      TY_CON_EXP@28..41
+                        TY@28..31
+                          TY_CON_EXP@28..31
+                            LONG_TY_CON@28..31
+                              IDENT@28..31 "int"
+                        WHITESPACE@31..32
+                        TY@32..41
+                          TY_CON_EXP@32..41
+                            TY@32..36
+                              TY_CON_EXP@32..36
+                                LONG_TY_CON@32..36
+                                  IDENT@32..36 "list"
+                            WHITESPACE@36..37
+                            TY@37..41
+                              TY_CON_EXP@37..41
+                                LONG_TY_CON@37..41
+                                  IDENT@37..41 "list"
             "#]],
         )
     }

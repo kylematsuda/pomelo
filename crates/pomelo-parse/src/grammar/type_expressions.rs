@@ -1,5 +1,5 @@
 use crate::grammar;
-use crate::{Checkpoint, Parser, SyntaxKind};
+use crate::{parser::Token, Checkpoint, Parser, SyntaxKind};
 
 use SyntaxKind::*;
 
@@ -10,9 +10,17 @@ pub(crate) fn ty(p: &mut Parser) {
 
     match p.peek() {
         TY_VAR => {
+            let tycon = p.checkpoint();
             p.eat(TY_VAR);
+
+            if p.peek_next_nontrivia(0) == TY_VAR {
+                tycon_exp(p, tycon);
+            }
         }
-        IDENT => {}
+        IDENT => {
+            let tycon = p.checkpoint();
+            tycon_exp(p, tycon);
+        }
         L_BRACE => record_ty(p),
         L_PAREN => {
             p.expect(L_PAREN);
@@ -27,11 +35,32 @@ pub(crate) fn ty(p: &mut Parser) {
     }
 
     let t = p.peek_token_next_nontrivia(0);
-    match t.map(|t| (t.kind(), t.text())) {
-        Some((IDENT, "*")) => tuple_type(p, outer, inner),
-        Some((THIN_ARROW, _)) => function_type(p, outer, inner),
+    match t.map(Token::kind).unwrap_or(EOF) {
+        IDENT if t.map(Token::text) == Some("*") => tuple_type(p, outer, inner),
+        THIN_ARROW => function_type(p, outer, inner),
+        TY_VAR | IDENT | L_BRACE | L_PAREN => extend_tycon_exp(p, outer, inner),
         _ => {}
     }
+}
+
+fn tycon_exp(p: &mut Parser, checkpoint: Checkpoint) {
+    let _ng = p.start_node_at(checkpoint, TY_CON_EXP);
+    p.eat_trivia();
+
+    while p.eat_through_trivia(TY_VAR) {}
+    p.eat_trivia();
+
+    longtycon(p);
+}
+
+fn extend_tycon_exp(p: &mut Parser, outer: Checkpoint, inner: Checkpoint) {
+    let _ng = p.start_node_at(outer, TY_CON_EXP);
+    {
+        let _ng = p.start_node_at(inner, TY);
+    } // enclose the last type parsed
+    p.eat_trivia();
+
+    ty(p);
 }
 
 pub(crate) fn tyvarseq(p: &mut Parser) {
@@ -54,8 +83,8 @@ pub(crate) fn tycon(p: &mut Parser) {
 
 fn longtycon(p: &mut Parser) {
     let _ng = p.start_node(LONG_TY_CON);
-
-    p.expect(IDENT);
+    let ident = |p: &mut Parser| p.expect(IDENT);
+    grammar::sequential(p, ident, DOT);
 }
 
 fn record_ty(p: &mut Parser) {
