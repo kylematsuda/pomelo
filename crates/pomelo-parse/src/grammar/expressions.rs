@@ -154,7 +154,7 @@ fn let_dec(p: &mut Parser) {
     p.expect(LET_KW);
     p.eat_trivia();
 
-    let pred = |p: &mut Parser| p.eat(SEMICOLON) || p.peek().is_dec_kw();
+    let pred = |p: &mut Parser| p.eat_through_trivia(SEMICOLON) || p.peek_next_nontrivia(0).is_dec_kw();
     grammar::sequential_with(p, grammar::declaration, pred);
     p.eat_trivia();
 
