@@ -9,6 +9,8 @@ pub(crate) fn declaration(p: &mut Parser) {
     let inner = p.checkpoint();
     declaration_inner(p);
 
+    // If we parse another declaration, then we need to convert
+    // this declaration to a SEQ_DEC
     let is_seq = |k: SyntaxKind| k.is_dec_kw() || k == SEMICOLON;
     if is_seq(p.peek_next_nontrivia(0)) {
         let _ng = p.start_node_at(outer, DEC);
@@ -42,7 +44,7 @@ pub(crate) fn declaration_inner(p: &mut Parser) {
         OPEN_KW => open_declaration(p),
         // Sequential decs are handled in `declaration()` 
         INFIX_KW | INFIXR_KW | NONFIX_KW => infix_or_nonfix(p),
-        _ => {} // can be empty...
+        _ => {} // declarations can be empty...
     }
 }
 
@@ -98,7 +100,21 @@ fn local_declaration(p: &mut Parser) {
     p.expect(END_KW);
 }
 
-fn open_declaration(p: &mut Parser) {}
+fn open_declaration(p: &mut Parser) {
+    let _ng = p.start_node(OPEN_DEC);
+    
+    assert!(p.eat(OPEN_KW));
+    p.eat_trivia();
+
+    if p.peek() != IDENT {
+        p.error("expected structure identifier");
+    } else {
+        while p.peek_next_nontrivia(0) == IDENT {
+            p.eat_trivia();
+            grammar::longstrid(p);
+        }
+    }
+}
 
 fn infix_or_nonfix(p: &mut Parser) {
     let checkpoint = p.checkpoint();

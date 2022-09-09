@@ -16,3 +16,13 @@ pub(crate) fn vid(p: &mut Parser) {
     let _ng = p.start_node(VID);
     p.expect(IDENT);
 }
+
+pub(crate) fn longstrid(p: &mut Parser) {
+    let _ng = p.start_node(LONG_STR_ID);
+    grammar::sequential(p, strid, DOT);
+}
+
+// TODO: make sure this is a valid STRID?
+pub(crate) fn strid(p: &mut Parser) {
+    p.expect(IDENT);
+}

@@ -508,122 +508,124 @@ mod tests {
                     LET_DEC@0..258
                       LET_KW@0..3 "let"
                       WHITESPACE@3..21
-                      DEC@21..30
-                        VAL_DEC@21..30
-                          VAL_KW@21..24 "val"
-                          WHITESPACE@24..25
-                          VAL_BIND@25..30
-                            PAT@25..26
-                              AT_PAT@25..26
-                                VID_PAT@25..26
-                                  LONG_VID@25..26
-                                    IDENT@25..26 "x"
-                            WHITESPACE@26..27
-                            EQ@27..28 "="
-                            WHITESPACE@28..29
-                            EXP@29..30
-                              AT_EXP@29..30
-                                SCON_EXP@29..30
-                                  INT@29..30 "1"
-                      WHITESPACE@30..47
-                      DEC@47..63
-                        VAL_DEC@47..63
-                          VAL_KW@47..50 "val"
-                          WHITESPACE@50..51
-                          VAL_BIND@51..63
-                            PAT@51..55
-                              AT_PAT@51..55
-                                VID_PAT@51..55
-                                  LONG_VID@51..55
-                                    IDENT@51..55 "here"
-                            WHITESPACE@55..56
-                            EQ@56..57 "="
-                            WHITESPACE@57..58
-                            EXP@58..63
-                              AT_EXP@58..63
-                                SCON_EXP@58..63
-                                  STRING@58..63 "\"are\""
-                      SEMICOLON@63..64 ";"
-                      WHITESPACE@64..81
-                      DEC@81..98
-                        VAL_DEC@81..98
-                          VAL_KW@81..84 "val"
-                          WHITESPACE@84..85
-                          VAL_BIND@85..98
-                            PAT@85..89
-                              AT_PAT@85..89
-                                VID_PAT@85..89
-                                  LONG_VID@85..89
-                                    IDENT@85..89 "some"
-                            WHITESPACE@89..90
-                            EQ@90..91 "="
-                            WHITESPACE@91..92
-                            EXP@92..98
-                              AT_EXP@92..98
-                                VID_EXP@92..98
-                                  LONG_VID@92..98
-                                    IDENT@92..98 "random"
-                      WHITESPACE@98..115
-                      DEC@115..134
-                        FUN_DEC@115..134
-                          FUN_KW@115..118 "fun"
-                          WHITESPACE@118..119
-                          TY_VAR_SEQ@119..119
-                          FVAL_BIND@119..134
-                            FVAL_BIND_ROW@119..134
-                              VID@119..124
-                                IDENT@119..124 "other"
-                              WHITESPACE@124..125
-                              AT_PAT@125..129
-                                VID_PAT@125..129
-                                  LONG_VID@125..129
-                                    IDENT@125..129 "decs"
-                              WHITESPACE@129..130
-                              EQ@130..131 "="
-                              WHITESPACE@131..132
-                              EXP@132..133
-                                AT_EXP@132..133
-                                  SCON_EXP@132..133
-                                    INT@132..133 "0"
-                              WHITESPACE@133..134
-                      SEMICOLON@134..135 ";"
-                      WHITESPACE@135..152
-                      DEC@152..167
-                        VAL_DEC@152..167
-                          VAL_KW@152..155 "val"
-                          WHITESPACE@155..156
-                          VAL_BIND@156..167
-                            PAT@156..160
-                              AT_PAT@156..160
-                                VID_PAT@156..160
-                                  LONG_VID@156..160
-                                    IDENT@156..160 "only"
-                            WHITESPACE@160..161
-                            EQ@161..162 "="
-                            WHITESPACE@162..163
-                            EXP@163..167
-                              AT_EXP@163..167
-                                VID_EXP@163..167
-                                  LONG_VID@163..167
-                                    IDENT@163..167 "some"
-                      WHITESPACE@167..185
-                      DEC@185..208
-                        VAL_DEC@185..208
-                          VAL_KW@185..188 "val"
-                          WHITESPACE@188..189
-                          VAL_BIND@189..208
-                            PAT@189..193
-                              AT_PAT@189..193
-                                VID_PAT@189..193
-                                  LONG_VID@189..193
-                                    IDENT@189..193 "have"
-                            WHITESPACE@193..194
-                            EQ@194..195 "="
-                            WHITESPACE@195..196
-                            EXP@196..208
-                              AT_EXP@196..208
-                                SCON_EXP@196..208
-                                  STRING@196..208 "\"semicolons\""
+                      DEC@21..208
+                        SEQ_DEC@21..208
+                          DEC@21..30
+                            VAL_DEC@21..30
+                              VAL_KW@21..24 "val"
+                              WHITESPACE@24..25
+                              VAL_BIND@25..30
+                                PAT@25..26
+                                  AT_PAT@25..26
+                                    VID_PAT@25..26
+                                      LONG_VID@25..26
+                                        IDENT@25..26 "x"
+                                WHITESPACE@26..27
+                                EQ@27..28 "="
+                                WHITESPACE@28..29
+                                EXP@29..30
+                                  AT_EXP@29..30
+                                    SCON_EXP@29..30
+                                      INT@29..30 "1"
+                          WHITESPACE@30..47
+                          DEC@47..63
+                            VAL_DEC@47..63
+                              VAL_KW@47..50 "val"
+                              WHITESPACE@50..51
+                              VAL_BIND@51..63
+                                PAT@51..55
+                                  AT_PAT@51..55
+                                    VID_PAT@51..55
+                                      LONG_VID@51..55
+                                        IDENT@51..55 "here"
+                                WHITESPACE@55..56
+                                EQ@56..57 "="
+                                WHITESPACE@57..58
+                                EXP@58..63
+                                  AT_EXP@58..63
+                                    SCON_EXP@58..63
+                                      STRING@58..63 "\"are\""
+                          SEMICOLON@63..64 ";"
+                          WHITESPACE@64..81
+                          DEC@81..98
+                            VAL_DEC@81..98
+                              VAL_KW@81..84 "val"
+                              WHITESPACE@84..85
+                              VAL_BIND@85..98
+                                PAT@85..89
+                                  AT_PAT@85..89
+                                    VID_PAT@85..89
+                                      LONG_VID@85..89
+                                        IDENT@85..89 "some"
+                                WHITESPACE@89..90
+                                EQ@90..91 "="
+                                WHITESPACE@91..92
+                                EXP@92..98
+                                  AT_EXP@92..98
+                                    VID_EXP@92..98
+                                      LONG_VID@92..98
+                                        IDENT@92..98 "random"
+                          WHITESPACE@98..115
+                          DEC@115..134
+                            FUN_DEC@115..134
+                              FUN_KW@115..118 "fun"
+                              WHITESPACE@118..119
+                              TY_VAR_SEQ@119..119
+                              FVAL_BIND@119..134
+                                FVAL_BIND_ROW@119..134
+                                  VID@119..124
+                                    IDENT@119..124 "other"
+                                  WHITESPACE@124..125
+                                  AT_PAT@125..129
+                                    VID_PAT@125..129
+                                      LONG_VID@125..129
+                                        IDENT@125..129 "decs"
+                                  WHITESPACE@129..130
+                                  EQ@130..131 "="
+                                  WHITESPACE@131..132
+                                  EXP@132..133
+                                    AT_EXP@132..133
+                                      SCON_EXP@132..133
+                                        INT@132..133 "0"
+                                  WHITESPACE@133..134
+                          SEMICOLON@134..135 ";"
+                          WHITESPACE@135..152
+                          DEC@152..167
+                            VAL_DEC@152..167
+                              VAL_KW@152..155 "val"
+                              WHITESPACE@155..156
+                              VAL_BIND@156..167
+                                PAT@156..160
+                                  AT_PAT@156..160
+                                    VID_PAT@156..160
+                                      LONG_VID@156..160
+                                        IDENT@156..160 "only"
+                                WHITESPACE@160..161
+                                EQ@161..162 "="
+                                WHITESPACE@162..163
+                                EXP@163..167
+                                  AT_EXP@163..167
+                                    VID_EXP@163..167
+                                      LONG_VID@163..167
+                                        IDENT@163..167 "some"
+                          WHITESPACE@167..185
+                          DEC@185..208
+                            VAL_DEC@185..208
+                              VAL_KW@185..188 "val"
+                              WHITESPACE@188..189
+                              VAL_BIND@189..208
+                                PAT@189..193
+                                  AT_PAT@189..193
+                                    VID_PAT@189..193
+                                      LONG_VID@189..193
+                                        IDENT@189..193 "have"
+                                WHITESPACE@193..194
+                                EQ@194..195 "="
+                                WHITESPACE@195..196
+                                EXP@196..208
+                                  AT_EXP@196..208
+                                    SCON_EXP@196..208
+                                      STRING@196..208 "\"semicolons\""
                       WHITESPACE@208..221
                       IN_KW@221..223 "in"
                       WHITESPACE@223..241
