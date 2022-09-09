@@ -154,18 +154,23 @@ impl Parser {
 
     /// Starts at an offset of `skip` from the current token.
     pub fn peek_next_nontrivia(&self, skip: usize) -> SyntaxKind {
-        self.tokens
-            .iter()
-            .rev()
+        self.peek_token_next_nontrivia(skip)
             .map(Token::kind)
-            .skip(skip)
-            .skip_while(SyntaxKind::is_trivia)
-            .next()
             .unwrap_or(SyntaxKind::EOF)
     }
 
     fn peek_token(&self) -> Option<&Token> {
         self.tokens.last()
+    }
+
+    /// Starts at an offset of `skip` from the current token.
+    pub fn peek_token_next_nontrivia(&self, skip: usize) -> Option<&Token> {
+        self.tokens
+            .iter()
+            .rev()
+            .skip(skip)
+            .skip_while(|t| t.kind().is_trivia())
+            .next()
     }
 
     pub fn eat(&mut self, kind: SyntaxKind) -> bool {
@@ -232,6 +237,13 @@ impl Parser {
 
         // Push into syntax tree as well for now
         self.push_token(Token::new(SyntaxKind::ERROR, ""))
+    }
+
+    pub fn eat_mapped(&mut self, kind: SyntaxKind) -> SyntaxKind {
+        let token = self.pop();
+        let mapped = Token::new(kind, token.text());
+        self.push_token(mapped);
+        token.kind()
     }
 
     fn pop(&mut self) -> Token {

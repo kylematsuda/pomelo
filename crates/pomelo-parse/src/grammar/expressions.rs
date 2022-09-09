@@ -1,11 +1,70 @@
 use crate::grammar;
-use crate::{Parser, SyntaxKind};
+use crate::{Checkpoint, Parser, SyntaxKind};
 
 use SyntaxKind::*;
 
 pub(crate) fn expression(p: &mut Parser) {
     let _ng = p.start_node(EXP);
-    atomic_expression(p)
+    let checkpoint_outer = p.checkpoint();
+    let checkpoint_inner = p.checkpoint();
+
+    match p.peek() {
+        k if k.is_atomic_exp_start() => atomic_expression(p),
+        RAISE_KW => unimplemented!(),
+        IF_KW => unimplemented!(),
+        WHILE_KW => unimplemented!(),
+        CASE_KW => unimplemented!(),
+        FN_KW => unimplemented!(),
+        _ => p.error("expected expression"),
+    }
+
+    match p.peek_next_nontrivia(0) {
+        COLON => typed_expression(p, checkpoint_outer, checkpoint_inner),
+        ANDALSO_KW => and_also_expression(p, checkpoint_outer, checkpoint_inner),
+        ORELSE_KW => or_else_expression(p, checkpoint_outer, checkpoint_inner),
+        HANDLE_EXP => handle_expression(p, checkpoint_outer, checkpoint_inner),
+        _ => {}
+    }
+}
+
+fn typed_expression(p: &mut Parser, outer: Checkpoint, inner: Checkpoint) {
+    let _ng = p.start_node_at(outer, TY_EXP);
+    {
+        let _ng = p.start_node_at(inner, EXP);
+    } // Close the inner EXP node
+    assert!(p.eat_through_trivia(COLON));
+    p.eat_trivia();
+    grammar::ty(p);
+}
+
+fn and_also_expression(p: &mut Parser, outer: Checkpoint, inner: Checkpoint) {
+    let _ng = p.start_node_at(outer, ANDALSO_EXP);
+    {
+        let _ng = p.start_node_at(inner, EXP);
+    } // Close the inner EXP node
+    assert!(p.eat_through_trivia(ANDALSO_KW));
+    p.eat_trivia();
+    expression(p);
+}
+
+fn or_else_expression(p: &mut Parser, outer: Checkpoint, inner: Checkpoint) {
+    let _ng = p.start_node_at(outer, ORELSE_EXP);
+    {
+        let _ng = p.start_node_at(inner, EXP);
+    } // Close the inner EXP node
+    assert!(p.eat_through_trivia(ORELSE_KW));
+    p.eat_trivia();
+    expression(p);
+}
+
+fn handle_expression(p: &mut Parser, outer: Checkpoint, inner: Checkpoint) {
+    let _ng = p.start_node_at(outer, HANDLE_EXP);
+    {
+        let _ng = p.start_node_at(inner, EXP);
+    } // Close the inner EXP node
+    assert!(p.eat_through_trivia(HANDLE_KW));
+    p.eat_trivia();
+    grammar::match_exp(p);
 }
 
 pub(crate) fn atomic_expression(p: &mut Parser) {
@@ -96,13 +155,15 @@ fn let_dec(p: &mut Parser) {
     p.eat_trivia();
 
     let pred = |p: &mut Parser| p.eat(SEMICOLON) || p.peek().is_dec_kw();
-
     grammar::sequential_with(p, grammar::declaration, pred);
+    p.eat_trivia();
 
     p.expect(IN_KW);
     p.eat_trivia();
 
     grammar::sequential(p, expression, SEMICOLON);
+    p.eat_trivia();
+
     p.expect(END_KW)
 }
 
@@ -396,11 +457,11 @@ mod tests {
                     LET_DEC@0..80
                       LET_KW@0..3 "let"
                       WHITESPACE@3..21
-                      DEC@21..43
-                        VAL_DEC@21..43
+                      DEC@21..30
+                        VAL_DEC@21..30
                           VAL_KW@21..24 "val"
                           WHITESPACE@24..25
-                          VAL_BIND@25..43
+                          VAL_BIND@25..30
                             PAT@25..26
                               AT_PAT@25..26
                                 VID_PAT@25..26
@@ -413,7 +474,7 @@ mod tests {
                               AT_EXP@29..30
                                 SCON_EXP@29..30
                                   INT@29..30 "1"
-                            WHITESPACE@30..43
+                      WHITESPACE@30..43
                       IN_KW@43..45 "in"
                       WHITESPACE@45..63
                       EXP@63..64
@@ -448,11 +509,11 @@ mod tests {
                     LET_DEC@0..258
                       LET_KW@0..3 "let"
                       WHITESPACE@3..21
-                      DEC@21..47
-                        VAL_DEC@21..47
+                      DEC@21..30
+                        VAL_DEC@21..30
                           VAL_KW@21..24 "val"
                           WHITESPACE@24..25
-                          VAL_BIND@25..47
+                          VAL_BIND@25..30
                             PAT@25..26
                               AT_PAT@25..26
                                 VID_PAT@25..26
@@ -465,7 +526,7 @@ mod tests {
                               AT_EXP@29..30
                                 SCON_EXP@29..30
                                   INT@29..30 "1"
-                            WHITESPACE@30..47
+                      WHITESPACE@30..47
                       DEC@47..63
                         VAL_DEC@47..63
                           VAL_KW@47..50 "val"
@@ -485,11 +546,11 @@ mod tests {
                                   STRING@58..63 "\"are\""
                       SEMICOLON@63..64 ";"
                       WHITESPACE@64..81
-                      DEC@81..115
-                        VAL_DEC@81..115
+                      DEC@81..98
+                        VAL_DEC@81..98
                           VAL_KW@81..84 "val"
                           WHITESPACE@84..85
-                          VAL_BIND@85..115
+                          VAL_BIND@85..98
                             PAT@85..89
                               AT_PAT@85..89
                                 VID_PAT@85..89
@@ -503,7 +564,7 @@ mod tests {
                                 VID_EXP@92..98
                                   LONG_VID@92..98
                                     IDENT@92..98 "random"
-                            WHITESPACE@98..115
+                      WHITESPACE@98..115
                       DEC@115..134
                         FUN_DEC@115..134
                           FUN_KW@115..118 "fun"
@@ -528,11 +589,11 @@ mod tests {
                               WHITESPACE@133..134
                       SEMICOLON@134..135 ";"
                       WHITESPACE@135..152
-                      DEC@152..185
-                        VAL_DEC@152..185
+                      DEC@152..167
+                        VAL_DEC@152..167
                           VAL_KW@152..155 "val"
                           WHITESPACE@155..156
-                          VAL_BIND@156..185
+                          VAL_BIND@156..167
                             PAT@156..160
                               AT_PAT@156..160
                                 VID_PAT@156..160
@@ -546,12 +607,12 @@ mod tests {
                                 VID_EXP@163..167
                                   LONG_VID@163..167
                                     IDENT@163..167 "some"
-                            WHITESPACE@167..185
-                      DEC@185..221
-                        VAL_DEC@185..221
+                      WHITESPACE@167..185
+                      DEC@185..208
+                        VAL_DEC@185..208
                           VAL_KW@185..188 "val"
                           WHITESPACE@188..189
-                          VAL_BIND@189..221
+                          VAL_BIND@189..208
                             PAT@189..193
                               AT_PAT@189..193
                                 VID_PAT@189..193
@@ -564,7 +625,7 @@ mod tests {
                               AT_EXP@196..208
                                 SCON_EXP@196..208
                                   STRING@196..208 "\"semicolons\""
-                            WHITESPACE@208..221
+                      WHITESPACE@208..221
                       IN_KW@221..223 "in"
                       WHITESPACE@223..241
                       EXP@241..242
@@ -709,6 +770,79 @@ mod tests {
                             LONG_VID@33..44
                               IDENT@33..44 "expressions"
                       R_PAREN@44..45 ")"
+            "#]],
+        )
+    }
+
+    #[test]
+    fn typed_expression() {
+        check_with_f(
+            false,
+            super::expression,
+            "x : 'a",
+            expect![[r#"
+                EXP@0..6
+                  TY_EXP@0..6
+                    EXP@0..1
+                      AT_EXP@0..1
+                        VID_EXP@0..1
+                          LONG_VID@0..1
+                            IDENT@0..1 "x"
+                    WHITESPACE@1..2
+                    COLON@2..3 ":"
+                    WHITESPACE@3..4
+                    TY@4..6
+                      TY_VAR@4..6 "'a"
+            "#]],
+        )
+    }
+
+    #[test]
+    fn another_typed_expression() {
+        check_with_f(
+            false,
+            super::expression,
+            "[1, 2, 3, 4, 5] : int list",
+            expect![[r#"
+                EXP@0..18
+                  TY_EXP@0..18
+                    EXP@0..15
+                      AT_EXP@0..15
+                        LIST_EXP@0..15
+                          L_BRACKET@0..1 "["
+                          EXP@1..2
+                            AT_EXP@1..2
+                              SCON_EXP@1..2
+                                INT@1..2 "1"
+                          COMMA@2..3 ","
+                          WHITESPACE@3..4
+                          EXP@4..5
+                            AT_EXP@4..5
+                              SCON_EXP@4..5
+                                INT@4..5 "2"
+                          COMMA@5..6 ","
+                          WHITESPACE@6..7
+                          EXP@7..8
+                            AT_EXP@7..8
+                              SCON_EXP@7..8
+                                INT@7..8 "3"
+                          COMMA@8..9 ","
+                          WHITESPACE@9..10
+                          EXP@10..11
+                            AT_EXP@10..11
+                              SCON_EXP@10..11
+                                INT@10..11 "4"
+                          COMMA@11..12 ","
+                          WHITESPACE@12..13
+                          EXP@13..14
+                            AT_EXP@13..14
+                              SCON_EXP@13..14
+                                INT@13..14 "5"
+                          R_BRACKET@14..15 "]"
+                    WHITESPACE@15..16
+                    COLON@16..17 ":"
+                    WHITESPACE@17..18
+                    TY@18..18
             "#]],
         )
     }

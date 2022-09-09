@@ -6,8 +6,6 @@ where
     F: Fn(&mut Parser),
 {
     parse_function(p);
-    p.eat_trivia();
-
     while p.eat_through_trivia(delimiter) {
         p.eat_trivia();
         parse_function(p);

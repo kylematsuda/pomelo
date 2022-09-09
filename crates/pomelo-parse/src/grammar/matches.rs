@@ -3,7 +3,7 @@ use crate::{Parser, SyntaxKind};
 
 use SyntaxKind::*;
 
-pub(crate) fn match_clause(p: &mut Parser) {
+pub(crate) fn match_exp(p: &mut Parser) {
     let _ng = p.start_node(MATCH);
     grammar::sequential(p, mrule, PIPE);
 }
@@ -29,7 +29,7 @@ mod tests {
     fn match_clause() {
         check_with_f(
             false,
-            super::match_clause,
+            super::match_exp,
             "apat => (a, rule)
            | another_pat => [another, rule]
            | 0 => 154.45",

@@ -66,6 +66,7 @@ pub enum SyntaxKind {
 
     // Needed punctuation
     DOT,
+    STAR, // Only used in TUPLE_TY_EXP
 
     // Core Grammar: Expressions, Matches, Declarations, and Bindings
     AT_EXP,
@@ -133,7 +134,6 @@ pub enum SyntaxKind {
     RECORD_TY_EXP,
     TY_CON_EXP,
     FUN_TY_EXP,
-    PAREN_TY,
 
     TY_ROW,
 
@@ -160,8 +160,7 @@ pub enum SyntaxKind {
     LAB_AS_VAR_TY,
     LAB_AS_VAR_AS_PAT,
 
-    DERIV_TY_EXP,
-    TY_PROD_EXP,
+    TUPLE_TY_EXP,
 
     // Derived function-value bindings and declarations
     DERIV_FUN_BIND,
@@ -223,6 +222,16 @@ impl SyntaxKind {
                 | INFIXR_KW
                 | NONFIX_KW
         )
+    }
+
+    pub fn is_atomic_exp_start(&self) -> bool {
+        use SyntaxKind::*;
+
+        self.is_special_constant()
+            || matches!(
+                self,
+                OP_KW | IDENT | L_BRACE | HASH | L_PAREN | L_BRACKET | LET_KW
+            )
     }
 
     pub fn from_keyword(s: &str) -> Option<Self> {
