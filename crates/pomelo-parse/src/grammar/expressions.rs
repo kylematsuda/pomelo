@@ -7,30 +7,10 @@ pub(crate) fn expression(p: &mut Parser) {
     handle_exp(p)
 }
 
-fn precedence_climber(
-    p: &mut Parser,
-    exp_node_kind: SyntaxKind,
-    before: impl Fn(&mut Parser),
-    continue_if: impl Fn(&mut Parser) -> bool,
-    after: impl Fn(&mut Parser),
-) {
-    let exp_checkpoint = p.checkpoint();
-    let node_checkpoint = p.checkpoint();
-
-    before(p);
-
-    if continue_if(p) {
-        let _ng_exp = p.start_node_at(exp_checkpoint, EXP);
-        let _ng_node = p.start_node_at(node_checkpoint, exp_node_kind);
-
-        p.eat_trivia();
-        after(p)
-    }
-}
-
 fn handle_exp(p: &mut Parser) {
-    precedence_climber(
+    grammar::precedence_climber(
         p,
+        EXP,
         HANDLE_EXP,
         orelse_exp,
         |p| p.eat_through_trivia(HANDLE_KW),
@@ -39,8 +19,9 @@ fn handle_exp(p: &mut Parser) {
 }
 
 fn orelse_exp(p: &mut Parser) {
-    precedence_climber(
+    grammar::precedence_climber(
         p,
+        EXP,
         ORELSE_EXP,
         andalso_exp,
         |p| p.eat_through_trivia(ORELSE_KW),
@@ -49,8 +30,9 @@ fn orelse_exp(p: &mut Parser) {
 }
 
 fn andalso_exp(p: &mut Parser) {
-    precedence_climber(
+    grammar::precedence_climber(
         p,
+        EXP,
         ANDALSO_EXP,
         typed_exp,
         |p| p.eat_through_trivia(ANDALSO_KW),
@@ -59,8 +41,9 @@ fn andalso_exp(p: &mut Parser) {
 }
 
 fn typed_exp(p: &mut Parser) {
-    precedence_climber(
+    grammar::precedence_climber(
         p,
+        EXP,
         TY_EXP,
         keyword_or_infexp,
         |p| p.eat_through_trivia(COLON),
@@ -114,8 +97,9 @@ fn infexp(p: &mut Parser) {
 }
 
 fn appexp(p: &mut Parser) {
-    precedence_climber(
+    grammar::precedence_climber(
         p,
+        EXP,
         APP_EXP,
         atomic_exp,
         |p| p.peek_next_nontrivia(0).is_atomic_exp_start(),
