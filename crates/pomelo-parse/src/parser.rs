@@ -152,11 +152,7 @@ impl Parser {
             .unwrap_or(SyntaxKind::EOF)
     }
 
-    /// Starts at current token.
-    ///
-    /// If you know where you currently are, but want to defer the
-    /// decision of what the enclosing node should be, use
-    /// [`self.checkpoint()`](crate::Parser::checkpoint).
+    /// Starts at an offset of `skip` from the current token.
     pub fn peek_next_nontrivia(&self, skip: usize) -> SyntaxKind {
         self.tokens
             .iter()
