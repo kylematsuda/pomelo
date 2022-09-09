@@ -37,7 +37,7 @@ pub(crate) fn atomic_expression(p: &mut Parser) {
             // Although SML/NJ errors if there are too many
             // spaces. And it seems like newlines in the middle
             // should not be allowed?
-            if p.peek_next_nontrivia() == R_PAREN {
+            if p.peek_next_nontrivia(1) == R_PAREN {
                 let _ng = p.start_node(UNIT_EXP);
                 p.expect(L_PAREN);
                 p.eat_trivia();

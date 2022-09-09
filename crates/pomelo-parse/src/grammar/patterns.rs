@@ -60,7 +60,7 @@ fn patrow_inner(p: &mut Parser) {
             wildcard_patrow(p);
 
             // Error recovery
-            if p.peek() == COMMA || (p.peek().is_trivia() && p.peek_next_nontrivia() == COMMA) {
+            if p.peek_next_nontrivia(0) == COMMA {
                 p.eat_trivia();
                 p.error("no additional patterns are allowed after a wildcard pattern");
                 p.eat(COMMA);
@@ -87,7 +87,7 @@ fn wildcard_patrow(p: &mut Parser) {
 
 fn pattern_row_or_label_as_var(p: &mut Parser) {
     assert_eq!(p.peek(), IDENT);
-    if p.peek_next_nontrivia() == EQ {
+    if p.peek_next_nontrivia(1) == EQ {
         pattern_row(p)
     } else {
         label_as_variable(p)
@@ -131,7 +131,7 @@ fn parenthesized_pat(p: &mut Parser) {
     // Although SML/NJ errors if there are too many
     // spaces. And it seems like newlines in the middle
     // should not be allowed?
-    if p.peek_next_nontrivia() == R_PAREN {
+    if p.peek_next_nontrivia(1) == R_PAREN {
         let _ng = p.start_node(UNIT_EXP);
         p.expect(L_PAREN);
         p.eat_trivia();
@@ -520,12 +520,12 @@ mod tests {
             super::pattern,
             "{ M.x as (a, b), ..., c = d }",
             expect![[r#"
-                PAT@0..88
-                  AT_PAT@0..88
-                    RECORD_PAT@0..88
+                PAT@0..29
+                  AT_PAT@0..29
+                    RECORD_PAT@0..29
                       L_BRACE@0..1 "{"
                       WHITESPACE@1..2
-                      PAT_ROW@2..86
+                      PAT_ROW@2..27
                         LAB_AS_VAR_PAT@2..15
                           LONG_VID@2..5
                             IDENT@2..3 "M"
@@ -556,21 +556,21 @@ mod tests {
                         WHITESPACE@16..17
                         WILDCARD_PAT@17..20
                           ELLIPSIS@17..20 "..."
-                        ERROR@20..79 "no additional pattern ..."
-                        COMMA@79..80 ","
-                        WHITESPACE@80..81
-                        PAT_ROW_PAT@81..86
-                          IDENT@81..82 "c"
-                          WHITESPACE@82..83
-                          EQ@83..84 "="
-                          WHITESPACE@84..85
-                          PAT@85..86
-                            AT_PAT@85..86
-                              VID_PAT@85..86
-                                LONG_VID@85..86
-                                  IDENT@85..86 "d"
-                      WHITESPACE@86..87
-                      R_BRACE@87..88 "}"
+                        ERROR@20..20 ""
+                        COMMA@20..21 ","
+                        WHITESPACE@21..22
+                        PAT_ROW_PAT@22..27
+                          IDENT@22..23 "c"
+                          WHITESPACE@23..24
+                          EQ@24..25 "="
+                          WHITESPACE@25..26
+                          PAT@26..27
+                            AT_PAT@26..27
+                              VID_PAT@26..27
+                                LONG_VID@26..27
+                                  IDENT@26..27 "d"
+                      WHITESPACE@27..28
+                      R_BRACE@28..29 "}"
             "#]],
         )
     }

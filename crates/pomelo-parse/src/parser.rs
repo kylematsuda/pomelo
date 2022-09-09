@@ -152,22 +152,20 @@ impl Parser {
             .unwrap_or(SyntaxKind::EOF)
     }
 
-    /// Always starts at one past the current token (self.peek())
-    pub fn peek_next_nontrivia(&self) -> SyntaxKind {
-        let mut it = self.tokens.iter().rev().map(Token::kind);
-
-        // Skip the first token
-        it.next();
-
-        let mut curr = it.next().unwrap_or(SyntaxKind::EOF);
-        loop {
-            if !curr.is_trivia() {
-                break;
-            } else {
-                curr = it.next().unwrap_or(SyntaxKind::EOF);
-            }
-        }
-        curr
+    /// Starts at current token.
+    ///
+    /// If you know where you currently are, but want to defer the
+    /// decision of what the enclosing node should be, use
+    /// [`self.checkpoint()`](crate::Parser::checkpoint).
+    pub fn peek_next_nontrivia(&self, skip: usize) -> SyntaxKind {
+        self.tokens
+            .iter()
+            .rev()
+            .map(Token::kind)
+            .skip(skip)
+            .skip_while(SyntaxKind::is_trivia)
+            .next()
+            .unwrap_or(SyntaxKind::EOF)
     }
 
     fn peek_token(&self) -> Option<&Token> {
@@ -216,13 +214,9 @@ impl Parser {
     pub fn eat_through_trivia(&mut self, kind: SyntaxKind) -> bool {
         if self.eat(kind) {
             true
-        } else if self.peek().is_trivia() {
-            if self.peek_next_nontrivia() == kind {
-                self.eat_trivia();
-                return self.eat(kind);
-            } else {
-                return false;
-            }
+        } else if self.peek_next_nontrivia(0) == kind {
+            self.eat_trivia();
+            return self.eat(kind);
         } else {
             false
         }
@@ -241,7 +235,7 @@ impl Parser {
         self.errors.push(Error::new(msg.clone(), text, pos));
 
         // Push into syntax tree as well for now
-        self.push_token(Token::new(SyntaxKind::ERROR, msg))
+        self.push_token(Token::new(SyntaxKind::ERROR, ""))
     }
 
     fn pop(&mut self) -> Token {
