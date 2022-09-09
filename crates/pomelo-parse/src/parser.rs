@@ -152,6 +152,24 @@ impl Parser {
             .unwrap_or(SyntaxKind::EOF)
     }
 
+    /// Always starts at one past the current token (self.peek())
+    pub fn peek_next_nontrivia(&self) -> SyntaxKind {
+        let mut it = self.tokens.iter().rev().map(Token::kind);
+
+        // Skip the first token
+        it.next();
+
+        let mut curr = it.next().unwrap_or(SyntaxKind::EOF);
+        loop {
+            if !curr.is_trivia() {
+                break;
+            } else {
+                curr = it.next().unwrap_or(SyntaxKind::EOF);
+            }
+        }
+        curr
+    }
+
     fn peek_token(&self) -> Option<&Token> {
         self.tokens.last()
     }
@@ -185,6 +203,29 @@ impl Parser {
             }
         }
         eaten
+    }
+
+    /// Eats the current token if it matches `kind`, returning `true`.
+    ///
+    /// Otherwise, if the current token is trivia,
+    /// peeks through to the next non-trivia token.
+    /// If it matches `kind`, eats the trivia and the target token and returns `true`.
+    /// If it doesn't match `kind`, eats nothing and returns `false`.
+    ///
+    /// Else eats nothing and returns `false`.
+    pub fn eat_through_trivia(&mut self, kind: SyntaxKind) -> bool {
+        if self.eat(kind) {
+            true
+        } else if self.peek().is_trivia() {
+            if self.peek_next_nontrivia() == kind {
+                self.eat_trivia();
+                return self.eat(kind);
+            } else {
+                return false;
+            }
+        } else {
+            false
+        }
     }
 
     pub fn expect(&mut self, kind: SyntaxKind) {

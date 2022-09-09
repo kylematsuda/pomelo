@@ -37,12 +37,7 @@ pub(crate) fn atomic_expression(p: &mut Parser) {
             // Although SML/NJ errors if there are too many
             // spaces. And it seems like newlines in the middle
             // should not be allowed?
-            let mut lookahead = 1;
-            while p.peek_nth(lookahead).is_trivia() {
-                lookahead += 1;
-            }
-
-            if p.peek_nth(lookahead) == R_PAREN {
+            if p.peek_next_nontrivia() == R_PAREN {
                 let _ng = p.start_node(UNIT_EXP);
                 p.expect(L_PAREN);
                 p.eat_trivia();
@@ -57,7 +52,7 @@ pub(crate) fn atomic_expression(p: &mut Parser) {
     }
 }
 
-pub(crate) fn record_exp(p: &mut Parser) {
+fn record_exp(p: &mut Parser) {
     let _ng = p.start_node(RECORD_EXP);
     p.expect(L_BRACE);
     p.eat_trivia();
@@ -72,7 +67,7 @@ pub(crate) fn record_exp(p: &mut Parser) {
     p.expect(R_BRACE);
 }
 
-pub(crate) fn exprow(p: &mut Parser) {
+fn exprow(p: &mut Parser) {
     let _ng = p.start_node(EXP_ROW);
     p.expect(IDENT);
     p.eat_trivia();
@@ -81,13 +76,12 @@ pub(crate) fn exprow(p: &mut Parser) {
     grammar::expression(p);
 }
 
-pub(crate) fn listexp(p: &mut Parser) {
+fn listexp(p: &mut Parser) {
     let _ng = p.start_node(LIST_EXP);
     p.expect(L_BRACKET);
     p.eat_trivia();
 
-    if p.peek() == R_BRACKET {
-        p.eat(R_BRACKET);
+    if p.eat(R_BRACKET) {
         return;
     }
 
@@ -95,15 +89,13 @@ pub(crate) fn listexp(p: &mut Parser) {
     p.expect(R_BRACKET)
 }
 
-pub(crate) fn let_dec(p: &mut Parser) {
+fn let_dec(p: &mut Parser) {
     let _ng = p.start_node(LET_DEC);
 
     p.expect(LET_KW);
     p.eat_trivia();
 
-    let pred = |p: &mut Parser| {
-        p.eat(SEMICOLON) || p.peek().is_dec_kw()
-    };
+    let pred = |p: &mut Parser| p.eat(SEMICOLON) || p.peek().is_dec_kw();
 
     grammar::sequential_with(p, grammar::declaration, pred);
 
@@ -114,7 +106,7 @@ pub(crate) fn let_dec(p: &mut Parser) {
     p.expect(END_KW)
 }
 
-pub(crate) fn other_parenthesized(p: &mut Parser) {
+fn other_parenthesized(p: &mut Parser) {
     let checkpoint = p.checkpoint();
 
     p.expect(L_PAREN);
@@ -131,12 +123,14 @@ pub(crate) fn other_parenthesized(p: &mut Parser) {
         COMMA => {
             p.expect(COMMA);
             p.eat_trivia();
+
             let ng = p.start_node_at(checkpoint, TUPLE_EXP);
             finish_tuple_expression(p, ng);
         }
         SEMICOLON => {
             p.expect(SEMICOLON);
             p.eat_trivia();
+
             let ng = p.start_node_at(checkpoint, SEQ_EXP);
             finish_seq_expression(p, ng);
         }
@@ -160,6 +154,118 @@ fn finish_seq_expression(p: &mut Parser, _ng: crate::NodeGuard) {
 mod tests {
     use crate::tests::check_with_f;
     use expect_test::expect;
+
+    #[test]
+    fn scons_tuple() {
+        check_with_f(
+            false,
+            super::expression,
+            "(1.0, 0x0FA, #\"A\", 0wxFF, 0, \"test string\")",
+            expect![[r##"
+                EXP@0..43
+                  AT_EXP@0..43
+                    TUPLE_EXP@0..43
+                      L_PAREN@0..1 "("
+                      EXP@1..4
+                        AT_EXP@1..4
+                          SCON_EXP@1..4
+                            REAL@1..4 "1.0"
+                      COMMA@4..5 ","
+                      WHITESPACE@5..6
+                      EXP@6..11
+                        AT_EXP@6..11
+                          SCON_EXP@6..11
+                            INT@6..11 "0x0FA"
+                      COMMA@11..12 ","
+                      WHITESPACE@12..13
+                      EXP@13..17
+                        AT_EXP@13..17
+                          SCON_EXP@13..17
+                            CHAR@13..17 "#\"A\""
+                      COMMA@17..18 ","
+                      WHITESPACE@18..19
+                      EXP@19..24
+                        AT_EXP@19..24
+                          SCON_EXP@19..24
+                            WORD@19..24 "0wxFF"
+                      COMMA@24..25 ","
+                      WHITESPACE@25..26
+                      EXP@26..27
+                        AT_EXP@26..27
+                          SCON_EXP@26..27
+                            INT@26..27 "0"
+                      COMMA@27..28 ","
+                      WHITESPACE@28..29
+                      EXP@29..42
+                        AT_EXP@29..42
+                          SCON_EXP@29..42
+                            STRING@29..42 "\"test string\""
+                      R_PAREN@42..43 ")"
+            "##]],
+        )
+    }
+
+    #[test]
+    fn longvid() {
+        check_with_f(
+            false,
+            super::expression,
+            "I.Am.A.Long.List.Of.Modules.x",
+            expect![[r#"
+                EXP@0..29
+                  AT_EXP@0..29
+                    VID_EXP@0..29
+                      LONG_VID@0..29
+                        IDENT@0..1 "I"
+                        DOT@1..2 "."
+                        IDENT@2..4 "Am"
+                        DOT@4..5 "."
+                        IDENT@5..6 "A"
+                        DOT@6..7 "."
+                        IDENT@7..11 "Long"
+                        DOT@11..12 "."
+                        IDENT@12..16 "List"
+                        DOT@16..17 "."
+                        IDENT@17..19 "Of"
+                        DOT@19..20 "."
+                        IDENT@20..27 "Modules"
+                        DOT@27..28 "."
+                        IDENT@28..29 "x"
+            "#]],
+        )
+    }
+
+    #[test]
+    fn op_longvid() {
+        check_with_f(
+            false,
+            super::expression,
+            "op I.Am.A.Long.List.Of.Modules.x",
+            expect![[r#"
+                EXP@0..32
+                  AT_EXP@0..32
+                    VID_EXP@0..32
+                      OP_KW@0..2 "op"
+                      WHITESPACE@2..3
+                      LONG_VID@3..32
+                        IDENT@3..4 "I"
+                        DOT@4..5 "."
+                        IDENT@5..7 "Am"
+                        DOT@7..8 "."
+                        IDENT@8..9 "A"
+                        DOT@9..10 "."
+                        IDENT@10..14 "Long"
+                        DOT@14..15 "."
+                        IDENT@15..19 "List"
+                        DOT@19..20 "."
+                        IDENT@20..22 "Of"
+                        DOT@22..23 "."
+                        IDENT@23..30 "Modules"
+                        DOT@30..31 "."
+                        IDENT@31..32 "x"
+            "#]],
+        )
+    }
 
     #[test]
     fn record() {
@@ -297,8 +403,9 @@ mod tests {
                           VAL_BIND@25..30
                             PAT@25..26
                               AT_PAT@25..26
-                                LONG_VID@25..26
-                                  IDENT@25..26 "x"
+                                VID_PAT@25..26
+                                  LONG_VID@25..26
+                                    IDENT@25..26 "x"
                             WHITESPACE@26..27
                             EQ@27..28 "="
                             WHITESPACE@28..29
@@ -348,8 +455,9 @@ mod tests {
                           VAL_BIND@25..30
                             PAT@25..26
                               AT_PAT@25..26
-                                LONG_VID@25..26
-                                  IDENT@25..26 "x"
+                                VID_PAT@25..26
+                                  LONG_VID@25..26
+                                    IDENT@25..26 "x"
                             WHITESPACE@26..27
                             EQ@27..28 "="
                             WHITESPACE@28..29
@@ -365,8 +473,9 @@ mod tests {
                           VAL_BIND@51..63
                             PAT@51..55
                               AT_PAT@51..55
-                                LONG_VID@51..55
-                                  IDENT@51..55 "here"
+                                VID_PAT@51..55
+                                  LONG_VID@51..55
+                                    IDENT@51..55 "here"
                             WHITESPACE@55..56
                             EQ@56..57 "="
                             WHITESPACE@57..58
@@ -383,8 +492,9 @@ mod tests {
                           VAL_BIND@85..98
                             PAT@85..89
                               AT_PAT@85..89
-                                LONG_VID@85..89
-                                  IDENT@85..89 "some"
+                                VID_PAT@85..89
+                                  LONG_VID@85..89
+                                    IDENT@85..89 "some"
                             WHITESPACE@89..90
                             EQ@90..91 "="
                             WHITESPACE@91..92
@@ -405,8 +515,9 @@ mod tests {
                                 IDENT@119..124 "other"
                               WHITESPACE@124..125
                               AT_PAT@125..129
-                                LONG_VID@125..129
-                                  IDENT@125..129 "decs"
+                                VID_PAT@125..129
+                                  LONG_VID@125..129
+                                    IDENT@125..129 "decs"
                               WHITESPACE@129..130
                               EQ@130..131 "="
                               WHITESPACE@131..132
@@ -424,8 +535,9 @@ mod tests {
                           VAL_BIND@156..167
                             PAT@156..160
                               AT_PAT@156..160
-                                LONG_VID@156..160
-                                  IDENT@156..160 "only"
+                                VID_PAT@156..160
+                                  LONG_VID@156..160
+                                    IDENT@156..160 "only"
                             WHITESPACE@160..161
                             EQ@161..162 "="
                             WHITESPACE@162..163
@@ -442,8 +554,9 @@ mod tests {
                           VAL_BIND@189..208
                             PAT@189..193
                               AT_PAT@189..193
-                                LONG_VID@189..193
-                                  IDENT@189..193 "have"
+                                VID_PAT@189..193
+                                  LONG_VID@189..193
+                                    IDENT@189..193 "have"
                             WHITESPACE@193..194
                             EQ@194..195 "="
                             WHITESPACE@195..196

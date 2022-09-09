@@ -45,8 +45,6 @@ pub(crate) fn fvalbind(p: &mut Parser) {
 }
 
 pub(crate) fn fvalbind_row(p: &mut Parser, row_index: u32) {
-    eprintln!("row_index: {}", row_index);
-
     let _ng = p.start_node(FVAL_BIND_ROW);
 
     if row_index > 0 {

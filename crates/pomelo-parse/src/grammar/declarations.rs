@@ -19,7 +19,7 @@ pub(crate) fn declaration(p: &mut Parser) {
         INFIX_KW => unimplemented!(),
         INFIXR_KW => unimplemented!(),
         NONFIX_KW => unimplemented!(),
-        _ => p.error("expected declaration"), 
+        _ => p.error("expected declaration"),
     }
 }
 

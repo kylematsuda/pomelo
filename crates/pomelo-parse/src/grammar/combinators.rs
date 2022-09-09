@@ -1,5 +1,6 @@
 use crate::{Parser, SyntaxKind};
 
+/// Be careful - this function eats trailing trivia
 pub(crate) fn sequential<F>(p: &mut Parser, parse_function: F, delimiter: SyntaxKind)
 where
     F: Fn(&mut Parser),
@@ -14,6 +15,7 @@ where
     }
 }
 
+/// Be careful - this function eats trailing trivia
 pub(crate) fn sequential_with<F, Pred>(p: &mut Parser, parse_function: F, predicate: Pred)
 where
     F: Fn(&mut Parser),

@@ -31,8 +31,9 @@ fn declare_int() {
                 VAL_BIND@4..9
                   PAT@4..5
                     AT_PAT@4..5
-                      LONG_VID@4..5
-                        IDENT@4..5 "a"
+                      VID_PAT@4..5
+                        LONG_VID@4..5
+                          IDENT@4..5 "a"
                   WHITESPACE@5..6
                   EQ@6..7 "="
                   WHITESPACE@7..8
@@ -57,8 +58,9 @@ fn declare_float() {
                 VAL_BIND@4..9
                   PAT@4..5
                     AT_PAT@4..5
-                      LONG_VID@4..5
-                        IDENT@4..5 "a"
+                      VID_PAT@4..5
+                        LONG_VID@4..5
+                          IDENT@4..5 "a"
                   WHITESPACE@5..6
                   EQ@6..7 "="
                   WHITESPACE@7..8
@@ -83,8 +85,9 @@ fn declare_char() {
                 VAL_BIND@4..12
                   PAT@4..5
                     AT_PAT@4..5
-                      LONG_VID@4..5
-                        IDENT@4..5 "a"
+                      VID_PAT@4..5
+                        LONG_VID@4..5
+                          IDENT@4..5 "a"
                   WHITESPACE@5..6
                   EQ@6..7 "="
                   WHITESPACE@7..8
@@ -109,8 +112,9 @@ fn declare_string() {
                 VAL_BIND@4..15
                   PAT@4..5
                     AT_PAT@4..5
-                      LONG_VID@4..5
-                        IDENT@4..5 "a"
+                      VID_PAT@4..5
+                        LONG_VID@4..5
+                          IDENT@4..5 "a"
                   WHITESPACE@5..6
                   EQ@6..7 "="
                   WHITESPACE@7..8
@@ -338,8 +342,9 @@ fn declare_fun_variable_patterns() {
                         INT@91..92 "1"
                     WHITESPACE@92..93
                     AT_PAT@93..94
-                      LONG_VID@93..94
-                        IDENT@93..94 "x"
+                      VID_PAT@93..94
+                        LONG_VID@93..94
+                          IDENT@93..94 "x"
                     WHITESPACE@94..95
                     EQ@95..96 "="
                     WHITESPACE@96..97

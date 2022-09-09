@@ -104,8 +104,6 @@ pub enum SyntaxKind {
     NONFIX_DEC,
 
     VAL_BIND,
-    VAL_BIND_NO_REC,
-    VAL_BIND_REC,
 
     TY_BIND,
     DAT_BIND,
@@ -158,8 +156,9 @@ pub enum SyntaxKind {
     TUPLE_PAT,
     LIST_PAT,
 
-    DERIV_PAT_ROW,
-    DERIV_PAT_ROW_PAT,
+    LAB_AS_VAR_PAT,
+    LAB_AS_VAR_TY,
+    LAB_AS_VAR_AS_PAT,
 
     DERIV_TY_EXP,
     TY_PROD_EXP,
