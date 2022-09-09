@@ -4,70 +4,138 @@ use crate::{Checkpoint, Parser, SyntaxKind};
 use SyntaxKind::*;
 
 pub(crate) fn expression(p: &mut Parser) {
+    handle_exp(p)
+}
+
+fn precedence_climber(
+    p: &mut Parser, 
+    exp_node_kind: SyntaxKind,
+    before: impl Fn(&mut Parser), 
+    continue_if: impl Fn(&mut Parser) -> bool,
+    after: impl Fn(&mut Parser)
+) {
+    let exp_checkpoint = p.checkpoint();
+    let node_checkpoint = p.checkpoint();
+
+    before(p);
+
+    if continue_if(p) {
+        let _ng_exp = p.start_node_at(exp_checkpoint, EXP);
+        let _ng_node = p.start_node_at(node_checkpoint, exp_node_kind);
+
+        p.eat_trivia();
+        after(p)
+    }
+
+}
+
+fn handle_exp(p: &mut Parser) {
+    precedence_climber(p, HANDLE_EXP, orelse_exp, |p| p.eat_through_trivia(HANDLE_KW), grammar::match_exp);
+}
+
+fn orelse_exp(p: &mut Parser) {
+    precedence_climber(p, ORELSE_EXP, andalso_exp, |p| p.eat_through_trivia(ORELSE_KW), andalso_exp);
+}
+
+fn andalso_exp(p: &mut Parser) {
+    precedence_climber(p, ANDALSO_EXP, typed_exp, |p| p.eat_through_trivia(ANDALSO_KW), typed_exp);
+}
+
+fn typed_exp(p: &mut Parser) {
+    precedence_climber(p, TY_EXP, keyword_or_infexp, |p| p.eat_through_trivia(COLON), grammar::ty);
+}
+
+fn keyword_or_infexp(p: &mut Parser) {
     let _ng = p.start_node(EXP);
-    let checkpoint_outer = p.checkpoint();
-    let checkpoint_inner = p.checkpoint();
 
     match p.peek() {
-        k if k.is_atomic_exp_start() => atomic_expression(p),
-        RAISE_KW => unimplemented!(),
-        IF_KW => unimplemented!(),
-        WHILE_KW => unimplemented!(),
-        CASE_KW => unimplemented!(),
-        FN_KW => unimplemented!(),
-        _ => p.error("expected expression"),
-    }
-
-    match p.peek_next_nontrivia(0) {
-        COLON => typed_expression(p, checkpoint_outer, checkpoint_inner),
-        ANDALSO_KW => and_also_expression(p, checkpoint_outer, checkpoint_inner),
-        ORELSE_KW => or_else_expression(p, checkpoint_outer, checkpoint_inner),
-        HANDLE_EXP => handle_expression(p, checkpoint_outer, checkpoint_inner),
-        _ => {}
+        FN_KW => fn_match(p), 
+        CASE_KW => case_match(p),
+        WHILE_KW => while_exp(p),
+        IF_KW => if_exp(p),
+        RAISE_KW => raise_exp(p),
+        _ => infexp(p)
     }
 }
 
-fn typed_expression(p: &mut Parser, outer: Checkpoint, inner: Checkpoint) {
-    let _ng = p.start_node_at(outer, TY_EXP);
-    {
-        let _ng = p.start_node_at(inner, EXP);
-    } // Close the inner EXP node
-    assert!(p.eat_through_trivia(COLON));
-    p.eat_trivia();
-    grammar::ty(p);
+fn infexp(p: &mut Parser) {
+    precedence_climber(p, INFIX_EXP, appexp, |p| p.eat_through_trivia(IDENT), appexp);
 }
 
-fn and_also_expression(p: &mut Parser, outer: Checkpoint, inner: Checkpoint) {
-    let _ng = p.start_node_at(outer, ANDALSO_EXP);
-    {
-        let _ng = p.start_node_at(inner, EXP);
-    } // Close the inner EXP node
-    assert!(p.eat_through_trivia(ANDALSO_KW));
+fn appexp(p: &mut Parser) {
+    precedence_climber(p, APP_EXP, atomic_exp, |p| p.peek_next_nontrivia(0).is_atomic_exp_start(), atomic_exp);
+}
+
+fn fn_match(p: &mut Parser) {
+    let _ng = p.start_node(FN_EXP);
+
+    assert!(p.eat(FN_EXP));
     p.eat_trivia();
+
+    grammar::match_exp(p)
+}
+
+fn case_match(p: &mut Parser) {
+    let _ng = p.start_node(CASE_MATCH_EXP);
+
+    assert!(p.eat(CASE_KW));
+    p.eat_trivia();
+
+    expression(p);
+    p.eat_trivia();
+
+    p.expect(OF_KW);
+    p.eat_trivia();
+
+    grammar::match_exp(p)
+}
+
+fn while_exp(p: &mut Parser) {
+    let _ng = p.start_node(WHILE_EXP);
+
+    assert!(p.eat(WHILE_KW));
+    p.eat_trivia();
+
+    expression(p);
+    p.eat_trivia();
+
+    p.expect(DO_KW);
+    p.eat_trivia();
+
     expression(p);
 }
 
-fn or_else_expression(p: &mut Parser, outer: Checkpoint, inner: Checkpoint) {
-    let _ng = p.start_node_at(outer, ORELSE_EXP);
-    {
-        let _ng = p.start_node_at(inner, EXP);
-    } // Close the inner EXP node
-    assert!(p.eat_through_trivia(ORELSE_KW));
+fn if_exp(p: &mut Parser) {
+    let _ng = p.start_node(IF_EXP);
+
+    assert!(p.eat(IF_KW));
     p.eat_trivia();
+
+    expression(p);
+    p.eat_trivia();
+
+    p.expect(THEN_KW);
+    p.eat_trivia();
+
+    expression(p);
+    p.eat_trivia();
+
+    p.expect(ELSE_KW);
+    p.eat_trivia();
+
     expression(p);
 }
 
-fn handle_expression(p: &mut Parser, outer: Checkpoint, inner: Checkpoint) {
-    let _ng = p.start_node_at(outer, HANDLE_EXP);
-    {
-        let _ng = p.start_node_at(inner, EXP);
-    } // Close the inner EXP node
-    assert!(p.eat_through_trivia(HANDLE_KW));
+fn raise_exp(p: &mut Parser) {
+    let _ng = p.start_node(RAISE_EXP);
+
+    assert!(p.eat(RAISE_KW));
     p.eat_trivia();
-    grammar::match_exp(p);
+
+    expression(p);
 }
 
-pub(crate) fn atomic_expression(p: &mut Parser) {
+pub(crate) fn atomic_exp(p: &mut Parser) {
     let _ng = p.start_node(AT_EXP);
 
     match p.peek() {
