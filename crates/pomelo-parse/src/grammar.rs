@@ -21,3 +21,45 @@ pub(crate) use identifiers::*;
 
 pub(crate) mod combinators;
 pub(crate) use combinators::*;
+
+use crate::{Parser, SyntaxKind};
+
+use SyntaxKind::*;
+
+pub(crate) fn source_file(p: &mut Parser) {
+    while !p.is_eof() {
+        match p.peek_next_nontrivia(0) {
+            k if k.is_dec_kw() => declaration(p),
+            _ => {
+                // The program is a sequence of declarations.
+                // If we find something else, it's probably because we errored.
+                // Best effort for now, we will discard tokens until we get to a keyword.
+                while !p.is_eof() {
+                    // Now try to recover based on what the keyword is.
+                    match p.peek() {
+                        k if k.is_dec_kw() => {
+                            declaration(p);
+                            break;
+                        }
+                        // These are the keywords that don't start a declaration, but do tell us
+                        // what kind of term is coming next:
+                        LET_KW | WITH_KW | END_KW => {
+                            declaration(p);
+                            break;
+                        }
+                        ANDALSO_KW | ORELSE_KW | RAISE_KW | IF_KW | THEN_KW | ELSE_KW
+                        | WHILE_KW | DO_KW | CASE_KW => {
+                            expression(p);
+                            break;
+                        }
+                        HANDLE_KW | FN_KW => {
+                            match_exp(p);
+                            break;
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        }
+    }
+}

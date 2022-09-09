@@ -3,7 +3,6 @@ use crate::{Parser, SyntaxKind};
 
 use SyntaxKind::*;
 
-
 pub(crate) fn declaration(p: &mut Parser) {
     let outer = p.checkpoint();
     let inner = p.checkpoint();
@@ -42,7 +41,7 @@ pub(crate) fn declaration_inner(p: &mut Parser) {
         EXCEPTION_KW => unimplemented!(),
         LOCAL_KW => local_declaration(p),
         OPEN_KW => open_declaration(p),
-        // Sequential decs are handled in `declaration()` 
+        // Sequential decs are handled in `declaration()`
         INFIX_KW | INFIXR_KW | NONFIX_KW => infix_or_nonfix(p),
         _ => {} // declarations can be empty...
     }
@@ -102,7 +101,7 @@ fn local_declaration(p: &mut Parser) {
 
 fn open_declaration(p: &mut Parser) {
     let _ng = p.start_node(OPEN_DEC);
-    
+
     assert!(p.eat(OPEN_KW));
     p.eat_trivia();
 

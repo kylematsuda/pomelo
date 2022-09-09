@@ -223,6 +223,45 @@ impl SyntaxKind {
         )
     }
 
+    pub fn is_kw(&self) -> bool {
+        use SyntaxKind::*;
+        matches!(
+            self,
+            ABSTYPE_KW
+                | AND_KW
+                | ANDALSO_KW
+                | AS_KW
+                | CASE_KW
+                | DATATYPE_KW
+                | DO_KW
+                | ELSE_KW
+                | END_KW
+                | EXCEPTION_KW
+                | FN_KW
+                | FUN_KW
+                | HANDLE_KW
+                | IF_KW
+                | IN_KW
+                | INFIX_KW
+                | INFIXR_KW
+                | LET_KW
+                | LOCAL_KW
+                | NONFIX_KW
+                | OF_KW
+                | OP_KW
+                | OPEN_KW
+                | ORELSE_KW
+                | RAISE_KW
+                | REC_KW
+                | THEN_KW
+                | TYPE_KW
+                | VAL_KW
+                | WITH_KW
+                | WITHTYPE_KW
+                | WHILE_KW
+        )
+    }
+
     pub fn is_atomic_exp_start(&self) -> bool {
         use SyntaxKind::*;
 

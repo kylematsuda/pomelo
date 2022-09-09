@@ -8,11 +8,11 @@ pub(crate) fn expression(p: &mut Parser) {
 }
 
 fn precedence_climber(
-    p: &mut Parser, 
+    p: &mut Parser,
     exp_node_kind: SyntaxKind,
-    before: impl Fn(&mut Parser), 
+    before: impl Fn(&mut Parser),
     continue_if: impl Fn(&mut Parser) -> bool,
-    after: impl Fn(&mut Parser)
+    after: impl Fn(&mut Parser),
 ) {
     let exp_checkpoint = p.checkpoint();
     let node_checkpoint = p.checkpoint();
@@ -26,43 +26,66 @@ fn precedence_climber(
         p.eat_trivia();
         after(p)
     }
-
 }
 
 fn handle_exp(p: &mut Parser) {
-    precedence_climber(p, HANDLE_EXP, orelse_exp, |p| p.eat_through_trivia(HANDLE_KW), grammar::match_exp);
+    precedence_climber(
+        p,
+        HANDLE_EXP,
+        orelse_exp,
+        |p| p.eat_through_trivia(HANDLE_KW),
+        grammar::match_exp,
+    );
 }
 
 fn orelse_exp(p: &mut Parser) {
-    precedence_climber(p, ORELSE_EXP, andalso_exp, |p| p.eat_through_trivia(ORELSE_KW), andalso_exp);
+    precedence_climber(
+        p,
+        ORELSE_EXP,
+        andalso_exp,
+        |p| p.eat_through_trivia(ORELSE_KW),
+        andalso_exp,
+    );
 }
 
 fn andalso_exp(p: &mut Parser) {
-    precedence_climber(p, ANDALSO_EXP, typed_exp, |p| p.eat_through_trivia(ANDALSO_KW), typed_exp);
+    precedence_climber(
+        p,
+        ANDALSO_EXP,
+        typed_exp,
+        |p| p.eat_through_trivia(ANDALSO_KW),
+        typed_exp,
+    );
 }
 
 fn typed_exp(p: &mut Parser) {
-    precedence_climber(p, TY_EXP, keyword_or_infexp, |p| p.eat_through_trivia(COLON), grammar::ty);
+    precedence_climber(
+        p,
+        TY_EXP,
+        keyword_or_infexp,
+        |p| p.eat_through_trivia(COLON),
+        grammar::ty,
+    );
 }
 
 fn keyword_or_infexp(p: &mut Parser) {
     let _ng = p.start_node(EXP);
 
     match p.peek() {
-        FN_KW => fn_match(p), 
+        FN_KW => fn_match(p),
         CASE_KW => case_match(p),
         WHILE_KW => while_exp(p),
         IF_KW => if_exp(p),
         RAISE_KW => raise_exp(p),
-        _ => infexp(p)
+        _ => infexp(p),
     }
 }
 
 /// This one is done a bit differently for now...
-/// It seems like it will be easier to parser any expression 
+/// It seems like it will be easier to parser any expression
 /// containing infix operators as a flat sequence of terms.
 ///
-/// This way, we can assign operator precedence later when we 
+/// This way, we can assign operator precedence later when we
 /// have resolved it.
 fn infexp(p: &mut Parser) {
     let exp_checkpoint = p.checkpoint();
@@ -87,18 +110,23 @@ fn infexp(p: &mut Parser) {
 
             appexp(p);
         }
-
     }
 }
 
 fn appexp(p: &mut Parser) {
-    precedence_climber(p, APP_EXP, atomic_exp, |p| p.peek_next_nontrivia(0).is_atomic_exp_start(), atomic_exp);
+    precedence_climber(
+        p,
+        APP_EXP,
+        atomic_exp,
+        |p| p.peek_next_nontrivia(0).is_atomic_exp_start(),
+        atomic_exp,
+    );
 }
 
-fn fn_match(p: &mut Parser) {
+pub(crate) fn fn_match(p: &mut Parser) {
     let _ng = p.start_node(FN_EXP);
 
-    assert!(p.eat(FN_EXP));
+    assert!(p.eat(FN_KW));
     p.eat_trivia();
 
     grammar::match_exp(p)
