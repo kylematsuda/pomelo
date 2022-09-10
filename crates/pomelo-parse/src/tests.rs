@@ -25,7 +25,7 @@ where
 }
 
 #[test]
-#[ignore]
+// #[ignore]
 fn aocprogram() {
     let src = r#"
 val input = "../../input/day6/input.txt"
@@ -89,10 +89,10 @@ val part_two = simulate 256 initial_timers
         false,
         src,
         expect![[r#"
-            FILE@0..167
+            FILE@0..284
               WHITESPACE@0..1
-              DEC@1..167
-                SEQ_DEC@1..167
+              DEC@1..226
+                SEQ_DEC@1..226
                   DEC@1..41
                     VAL_DEC@1..41
                       VAL_KW@1..4 "val"
@@ -111,13 +111,13 @@ val part_two = simulate 256 initial_timers
                             SCON_EXP@13..41
                               STRING@13..41 "\"../../input/day6/inp ..."
                   WHITESPACE@41..43
-                  DEC@43..167
-                    FUN_DEC@43..167
+                  DEC@43..226
+                    FUN_DEC@43..226
                       FUN_KW@43..46 "fun"
                       WHITESPACE@46..47
                       TY_VAR_SEQ@47..47
-                      FVAL_BIND@47..167
-                        FVAL_BIND_ROW@47..167
+                      FVAL_BIND@47..226
+                        FVAL_BIND_ROW@47..226
                           VID@47..56
                             IDENT@47..56 "readlines"
                           WHITESPACE@56..57
@@ -140,78 +140,163 @@ val part_two = simulate 256 initial_timers
                           WHITESPACE@74..75
                           EQ@75..76 "="
                           WHITESPACE@76..77
-                          EXP@77..166
-                            AT_EXP@77..166
-                              LET_DEC@77..166
+                          EXP@77..226
+                            AT_EXP@77..226
+                              LET_DEC@77..226
                                 LET_KW@77..80 "let"
                                 WHITESPACE@80..83
-                                DEC@83..113
-                                  VAL_DEC@83..113
-                                    VAL_KW@83..86 "val"
-                                    WHITESPACE@86..87
-                                    VAL_BIND@87..113
-                                      PAT@87..90
-                                        AT_PAT@87..90
-                                          VID_PAT@87..90
-                                            LONG_VID@87..90
-                                              IDENT@87..90 "ins"
-                                      WHITESPACE@90..91
-                                      EQ@91..92 "="
-                                      WHITESPACE@92..93
-                                      EXP@93..113
-                                        UNRES_INFIX_APP_EXP@93..113
-                                          EXP@93..106
-                                            AT_EXP@93..106
-                                              VID_EXP@93..106
-                                                LONG_VID@93..106
-                                                  IDENT@93..99 "TextIO"
-                                                  DOT@99..100 "."
-                                                  IDENT@100..106 "openIn"
-                                          WHITESPACE@106..107
-                                          EXP@107..113
-                                            AT_EXP@107..113
-                                              VID_EXP@107..113
-                                                LONG_VID@107..113
-                                                  IDENT@107..113 "infile"
-                                WHITESPACE@113..117
-                                IN_KW@117..119 "in"
-                                WHITESPACE@119..125
-                                EXP@125..159
-                                  UNRES_INFIX_APP_EXP@125..159
-                                    EXP@125..129
-                                      AT_EXP@125..129
-                                        VID_EXP@125..129
-                                          LONG_VID@125..129
-                                            IDENT@125..129 "loop"
-                                    WHITESPACE@129..130
-                                    EXP@130..133
-                                      AT_EXP@130..133
-                                        VID_EXP@130..133
-                                          LONG_VID@130..133
-                                            IDENT@130..133 "ins"
-                                    WHITESPACE@133..134
-                                    EXP@134..140
-                                      AT_EXP@134..140
-                                        VID_EXP@134..140
-                                          LONG_VID@134..140
-                                            IDENT@134..140 "before"
-                                    WHITESPACE@140..141
-                                    EXP@141..155
-                                      AT_EXP@141..155
-                                        VID_EXP@141..155
-                                          LONG_VID@141..155
-                                            IDENT@141..147 "TextIO"
-                                            DOT@147..148 "."
-                                            IDENT@148..155 "closeIn"
-                                    WHITESPACE@155..156
-                                    EXP@156..159
-                                      AT_EXP@156..159
-                                        VID_EXP@156..159
-                                          LONG_VID@156..159
-                                            IDENT@156..159 "ins"
-                                WHITESPACE@159..163
-                                END_KW@163..166 "end"
-                          WHITESPACE@166..167
+                                DEC@83..226
+                                  SEQ_DEC@83..226
+                                    DEC@83..113
+                                      VAL_DEC@83..113
+                                        VAL_KW@83..86 "val"
+                                        WHITESPACE@86..87
+                                        VAL_BIND@87..113
+                                          PAT@87..90
+                                            AT_PAT@87..90
+                                              VID_PAT@87..90
+                                                LONG_VID@87..90
+                                                  IDENT@87..90 "ins"
+                                          WHITESPACE@90..91
+                                          EQ@91..92 "="
+                                          WHITESPACE@92..93
+                                          EXP@93..113
+                                            UNRES_INFIX_APP_EXP@93..113
+                                              EXP@93..106
+                                                AT_EXP@93..106
+                                                  VID_EXP@93..106
+                                                    LONG_VID@93..106
+                                                      IDENT@93..99 "TextIO"
+                                                      DOT@99..100 "."
+                                                      IDENT@100..106 "openIn"
+                                              WHITESPACE@106..107
+                                              EXP@107..113
+                                                AT_EXP@107..113
+                                                  VID_EXP@107..113
+                                                    LONG_VID@107..113
+                                                      IDENT@107..113 "infile"
+                                    WHITESPACE@113..117
+                                    DEC@117..226
+                                      FUN_DEC@117..226
+                                        FUN_KW@117..120 "fun"
+                                        WHITESPACE@120..121
+                                        TY_VAR_SEQ@121..121
+                                        FVAL_BIND@121..226
+                                          FVAL_BIND_ROW@121..206
+                                            VID@121..125
+                                              IDENT@121..125 "loop"
+                                            WHITESPACE@125..126
+                                            AT_PAT@126..129
+                                              VID_PAT@126..129
+                                                LONG_VID@126..129
+                                                  IDENT@126..129 "ins"
+                                            WHITESPACE@129..130
+                                            EQ@130..131 "="
+                                            WHITESPACE@131..137
+                                            EXP@137..206
+                                              TY_EXP@137..206
+                                                EXP@137..194
+                                                  CASE_MATCH_EXP@137..194
+                                                    CASE_KW@137..141 "case"
+                                                    WHITESPACE@141..142
+                                                    EXP@142..162
+                                                      UNRES_INFIX_APP_EXP@142..162
+                                                        EXP@142..158
+                                                          AT_EXP@142..158
+                                                            VID_EXP@142..158
+                                                              LONG_VID@142..158
+                                                                IDENT@142..148 "TextIO"
+                                                                DOT@148..149 "."
+                                                                IDENT@149..158 "inputLine"
+                                                        WHITESPACE@158..159
+                                                        EXP@159..162
+                                                          AT_EXP@159..162
+                                                            VID_EXP@159..162
+                                                              LONG_VID@159..162
+                                                                IDENT@159..162 "ins"
+                                                    WHITESPACE@162..163
+                                                    OF_KW@163..165 "of"
+                                                    WHITESPACE@165..175
+                                                    MATCH@175..194
+                                                      MRULE@175..194
+                                                        PAT@175..184
+                                                          UNRES_INFIX_APP_PAT@175..184
+                                                            PAT@175..179
+                                                              AT_PAT@175..179
+                                                                VID_PAT@175..179
+                                                                  LONG_VID@175..179
+                                                                    IDENT@175..179 "SOME"
+                                                            WHITESPACE@179..180
+                                                            PAT@180..184
+                                                              AT_PAT@180..184
+                                                                VID_PAT@180..184
+                                                                  LONG_VID@180..184
+                                                                    IDENT@180..184 "line"
+                                                        WHITESPACE@184..185
+                                                        THICK_ARROW@185..187 "=>"
+                                                        WHITESPACE@187..188
+                                                        EXP@188..194
+                                                          TY_EXP@188..194
+                                                            EXP@188..192
+                                                              AT_EXP@188..192
+                                                                VID_EXP@188..192
+                                                                  LONG_VID@188..192
+                                                                    IDENT@188..192 "line"
+                                                            WHITESPACE@192..193
+                                                            COLON@193..194 ":"
+                                                COLON@194..195 ":"
+                                                WHITESPACE@195..196
+                                                TY@196..206
+                                                  L_PAREN@196..197 "("
+                                                  TY@197..205
+                                                    TY_CON_EXP@197..205
+                                                      TY@197..201
+                                                        LONG_TY_CON@197..201
+                                                          IDENT@197..201 "loop"
+                                                      WHITESPACE@201..202
+                                                      TY@202..205
+                                                        LONG_TY_CON@202..205
+                                                          IDENT@202..205 "ins"
+                                                  R_PAREN@205..206 ")"
+                                          WHITESPACE@206..214
+                                          FVAL_BIND_ROW@214..226
+                                            PIPE@214..215 "|"
+                                            WHITESPACE@215..216
+                                            VID@216..220
+                                              IDENT@216..220 "NONE"
+                                            WHITESPACE@220..226
+                                            AT_PAT@226..226
+                                              ERROR@226..226 ""
+                                            ERROR@226..226 ""
+                                            EXP@226..226
+                                              AT_EXP@226..226
+                                                ERROR@226..226 ""
+                                ERROR@226..226 ""
+                                EXP@226..226
+                                  AT_EXP@226..226
+                                    ERROR@226..226 ""
+                                ERROR@226..226 ""
+              THICK_ARROW@226..228 "=>"
+              WHITESPACE@228..229
+              L_BRACKET@229..230 "["
+              R_BRACKET@230..231 "]"
+              WHITESPACE@231..234
+              IN_KW@234..236 "in"
+              WHITESPACE@236..242
+              IDENT@242..246 "loop"
+              WHITESPACE@246..247
+              IDENT@247..250 "ins"
+              WHITESPACE@250..251
+              IDENT@251..257 "before"
+              WHITESPACE@257..258
+              IDENT@258..264 "TextIO"
+              DOT@264..265 "."
+              IDENT@265..272 "closeIn"
+              WHITESPACE@272..273
+              IDENT@273..276 "ins"
+              WHITESPACE@276..280
+              END_KW@280..283 "end"
+              WHITESPACE@283..284
         "#]],
     )
 }

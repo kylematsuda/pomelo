@@ -30,10 +30,12 @@ pub(crate) fn source_file(p: &mut Parser) {
     let _ng = p.start_node(FILE);
 
     while !p.is_eof() {
+        eprintln!("i am stuck here: {:?}", p.peek());
         match p.peek_next_nontrivia(0) {
             k if k.is_dec_kw() => {
                 p.eat_trivia();
                 declaration(p);
+                p.eat_trivia();
             }
             EOF => {
                 p.eat_trivia();
@@ -46,22 +48,31 @@ pub(crate) fn source_file(p: &mut Parser) {
                 while !p.is_eof() {
                     // Now try to recover based on what the keyword is.
                     match p.peek() {
+                        // We can parse a declaration right away, so just break.
                         k if k.is_dec_kw() => {
-                            declaration(p);
                             break;
                         }
                         // These are the keywords that don't start a declaration, but do tell us
-                        // what kind of term is coming next:
-                        LET_KW | WITH_KW | END_KW => {
-                            declaration(p);
+                        // what kind of term is coming next.
+                        //
+                        // We need to eat the keyword though.
+                        WITH_KW | END_KW => {
+                            p.eat_any();
                             break;
                         }
-                        ANDALSO_KW | ORELSE_KW | RAISE_KW | IF_KW | THEN_KW | ELSE_KW
-                        | WHILE_KW | DO_KW | CASE_KW => {
+                        // These start expressions, so we need to not eat the kw.
+                        LET_KW | WHILE_KW | CASE_KW | IF_KW | RAISE_KW | FN_KW => {
                             expression(p);
                             break;
                         }
-                        HANDLE_KW | FN_KW => {
+                        // These happen in the middle of expressions, so we need to eat the kw.
+                        ANDALSO_KW | ORELSE_KW | THEN_KW | ELSE_KW => {
+                            p.eat_any();
+                            expression(p);
+                            break;
+                        }
+                        HANDLE_KW => {
+                            p.eat_any();
                             match_exp(p);
                             break;
                         }
