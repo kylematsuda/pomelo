@@ -4,59 +4,18 @@ use crate::{Parser, SyntaxKind};
 use SyntaxKind::*;
 
 pub(crate) fn pattern(p: &mut Parser) {
-    match p.peek() {
-        OP_KW | IDENT => layered_pat(p),
-        _ => typed_pat(p),
-    }
+    layered_pat(p)
 }
 
 fn layered_pat(p: &mut Parser) {
-    let mut lookahead = 0;
-    // Optional <op>
-    if p.peek() == OP_KW {
-        lookahead += 1;
-    }
-
-    // Next we expect a <vid>
-    let k = p.peek_next_nontrivia(lookahead);
-    if k == IDENT {
-        lookahead += 1;
-    } else {
-        typed_pat(p);
-        return;
-    }
-
-    // Next, we expect "as" or ":".
-    // If neither of these are present,
-    // then this is not a layered pat.
-    let k = p.peek_next_nontrivia(lookahead);
-    if k == AS_KW || k == COLON {
-        do_layered_pat(p);
-    } else {
-        typed_pat(p);
-    }
-}
-
-fn do_layered_pat(p: &mut Parser) {
-    let _ng = p.start_node(PAT);
-    let _ng_inner = p.start_node(LAYERED_PAT);
-
-    p.eat(OP_KW);
-    p.eat_trivia();
-
-    grammar::vid(p);
-    p.eat_trivia();
-
-    if p.eat(COLON) {
-        p.eat_trivia();
-        grammar::ty(p);
-        p.eat_trivia();
-    }
-
-    p.expect(AS_KW);
-    p.eat_trivia();
-
-    pattern(p);
+    grammar::precedence_climber_once(
+        p,
+        PAT,
+        LAYERED_PAT,
+        typed_pat,
+        |p| p.eat_through_trivia(AS_KW),
+        pattern,
+    )
 }
 
 fn typed_pat(p: &mut Parser) {
@@ -897,8 +856,11 @@ mod tests {
             expect![[r#"
                 PAT@0..10
                   LAYERED_PAT@0..10
-                    VID@0..3
-                      IDENT@0..3 "vid"
+                    PAT@0..3
+                      AT_PAT@0..3
+                        VID_PAT@0..3
+                          LONG_VID@0..3
+                            IDENT@0..3 "vid"
                     WHITESPACE@3..4
                     AS_KW@4..6 "as"
                     WHITESPACE@6..7
@@ -920,21 +882,26 @@ mod tests {
             expect![[r#"
                 PAT@0..45
                   LAYERED_PAT@0..45
-                    OP_KW@0..2 "op"
-                    WHITESPACE@2..3
-                    VID@3..7
-                      IDENT@3..7 "myid"
-                    WHITESPACE@7..8
-                    COLON@8..9 ":"
-                    WHITESPACE@9..10
-                    TY@10..17
-                      TY_CON_EXP@10..17
-                        TY@10..12
-                          TY_VAR@10..12 "'a"
-                        WHITESPACE@12..13
-                        TY@13..17
-                          LONG_TY_CON@13..17
-                            IDENT@13..17 "list"
+                    PAT@0..17
+                      TY_PAT@0..17
+                        PAT@0..7
+                          AT_PAT@0..7
+                            VID_PAT@0..7
+                              OP_KW@0..2 "op"
+                              WHITESPACE@2..3
+                              LONG_VID@3..7
+                                IDENT@3..7 "myid"
+                        WHITESPACE@7..8
+                        COLON@8..9 ":"
+                        WHITESPACE@9..10
+                        TY@10..17
+                          TY_CON_EXP@10..17
+                            TY@10..12
+                              TY_VAR@10..12 "'a"
+                            WHITESPACE@12..13
+                            TY@13..17
+                              LONG_TY_CON@13..17
+                                IDENT@13..17 "list"
                     WHITESPACE@17..18
                     AS_KW@18..20 "as"
                     WHITESPACE@20..21
