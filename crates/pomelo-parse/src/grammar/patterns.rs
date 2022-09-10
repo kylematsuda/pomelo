@@ -54,6 +54,8 @@ fn do_layered_pat(p: &mut Parser) {
     }
 
     p.expect(AS_KW);
+    p.eat_trivia();
+
     pattern(p);
 }
 
@@ -68,49 +70,26 @@ fn typed_pat(p: &mut Parser) {
     )
 }
 
+/// Similar to infix expressions,
+/// we don't have enough information here
+/// to decide which operators are infix.
 fn infixed_pat(p: &mut Parser) {
-    grammar::precedence_climber_once(
+    grammar::precedence_climber_flat(
         p,
         PAT,
-        INFIX_CONS_PAT,
-        at_pat_or_constructed,
-        |p| p.peek_next_nontrivia(0) == IDENT,
+        UNRES_INFIX_APP_PAT,
+        atomic_in_pat,
+        |p| p.peek_next_nontrivia(0).is_atomic_pat_start(),
         |p| {
             p.eat_trivia();
-            grammar::vid(p);
-            p.eat_trivia();
-
-            at_pat_or_constructed(p);
+            atomic_in_pat(p);
         },
     )
 }
 
-fn at_pat_or_constructed(p: &mut Parser) {
+fn atomic_in_pat(p: &mut Parser) {
     let _ng = p.start_node(PAT);
-
-    let outer = p.checkpoint();
-    let inner = p.checkpoint();
-
-    match p.peek() {
-        OP_KW | IDENT => {
-            p.eat(OP_KW);
-            p.eat_trivia();
-
-            grammar::longvid(p);
-
-            // Parse <op><longvid> <atpat>
-            if p.peek_next_nontrivia(0).is_atomic_pat_start() {
-                let _ng_cons = p.start_node_at(outer, CONS_PAT);
-                atomic_pattern(p);
-            } else {
-                // Oops, we've just parsed an <atpat>.
-                // Correctly wrap it in AT_PAT + VID_PAT
-                let _ng_at = p.start_node_at(outer, AT_PAT);
-                let _ng_vid = p.start_node_at(inner, VID_PAT);
-            }
-        }
-        _ => atomic_pattern(p),
-    }
+    atomic_pattern(p);
 }
 
 pub(crate) fn atomic_pattern(p: &mut Parser) {
@@ -906,6 +885,162 @@ mod tests {
                           R_PAREN@47..48 ")"
                       R_BRACKET@48..49 "]"
             "##]],
+        )
+    }
+
+    #[test]
+    fn layered_pat_simple() {
+        check_with_f(
+            false,
+            super::pattern,
+            "vid as pat",
+            expect![[r#"
+                PAT@0..10
+                  LAYERED_PAT@0..10
+                    VID@0..3
+                      IDENT@0..3 "vid"
+                    WHITESPACE@3..4
+                    AS_KW@4..6 "as"
+                    WHITESPACE@6..7
+                    PAT@7..10
+                      AT_PAT@7..10
+                        VID_PAT@7..10
+                          LONG_VID@7..10
+                            IDENT@7..10 "pat"
+            "#]],
+        )
+    }
+
+    #[test]
+    fn layered_pat_complicated() {
+        check_with_f(
+            false,
+            super::pattern,
+            "op myid : 'a list as [my, complicated, \"pat\"]",
+            expect![[r#"
+                PAT@0..45
+                  LAYERED_PAT@0..45
+                    OP_KW@0..2 "op"
+                    WHITESPACE@2..3
+                    VID@3..7
+                      IDENT@3..7 "myid"
+                    WHITESPACE@7..8
+                    COLON@8..9 ":"
+                    WHITESPACE@9..10
+                    TY@10..17
+                      TY_CON_EXP@10..17
+                        TY@10..12
+                          TY_VAR@10..12 "'a"
+                        WHITESPACE@12..13
+                        TY@13..17
+                          LONG_TY_CON@13..17
+                            IDENT@13..17 "list"
+                    WHITESPACE@17..18
+                    AS_KW@18..20 "as"
+                    WHITESPACE@20..21
+                    PAT@21..45
+                      AT_PAT@21..45
+                        LIST_PAT@21..45
+                          L_BRACKET@21..22 "["
+                          PAT@22..24
+                            AT_PAT@22..24
+                              VID_PAT@22..24
+                                LONG_VID@22..24
+                                  IDENT@22..24 "my"
+                          COMMA@24..25 ","
+                          WHITESPACE@25..26
+                          PAT@26..37
+                            AT_PAT@26..37
+                              VID_PAT@26..37
+                                LONG_VID@26..37
+                                  IDENT@26..37 "complicated"
+                          COMMA@37..38 ","
+                          WHITESPACE@38..39
+                          PAT@39..44
+                            AT_PAT@39..44
+                              SCON_PAT@39..44
+                                STRING@39..44 "\"pat\""
+                          R_BRACKET@44..45 "]"
+            "#]],
+        )
+    }
+
+    #[test]
+    fn typed_pat() {
+        check_with_f(
+            false,
+            super::pattern,
+            "{ x = y } : myrecord",
+            expect![[r#"
+                PAT@0..20
+                  TY_PAT@0..20
+                    PAT@0..9
+                      AT_PAT@0..9
+                        RECORD_PAT@0..9
+                          L_BRACE@0..1 "{"
+                          WHITESPACE@1..2
+                          PAT_ROW@2..7
+                            PAT_ROW_PAT@2..7
+                              IDENT@2..3 "x"
+                              WHITESPACE@3..4
+                              EQ@4..5 "="
+                              WHITESPACE@5..6
+                              PAT@6..7
+                                AT_PAT@6..7
+                                  VID_PAT@6..7
+                                    LONG_VID@6..7
+                                      IDENT@6..7 "y"
+                          WHITESPACE@7..8
+                          R_BRACE@8..9 "}"
+                    WHITESPACE@9..10
+                    COLON@10..11 ":"
+                    WHITESPACE@11..12
+                    TY@12..20
+                      LONG_TY_CON@12..20
+                        IDENT@12..20 "myrecord"
+            "#]],
+        )
+    }
+
+    #[test]
+    fn infix_pat() {
+        check_with_f(
+            false,
+            super::pattern,
+            "pat + another * last",
+            expect![[r#"
+                PAT@0..20
+                  UNRES_INFIX_APP_PAT@0..20
+                    PAT@0..3
+                      AT_PAT@0..3
+                        VID_PAT@0..3
+                          LONG_VID@0..3
+                            IDENT@0..3 "pat"
+                    WHITESPACE@3..4
+                    PAT@4..5
+                      AT_PAT@4..5
+                        VID_PAT@4..5
+                          LONG_VID@4..5
+                            IDENT@4..5 "+"
+                    WHITESPACE@5..6
+                    PAT@6..13
+                      AT_PAT@6..13
+                        VID_PAT@6..13
+                          LONG_VID@6..13
+                            IDENT@6..13 "another"
+                    WHITESPACE@13..14
+                    PAT@14..15
+                      AT_PAT@14..15
+                        VID_PAT@14..15
+                          LONG_VID@14..15
+                            IDENT@14..15 "*"
+                    WHITESPACE@15..16
+                    PAT@16..20
+                      AT_PAT@16..20
+                        VID_PAT@16..20
+                          LONG_VID@16..20
+                            IDENT@16..20 "last"
+            "#]],
         )
     }
 }

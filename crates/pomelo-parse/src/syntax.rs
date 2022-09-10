@@ -9,6 +9,7 @@ pub enum SyntaxKind {
     UNKNOWN,
     ERROR,
     UNRES_INFIX_APP_EXP,
+    UNRES_INFIX_APP_PAT,
 
     // Unevaluated
     WHITESPACE,
