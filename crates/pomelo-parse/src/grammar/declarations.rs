@@ -579,26 +579,26 @@ mod tests {
             crate::grammar::declaration,
             "type 'a 'b 'c mytype = 'd",
             expect![[r#"
-            DEC@0..25
-              TY_DEC@0..25
-                TYPE_KW@0..4 "type"
-                WHITESPACE@4..5
-                TY_BIND@5..25
-                  TY_VAR_SEQ@5..14
-                    TY_VAR@5..7 "'a"
-                    WHITESPACE@7..8
-                    TY_VAR@8..10 "'b"
-                    WHITESPACE@10..11
-                    TY_VAR@11..13 "'c"
-                    WHITESPACE@13..14
-                  TY_CON@14..20
-                    IDENT@14..20 "mytype"
-                  WHITESPACE@20..21
-                  EQ@21..22 "="
-                  WHITESPACE@22..23
-                  TY@23..25
-                    TY_VAR@23..25 "'d"
-        "#]],
+                DEC@0..25
+                  TY_DEC@0..25
+                    TYPE_KW@0..4 "type"
+                    WHITESPACE@4..5
+                    TY_BIND@5..25
+                      TY_VAR_SEQ@5..13
+                        TY_VAR@5..7 "'a"
+                        WHITESPACE@7..8
+                        TY_VAR@8..10 "'b"
+                        WHITESPACE@10..11
+                        TY_VAR@11..13 "'c"
+                      WHITESPACE@13..14
+                      TY_CON@14..20
+                        IDENT@14..20 "mytype"
+                      WHITESPACE@20..21
+                      EQ@21..22 "="
+                      WHITESPACE@22..23
+                      TY@23..25
+                        TY_VAR@23..25 "'d"
+            "#]],
         )
     }
 }

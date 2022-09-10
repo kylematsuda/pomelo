@@ -102,15 +102,7 @@ fn ty_atom(p: &mut Parser) {
 
 pub(crate) fn tyvarseq(p: &mut Parser) {
     let _ng = p.start_node(TY_VAR_SEQ);
-    while !p.is_eof() {
-        match p.peek() {
-            TY_VAR => {
-                p.eat(TY_VAR);
-                p.eat_trivia();
-            }
-            _ => break,
-        }
-    }
+    while p.eat_through_trivia(TY_VAR) {}
 }
 
 pub(crate) fn tycon(p: &mut Parser) {
