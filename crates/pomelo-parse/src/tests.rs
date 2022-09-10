@@ -25,12 +25,17 @@ where
 }
 
 #[test]
+#[ignore]
 fn aocprogram() {
     let src = r#"
 val input = "../../input/day6/input.txt"
 
 fun readlines (infile : string) = let
   val ins = TextIO.openIn infile 
+  fun loop ins = 
+    case TextIO.inputLine ins of
+         SOME line => line :: (loop ins)
+       | NONE      => []
   in 
     loop ins before TextIO.closeIn ins 
   end

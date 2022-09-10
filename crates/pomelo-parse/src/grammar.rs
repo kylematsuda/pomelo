@@ -65,7 +65,11 @@ pub(crate) fn source_file(p: &mut Parser) {
                             match_exp(p);
                             break;
                         }
-                        _ => {}
+                        // Don't know where we are, so we need to eat tokens to get out of this
+                        // mess
+                        _ => {
+                            p.eat_any();
+                        }
                     }
                 }
             }

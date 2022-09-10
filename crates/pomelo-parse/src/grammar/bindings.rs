@@ -75,34 +75,21 @@ pub(crate) fn fvalbind_row(p: &mut Parser, row_index: u32) {
     grammar::atomic_pattern(p);
     p.eat_trivia();
 
-    while !p.is_eof() {
-        match p.peek() {
-            COLON => {
-                p.eat(COLON);
-                p.eat_trivia();
-                grammar::ty(p);
-                p.eat_trivia();
-                fvalbind_row_end(p);
-                return;
-            }
-            EQ => {
-                fvalbind_row_end(p);
-                return;
-            }
-            _ => {
-                grammar::atomic_pattern(p);
-                p.eat_trivia();
-            }
-        }
+    while p.peek().is_atomic_pat_start() {
+        grammar::atomic_pattern(p);
+        p.eat_trivia();
     }
-    p.error("unexpected EOF");
-}
 
-pub(crate) fn fvalbind_row_end(p: &mut Parser) {
+    if p.eat(COLON) {
+        p.eat_trivia();
+        grammar::ty(p);
+        p.eat_trivia();
+    }
+
     p.expect(EQ);
     p.eat_trivia();
+
     grammar::expression(p);
-    p.eat_trivia();
 }
 
 #[cfg(test)]

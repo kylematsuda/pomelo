@@ -673,7 +673,7 @@ mod tests {
                               WHITESPACE@118..119
                               TY_VAR_SEQ@119..119
                               FVAL_BIND@119..134
-                                FVAL_BIND_ROW@119..134
+                                FVAL_BIND_ROW@119..133
                                   VID@119..124
                                     IDENT@119..124 "other"
                                   WHITESPACE@124..125
@@ -688,7 +688,7 @@ mod tests {
                                     AT_EXP@132..133
                                       SCON_EXP@132..133
                                         INT@132..133 "0"
-                                  WHITESPACE@133..134
+                                WHITESPACE@133..134
                           SEMICOLON@134..135 ";"
                           WHITESPACE@135..152
                           DEC@152..167
