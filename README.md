@@ -5,3 +5,4 @@
 [ ] Remove Real constants from patterns
 [ ] Maybe remove nesting of IDENT where obvious
 [ ] Make cons :: operator work!
+[ ] Make legal special identifiers (e.g., "=") work!!
