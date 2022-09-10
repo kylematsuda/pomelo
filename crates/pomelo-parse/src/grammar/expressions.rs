@@ -67,13 +67,13 @@ fn keyword_or_infexp(p: &mut Parser) {
 /// track of infix declarations), we do not know
 /// which identifiers are infix operators.
 /// In a series of expressions, e.g., "a b c d",
-/// we also don't know which are (prefix) function applications 
+/// we also don't know which are (prefix) function applications
 /// and which are infix applications.
 ///
-/// Therefore, for now we just parse this as a flat sequence 
-/// of atomic expressions. In a subsequent pass, we will try to 
-/// resolve operator associativity and fixity. After doing that, 
-/// we can infer which expressions are prefix function applications 
+/// Therefore, for now we just parse this as a flat sequence
+/// of atomic expressions. In a subsequent pass, we will try to
+/// resolve operator associativity and fixity. After doing that,
+/// we can infer which expressions are prefix function applications
 /// and we can group them left-associatively.
 fn infexp(p: &mut Parser) {
     grammar::precedence_climber_flat(
@@ -1166,9 +1166,301 @@ mod tests {
     }
 
     #[test]
+    fn handle() {
+        check_with_f(
+            false,
+            super::expression,
+            "myexception handle 1 => explode 
+                              | 5 => \"cry\" 
+                              | _ => crash",
+            expect![[r#"
+                EXP@0..119
+                  HANDLE_EXP@0..119
+                    EXP@0..11
+                      AT_EXP@0..11
+                        VID_EXP@0..11
+                          LONG_VID@0..11
+                            IDENT@0..11 "myexception"
+                    WHITESPACE@11..12
+                    HANDLE_KW@12..18 "handle"
+                    WHITESPACE@18..19
+                    MATCH@19..119
+                      MRULE@19..31
+                        PAT@19..20
+                          AT_PAT@19..20
+                            SCON_PAT@19..20
+                              INT@19..20 "1"
+                        WHITESPACE@20..21
+                        THICK_ARROW@21..23 "=>"
+                        WHITESPACE@23..24
+                        EXP@24..31
+                          AT_EXP@24..31
+                            VID_EXP@24..31
+                              LONG_VID@24..31
+                                IDENT@24..31 "explode"
+                      WHITESPACE@31..63
+                      PIPE@63..64 "|"
+                      WHITESPACE@64..65
+                      MRULE@65..75
+                        PAT@65..66
+                          AT_PAT@65..66
+                            SCON_PAT@65..66
+                              INT@65..66 "5"
+                        WHITESPACE@66..67
+                        THICK_ARROW@67..69 "=>"
+                        WHITESPACE@69..70
+                        EXP@70..75
+                          AT_EXP@70..75
+                            SCON_EXP@70..75
+                              STRING@70..75 "\"cry\""
+                      WHITESPACE@75..107
+                      PIPE@107..108 "|"
+                      WHITESPACE@108..109
+                      MRULE@109..119
+                        PAT@109..110
+                          AT_PAT@109..110
+                            WILDCARD_PAT@109..110
+                              UNDERSCORE@109..110 "_"
+                        WHITESPACE@110..111
+                        THICK_ARROW@111..113 "=>"
+                        WHITESPACE@113..114
+                        EXP@114..119
+                          AT_EXP@114..119
+                            VID_EXP@114..119
+                              LONG_VID@114..119
+                                IDENT@114..119 "crash"
+            "#]],
+        )
+    }
+
+    #[test]
+    fn raise() {
+        check_with_f(
+            false,
+            super::expression,
+            "raise a really nasty problem",
+            expect![[r#"
+                EXP@0..28
+                  RAISE_EXP@0..28
+                    RAISE_KW@0..5 "raise"
+                    WHITESPACE@5..6
+                    EXP@6..28
+                      UNRES_INFIX_APP_EXP@6..28
+                        EXP@6..7
+                          AT_EXP@6..7
+                            VID_EXP@6..7
+                              LONG_VID@6..7
+                                IDENT@6..7 "a"
+                        WHITESPACE@7..8
+                        EXP@8..14
+                          AT_EXP@8..14
+                            VID_EXP@8..14
+                              LONG_VID@8..14
+                                IDENT@8..14 "really"
+                        WHITESPACE@14..15
+                        EXP@15..20
+                          AT_EXP@15..20
+                            VID_EXP@15..20
+                              LONG_VID@15..20
+                                IDENT@15..20 "nasty"
+                        WHITESPACE@20..21
+                        EXP@21..28
+                          AT_EXP@21..28
+                            VID_EXP@21..28
+                              LONG_VID@21..28
+                                IDENT@21..28 "problem"
+            "#]],
+        )
+    }
+
+    #[test]
+    fn if_then_else() {
+        check_with_f(
+            false,
+            super::expression,
+            "if a andalso b then (c, d) else [e, f, g]",
+            expect![[r#"
+                EXP@0..41
+                  IF_EXP@0..41
+                    IF_KW@0..2 "if"
+                    WHITESPACE@2..3
+                    EXP@3..14
+                      ANDALSO_EXP@3..14
+                        EXP@3..4
+                          AT_EXP@3..4
+                            VID_EXP@3..4
+                              LONG_VID@3..4
+                                IDENT@3..4 "a"
+                        WHITESPACE@4..5
+                        ANDALSO_KW@5..12 "andalso"
+                        WHITESPACE@12..13
+                        EXP@13..14
+                          AT_EXP@13..14
+                            VID_EXP@13..14
+                              LONG_VID@13..14
+                                IDENT@13..14 "b"
+                    WHITESPACE@14..15
+                    THEN_KW@15..19 "then"
+                    WHITESPACE@19..20
+                    EXP@20..26
+                      AT_EXP@20..26
+                        TUPLE_EXP@20..26
+                          L_PAREN@20..21 "("
+                          EXP@21..22
+                            AT_EXP@21..22
+                              VID_EXP@21..22
+                                LONG_VID@21..22
+                                  IDENT@21..22 "c"
+                          COMMA@22..23 ","
+                          WHITESPACE@23..24
+                          EXP@24..25
+                            AT_EXP@24..25
+                              VID_EXP@24..25
+                                LONG_VID@24..25
+                                  IDENT@24..25 "d"
+                          R_PAREN@25..26 ")"
+                    WHITESPACE@26..27
+                    ELSE_KW@27..31 "else"
+                    WHITESPACE@31..32
+                    EXP@32..41
+                      AT_EXP@32..41
+                        LIST_EXP@32..41
+                          L_BRACKET@32..33 "["
+                          EXP@33..34
+                            AT_EXP@33..34
+                              VID_EXP@33..34
+                                LONG_VID@33..34
+                                  IDENT@33..34 "e"
+                          COMMA@34..35 ","
+                          WHITESPACE@35..36
+                          EXP@36..37
+                            AT_EXP@36..37
+                              VID_EXP@36..37
+                                LONG_VID@36..37
+                                  IDENT@36..37 "f"
+                          COMMA@37..38 ","
+                          WHITESPACE@38..39
+                          EXP@39..40
+                            AT_EXP@39..40
+                              VID_EXP@39..40
+                                LONG_VID@39..40
+                                  IDENT@39..40 "g"
+                          R_BRACKET@40..41 "]"
+            "#]],
+        )
+    }
+
+    #[test]
+    fn while_do() {
+        check_with_f(
+            false,
+            super::expression,
+            "while a orelse b do (c, d)",
+            expect![[r#"
+                EXP@0..26
+                  WHILE_EXP@0..26
+                    WHILE_KW@0..5 "while"
+                    WHITESPACE@5..6
+                    EXP@6..16
+                      ORELSE_EXP@6..16
+                        EXP@6..7
+                          AT_EXP@6..7
+                            VID_EXP@6..7
+                              LONG_VID@6..7
+                                IDENT@6..7 "a"
+                        WHITESPACE@7..8
+                        ORELSE_KW@8..14 "orelse"
+                        WHITESPACE@14..15
+                        EXP@15..16
+                          AT_EXP@15..16
+                            VID_EXP@15..16
+                              LONG_VID@15..16
+                                IDENT@15..16 "b"
+                    WHITESPACE@16..17
+                    DO_KW@17..19 "do"
+                    WHITESPACE@19..20
+                    EXP@20..26
+                      AT_EXP@20..26
+                        TUPLE_EXP@20..26
+                          L_PAREN@20..21 "("
+                          EXP@21..22
+                            AT_EXP@21..22
+                              VID_EXP@21..22
+                                LONG_VID@21..22
+                                  IDENT@21..22 "c"
+                          COMMA@22..23 ","
+                          WHITESPACE@23..24
+                          EXP@24..25
+                            AT_EXP@24..25
+                              VID_EXP@24..25
+                                LONG_VID@24..25
+                                  IDENT@24..25 "d"
+                          R_PAREN@25..26 ")"
+            "#]],
+        )
+    }
+
+    #[test]
+    fn case_of() {
+        check_with_f(
+            false,
+            super::expression,
+            "case MyModule.exp of
+                13 => dosomething 
+              | 15 => anotherthing", 
+            expect![[r#"
+                EXP@0..90
+                  CASE_MATCH_EXP@0..90
+                    CASE_KW@0..4 "case"
+                    WHITESPACE@4..5
+                    EXP@5..17
+                      AT_EXP@5..17
+                        VID_EXP@5..17
+                          LONG_VID@5..17
+                            IDENT@5..13 "MyModule"
+                            DOT@13..14 "."
+                            IDENT@14..17 "exp"
+                    WHITESPACE@17..18
+                    OF_KW@18..20 "of"
+                    WHITESPACE@20..37
+                    MATCH@37..90
+                      MRULE@37..54
+                        PAT@37..39
+                          AT_PAT@37..39
+                            SCON_PAT@37..39
+                              INT@37..39 "13"
+                        WHITESPACE@39..40
+                        THICK_ARROW@40..42 "=>"
+                        WHITESPACE@42..43
+                        EXP@43..54
+                          AT_EXP@43..54
+                            VID_EXP@43..54
+                              LONG_VID@43..54
+                                IDENT@43..54 "dosomething"
+                      WHITESPACE@54..70
+                      PIPE@70..71 "|"
+                      WHITESPACE@71..72
+                      MRULE@72..90
+                        PAT@72..74
+                          AT_PAT@72..74
+                            SCON_PAT@72..74
+                              INT@72..74 "15"
+                        WHITESPACE@74..75
+                        THICK_ARROW@75..77 "=>"
+                        WHITESPACE@77..78
+                        EXP@78..90
+                          AT_EXP@78..90
+                            VID_EXP@78..90
+                              LONG_VID@78..90
+                                IDENT@78..90 "anotherthing"
+            "#]],
+        )
+    }
+
+    #[test]
     fn or_else_seq() {
         // This is chosen right associative for now.
-        // It probably doesn't matter, though may give a 
+        // It probably doesn't matter, though may give a
         // marginal gain for a treewalk interpreter?
         // (since short circuiting)
         check_with_f(
@@ -1211,7 +1503,7 @@ mod tests {
                                 VID_EXP@27..28
                                   LONG_VID@27..28
                                     IDENT@27..28 "w"
-            "#]]
+            "#]],
         )
     }
 
@@ -1258,7 +1550,7 @@ mod tests {
                                 VID_EXP@30..31
                                   LONG_VID@30..31
                                     IDENT@30..31 "w"
-            "#]]
+            "#]],
         )
     }
 
@@ -1305,7 +1597,7 @@ mod tests {
                             VID_EXP@29..30
                               LONG_VID@29..30
                                 IDENT@29..30 "w"
-            "#]]
+            "#]],
         )
     }
 
@@ -1335,7 +1627,7 @@ mod tests {
                         VID_EXP@4..5
                           LONG_VID@4..5
                             IDENT@4..5 "y"
-            "#]]
+            "#]],
         )
     }
 
@@ -1389,7 +1681,7 @@ mod tests {
                         VID_EXP@12..13
                           LONG_VID@12..13
                             IDENT@12..13 "d"
-            "#]]
+            "#]],
         )
     }
 }

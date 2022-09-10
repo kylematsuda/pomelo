@@ -69,7 +69,6 @@ pub(crate) fn precedence_climber_flat(
     }
 }
 
-
 /// outer_node_kind: e.g. EXP
 /// inner_node_kind: e.g., ORELSE_EXP
 ///
@@ -100,7 +99,7 @@ pub(crate) fn precedence_climber_left(
 /// inner_node_kind: e.g., ORELSE_EXP
 ///
 /// This folds expressions right associatively.
-/// It should be called recursively by putting the 
+/// It should be called recursively by putting the
 /// calling function in the `caller` arg.
 pub(crate) fn precedence_climber_right(
     p: &mut Parser,
@@ -110,5 +109,12 @@ pub(crate) fn precedence_climber_right(
     continue_if: impl Fn(&mut Parser) -> bool,
     caller: impl Fn(&mut Parser),
 ) {
-    precedence_climber_flat(p, outer_node_kind, inner_node_kind, before, continue_if, caller)
+    precedence_climber_flat(
+        p,
+        outer_node_kind,
+        inner_node_kind,
+        before,
+        continue_if,
+        caller,
+    )
 }

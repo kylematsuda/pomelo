@@ -64,7 +64,7 @@ fn tycon_seq(p: &mut Parser) {
                         true
                     }
                 }
-                _ => false
+                _ => false,
             }
         },
         ty_atom_or_longtycon,
