@@ -256,8 +256,24 @@ impl Parser {
         }
     }
 
-    pub fn is_eof(&mut self) -> bool {
+    pub fn is_eof(&self) -> bool {
         self.peek() == SyntaxKind::EOF
+    }
+
+    /// Check if the current token is a valid VId.
+    /// This is not done yet!!! Just a stub to be filled out.
+    /// We need to deal with special identifiers....
+    pub fn is_vid(&self) -> bool {
+        let t = self.peek_token();
+
+        if let Some(t) = t {
+            match t.kind() {
+                SyntaxKind::IDENT => true,
+                _ => false, // TODO, check for special identifiers here
+            }
+        } else {
+            false
+        }
     }
 
     #[must_use]

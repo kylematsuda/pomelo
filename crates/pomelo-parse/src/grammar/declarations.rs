@@ -386,8 +386,7 @@ mod tests {
                     TY_VAR_SEQ@4..4
                     FVAL_BIND@4..98
                       FVAL_BIND_ROW@4..17
-                        VID@4..9
-                          IDENT@4..9 "myfun"
+                        VID@4..9 "myfun"
                         WHITESPACE@9..10
                         AT_PAT@10..11
                           SCON_PAT@10..11
@@ -407,8 +406,7 @@ mod tests {
                       FVAL_BIND_ROW@29..44
                         PIPE@29..30 "|"
                         WHITESPACE@30..31
-                        VID@31..36
-                          IDENT@31..36 "myfun"
+                        VID@31..36 "myfun"
                         WHITESPACE@36..37
                         AT_PAT@37..38
                           SCON_PAT@37..38
@@ -428,8 +426,7 @@ mod tests {
                       FVAL_BIND_ROW@56..71
                         PIPE@56..57 "|"
                         WHITESPACE@57..58
-                        VID@58..63
-                          IDENT@58..63 "myfun"
+                        VID@58..63 "myfun"
                         WHITESPACE@63..64
                         AT_PAT@64..65
                           SCON_PAT@64..65
@@ -449,8 +446,7 @@ mod tests {
                       FVAL_BIND_ROW@83..98
                         PIPE@83..84 "|"
                         WHITESPACE@84..85
-                        VID@85..90
-                          IDENT@85..90 "myfun"
+                        VID@85..90 "myfun"
                         WHITESPACE@90..91
                         AT_PAT@91..92
                           SCON_PAT@91..92
@@ -489,8 +485,7 @@ mod tests {
                     TY_VAR_SEQ@4..4
                     FVAL_BIND@4..98
                       FVAL_BIND_ROW@4..17
-                        VID@4..9
-                          IDENT@4..9 "myfun"
+                        VID@4..9 "myfun"
                         WHITESPACE@9..10
                         AT_PAT@10..11
                           SCON_PAT@10..11
@@ -510,8 +505,7 @@ mod tests {
                       FVAL_BIND_ROW@29..44
                         PIPE@29..30 "|"
                         WHITESPACE@30..31
-                        VID@31..36
-                          IDENT@31..36 "myfun"
+                        VID@31..36 "myfun"
                         WHITESPACE@36..37
                         AT_PAT@37..38
                           SCON_PAT@37..38
@@ -531,8 +525,7 @@ mod tests {
                       FVAL_BIND_ROW@56..71
                         PIPE@56..57 "|"
                         WHITESPACE@57..58
-                        VID@58..63
-                          IDENT@58..63 "myfun"
+                        VID@58..63 "myfun"
                         WHITESPACE@63..64
                         AT_PAT@64..65
                           SCON_PAT@64..65
@@ -552,8 +545,7 @@ mod tests {
                       FVAL_BIND_ROW@83..98
                         PIPE@83..84 "|"
                         WHITESPACE@84..85
-                        VID@85..90
-                          IDENT@85..90 "myfun"
+                        VID@85..90 "myfun"
                         WHITESPACE@90..91
                         AT_PAT@91..92
                           SCON_PAT@91..92

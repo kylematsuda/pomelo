@@ -674,8 +674,7 @@ mod tests {
                               TY_VAR_SEQ@119..119
                               FVAL_BIND@119..134
                                 FVAL_BIND_ROW@119..133
-                                  VID@119..124
-                                    IDENT@119..124 "other"
+                                  VID@119..124 "other"
                                   WHITESPACE@124..125
                                   AT_PAT@125..129
                                     VID_PAT@125..129

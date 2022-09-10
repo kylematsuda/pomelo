@@ -8,7 +8,8 @@
     [ ] cons :: operator
     [ ] special identifiers (e.g., "=") work
 [ ] Reduce tree nesting
-    [ ] Compress VID and LONG_VID nodes (remove inner IDENT)
+    [x] Compress VID nodes (remove inner IDENT)
+    [ ] Improve LONG_VID nodes (sequence of STRID followed by VID?) 
     [ ] Labels 
     [ ] VID_PAT? VID_EXP?
     [ ] LONG_TY_CON? TY_VAR?

@@ -25,7 +25,7 @@ where
 }
 
 #[test]
-// #[ignore]
+#[ignore]
 fn aocprogram() {
     // This won't work until we figure out how to correctly
     // glue ":" and ":" into "::". And implement it everywhere!
