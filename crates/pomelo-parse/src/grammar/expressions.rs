@@ -1407,7 +1407,7 @@ mod tests {
             super::expression,
             "case MyModule.exp of
                 13 => dosomething 
-              | 15 => anotherthing", 
+              | 15 => anotherthing",
             expect![[r#"
                 EXP@0..90
                   CASE_MATCH_EXP@0..90

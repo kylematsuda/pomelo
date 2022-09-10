@@ -27,9 +27,18 @@ use crate::{Parser, SyntaxKind};
 use SyntaxKind::*;
 
 pub(crate) fn source_file(p: &mut Parser) {
+    let _ng = p.start_node(FILE);
+
     while !p.is_eof() {
         match p.peek_next_nontrivia(0) {
-            k if k.is_dec_kw() => declaration(p),
+            k if k.is_dec_kw() => {
+                p.eat_trivia();
+                declaration(p);
+            }
+            EOF => {
+                p.eat_trivia();
+                return;
+            }
             _ => {
                 // The program is a sequence of declarations.
                 // If we find something else, it's probably because we errored.

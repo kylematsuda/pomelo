@@ -290,7 +290,7 @@ impl Parser {
     }
 
     pub fn parse(self) -> SyntaxTree {
-        self.parse_inner(crate::grammar::declaration)
+        self.parse_inner(crate::grammar::source_file)
     }
 
     /// For testing
