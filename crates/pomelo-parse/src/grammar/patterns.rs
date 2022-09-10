@@ -511,10 +511,10 @@ mod tests {
                           WHITESPACE@13..14
                           COLON@14..15 ":"
                           WHITESPACE@15..16
-                          LAB_AS_VAR_TY@16..19
+                          LAB_AS_VAR_TY@16..18
                             TY@16..18
                               TY_VAR@16..18 "'a"
-                            WHITESPACE@18..19
+                          WHITESPACE@18..19
                           AS_KW@19..21 "as"
                           WHITESPACE@21..22
                           LAB_AS_VAR_AS_PAT@22..32
@@ -584,10 +584,10 @@ mod tests {
                           WHITESPACE@20..21
                           COLON@21..22 ":"
                           WHITESPACE@22..23
-                          LAB_AS_VAR_TY@23..26
+                          LAB_AS_VAR_TY@23..25
                             TY@23..25
                               TY_VAR@23..25 "'a"
-                            WHITESPACE@25..26
+                          WHITESPACE@25..26
                           AS_KW@26..28 "as"
                           WHITESPACE@28..29
                           LAB_AS_VAR_AS_PAT@29..39
