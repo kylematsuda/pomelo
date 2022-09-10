@@ -30,7 +30,6 @@ fn valbind_inner(p: &mut Parser, rec: bool) {
             p.error("val rec can only take bindings of form <pat> = fn <match>");
             return;
         } else {
-            let _ng = p.start_node(EXP);
             grammar::fn_match(p);
         }
     }

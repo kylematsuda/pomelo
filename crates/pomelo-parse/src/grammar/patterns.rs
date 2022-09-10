@@ -13,7 +13,9 @@ pub(crate) fn pattern(p: &mut Parser) {
 fn layered_pat(p: &mut Parser) {
     let mut lookahead = 0;
     // Optional <op>
-    if p.peek() == OP_KW { lookahead += 1; }
+    if p.peek() == OP_KW {
+        lookahead += 1;
+    }
 
     // Next we expect a <vid>
     let k = p.peek_next_nontrivia(lookahead);
@@ -25,7 +27,7 @@ fn layered_pat(p: &mut Parser) {
     }
 
     // Next, we expect "as" or ":".
-    // If neither of these are present, 
+    // If neither of these are present,
     // then this is not a layered pat.
     let k = p.peek_next_nontrivia(lookahead);
     if k == AS_KW || k == COLON {
@@ -56,18 +58,18 @@ fn do_layered_pat(p: &mut Parser) {
 }
 
 fn typed_pat(p: &mut Parser) {
-    grammar::precedence_climber(
+    grammar::precedence_climber_once(
         p,
         PAT,
         TY_PAT,
         infixed_pat,
         |p| p.eat_through_trivia(COLON),
-        grammar::ty
+        grammar::ty,
     )
 }
 
 fn infixed_pat(p: &mut Parser) {
-    grammar::precedence_climber(
+    grammar::precedence_climber_once(
         p,
         PAT,
         INFIX_CONS_PAT,
@@ -79,18 +81,18 @@ fn infixed_pat(p: &mut Parser) {
             p.eat_trivia();
 
             at_pat_or_constructed(p);
-        }
+        },
     )
 }
 
 fn at_pat_or_constructed(p: &mut Parser) {
-    let _ng = p.start_node(PAT); 
+    let _ng = p.start_node(PAT);
 
     let outer = p.checkpoint();
     let inner = p.checkpoint();
 
     match p.peek() {
-       OP_KW | IDENT => {
+        OP_KW | IDENT => {
             p.eat(OP_KW);
             p.eat_trivia();
 
@@ -107,10 +109,9 @@ fn at_pat_or_constructed(p: &mut Parser) {
                 let _ng_vid = p.start_node_at(inner, VID_PAT);
             }
         }
-        _ => atomic_pattern(p)
+        _ => atomic_pattern(p),
     }
 }
-
 
 pub(crate) fn atomic_pattern(p: &mut Parser) {
     let _ng = p.start_node(AT_PAT);

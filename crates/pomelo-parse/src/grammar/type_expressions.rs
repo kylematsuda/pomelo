@@ -8,7 +8,7 @@ pub(crate) fn ty(p: &mut Parser) {
 }
 
 fn fun_ty(p: &mut Parser) {
-    grammar::precedence_climber(
+    grammar::precedence_climber_once(
         p,
         TY,
         FUN_TY_EXP,
@@ -19,14 +19,14 @@ fn fun_ty(p: &mut Parser) {
 }
 
 fn tuple_ty(p: &mut Parser) {
-    grammar::precedence_climber(
+    grammar::precedence_climber_once(
         p,
         TY,
         TUPLE_TY_EXP,
         tycon_seq,
         |p| {
             // This is a little convoluted.
-            // At the lexing stage, we don't know 
+            // At the lexing stage, we don't know
             // how to determine the function of '*':
             // as an operator/identifier, or as part of
             // a tuple type expression. As a result,
@@ -38,8 +38,8 @@ fn tuple_ty(p: &mut Parser) {
                     p.eat_trivia();
                     assert_eq!(p.eat_mapped(STAR), IDENT);
                     true
-                },
-                _ => false
+                }
+                _ => false,
             }
         },
         tycon_seq,
@@ -52,9 +52,7 @@ fn tycon_seq(p: &mut Parser) {
 
     tycon_ty(p);
 
-    let continue_if = |k: SyntaxKind| {
-        k.is_ty_atom() || k == IDENT
-    };
+    let continue_if = |k: SyntaxKind| k.is_ty_atom() || k == IDENT;
 
     if continue_if(p.peek_next_nontrivia(0)) {
         let _ng_ty = p.start_node_at(ty_checkpoint, TY);
@@ -83,13 +81,15 @@ fn is_last_tycon(p: &Parser) -> bool {
         match p.peek_next_nontrivia(lookahead) {
             EOF => return true,
             k if k.is_ty_atom() => return false,
-            DOT => { dotted = true; }
+            DOT => {
+                dotted = true;
+            }
             IDENT => {
                 if !dotted {
-                    return false; 
+                    return false;
                 }
-            },
-            _ => return true, 
+            }
+            _ => return true,
         }
         lookahead += 1;
     }
@@ -134,7 +134,7 @@ fn ty_atom(p: &mut Parser) {
             p.eat_trivia();
 
             p.expect(R_PAREN);
-        },
+        }
         _ => p.error("expected type expression"),
     }
 }

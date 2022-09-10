@@ -225,9 +225,7 @@ impl SyntaxKind {
 
     pub fn is_ty_atom(&self) -> bool {
         use SyntaxKind::*;
-        matches!(
-            self,
-            TY_VAR | L_BRACE | L_PAREN)
+        matches!(self, TY_VAR | L_BRACE | L_PAREN)
     }
 
     pub fn is_kw(&self) -> bool {

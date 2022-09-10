@@ -8,7 +8,7 @@ pub(crate) fn expression(p: &mut Parser) {
 }
 
 fn handle_exp(p: &mut Parser) {
-    grammar::precedence_climber(
+    grammar::precedence_climber_once(
         p,
         EXP,
         HANDLE_EXP,
@@ -19,7 +19,7 @@ fn handle_exp(p: &mut Parser) {
 }
 
 fn orelse_exp(p: &mut Parser) {
-    grammar::precedence_climber(
+    grammar::precedence_climber_once(
         p,
         EXP,
         ORELSE_EXP,
@@ -30,7 +30,7 @@ fn orelse_exp(p: &mut Parser) {
 }
 
 fn andalso_exp(p: &mut Parser) {
-    grammar::precedence_climber(
+    grammar::precedence_climber_once(
         p,
         EXP,
         ANDALSO_EXP,
@@ -41,7 +41,7 @@ fn andalso_exp(p: &mut Parser) {
 }
 
 fn typed_exp(p: &mut Parser) {
-    grammar::precedence_climber(
+    grammar::precedence_climber_once(
         p,
         EXP,
         TY_EXP,
@@ -52,8 +52,6 @@ fn typed_exp(p: &mut Parser) {
 }
 
 fn keyword_or_infexp(p: &mut Parser) {
-    let _ng = p.start_node(EXP);
-
     match p.peek() {
         FN_KW => fn_match(p),
         CASE_KW => case_match(p),
@@ -71,43 +69,48 @@ fn keyword_or_infexp(p: &mut Parser) {
 /// This way, we can assign operator precedence later when we
 /// have resolved it.
 fn infexp(p: &mut Parser) {
-    let exp_checkpoint = p.checkpoint();
-    let inf_checkpoint = p.checkpoint();
-
-    appexp(p);
-
-    if p.peek_next_nontrivia(0) == IDENT {
-        let _ng_exp = p.start_node_at(exp_checkpoint, EXP);
-        let _ng_inf = p.start_node_at(inf_checkpoint, INFIX_EXP);
-
-        p.eat_trivia();
-        grammar::vid(p);
-        p.eat_trivia();
-
-        appexp(p);
-
-        while p.peek_next_nontrivia(0) == IDENT {
+    grammar::precedence_climber(
+        p,
+        EXP,
+        INFIX_EXP,
+        appexp,
+        |p| p.peek_next_nontrivia(0) == IDENT,
+        |p| {
             p.eat_trivia();
             grammar::vid(p);
             p.eat_trivia();
 
             appexp(p);
+        },
+    )
+}
+
+// This is disgusting... need to figure out a better way to make sure
+// these guys left associate
+fn appexp(p: &mut Parser) {
+    let continue_if = |p: &mut Parser| p.peek_next_nontrivia(0).is_atomic_exp_start();
+
+    let outer_checkpoint = p.checkpoint();
+    let inner_checkpoint = p.checkpoint();
+
+    atomic_inner(p);
+
+    if !continue_if(p) {
+        let _ng = p.start_node_at(outer_checkpoint, EXP);
+        return;
+    } else {
+        while continue_if(p) {
+            p.eat_trivia();
+            atomic_inner(p);
+
+            let _ng_outer = p.start_node_at(outer_checkpoint.clone(), EXP);
+            let _ng_inner = p.start_node_at(inner_checkpoint.clone(), APP_EXP);
         }
     }
 }
 
-fn appexp(p: &mut Parser) {
-    grammar::precedence_climber(
-        p,
-        EXP,
-        APP_EXP,
-        atomic_exp,
-        |p| p.peek_next_nontrivia(0).is_atomic_exp_start(),
-        atomic_exp,
-    );
-}
-
 pub(crate) fn fn_match(p: &mut Parser) {
+    let _ng_exp = p.start_node(EXP);
     let _ng = p.start_node(FN_EXP);
 
     assert!(p.eat(FN_KW));
@@ -117,6 +120,7 @@ pub(crate) fn fn_match(p: &mut Parser) {
 }
 
 fn case_match(p: &mut Parser) {
+    let _ng_exp = p.start_node(EXP);
     let _ng = p.start_node(CASE_MATCH_EXP);
 
     assert!(p.eat(CASE_KW));
@@ -132,6 +136,7 @@ fn case_match(p: &mut Parser) {
 }
 
 fn while_exp(p: &mut Parser) {
+    let _ng_exp = p.start_node(EXP);
     let _ng = p.start_node(WHILE_EXP);
 
     assert!(p.eat(WHILE_KW));
@@ -147,6 +152,7 @@ fn while_exp(p: &mut Parser) {
 }
 
 fn if_exp(p: &mut Parser) {
+    let _ng_exp = p.start_node(EXP);
     let _ng = p.start_node(IF_EXP);
 
     assert!(p.eat(IF_KW));
@@ -168,6 +174,7 @@ fn if_exp(p: &mut Parser) {
 }
 
 fn raise_exp(p: &mut Parser) {
+    let _ng_exp = p.start_node(EXP);
     let _ng = p.start_node(RAISE_EXP);
 
     assert!(p.eat(RAISE_KW));
@@ -176,7 +183,7 @@ fn raise_exp(p: &mut Parser) {
     expression(p);
 }
 
-pub(crate) fn atomic_exp(p: &mut Parser) {
+fn atomic_inner(p: &mut Parser) {
     let _ng = p.start_node(AT_EXP);
 
     match p.peek() {
@@ -992,6 +999,211 @@ mod tests {
                         LONG_TY_CON@37..41
                           IDENT@37..41 "list"
             "#]],
+        )
+    }
+
+    #[test]
+    fn one_application() {
+        check_with_f(
+            false,
+            super::expression,
+            "a b",
+            expect![[r#"
+            EXP@0..3
+              APP_EXP@0..3
+                AT_EXP@0..1
+                  VID_EXP@0..1
+                    LONG_VID@0..1
+                      IDENT@0..1 "a"
+                WHITESPACE@1..2
+                AT_EXP@2..3
+                  VID_EXP@2..3
+                    LONG_VID@2..3
+                      IDENT@2..3 "b"
+            "#]],
+        )
+    }
+
+    #[test]
+    fn two_applications() {
+        check_with_f(
+            false,
+            super::expression,
+            "a b c",
+            expect![[r#"
+                EXP@0..5
+                  APP_EXP@0..5
+                    EXP@0..3
+                      APP_EXP@0..3
+                        AT_EXP@0..1
+                          VID_EXP@0..1
+                            LONG_VID@0..1
+                              IDENT@0..1 "a"
+                        WHITESPACE@1..2
+                        AT_EXP@2..3
+                          VID_EXP@2..3
+                            LONG_VID@2..3
+                              IDENT@2..3 "b"
+                    WHITESPACE@3..4
+                    AT_EXP@4..5
+                      VID_EXP@4..5
+                        LONG_VID@4..5
+                          IDENT@4..5 "c"
+            "#]],
+        )
+    }
+
+    #[test]
+    fn many_applications() {
+        check_with_f(
+            false,
+            super::expression,
+            "a b c d e f g x",
+            expect![[r#"
+                EXP@0..15
+                  APP_EXP@0..15
+                    EXP@0..13
+                      APP_EXP@0..13
+                        EXP@0..11
+                          APP_EXP@0..11
+                            EXP@0..9
+                              APP_EXP@0..9
+                                EXP@0..7
+                                  APP_EXP@0..7
+                                    EXP@0..5
+                                      APP_EXP@0..5
+                                        EXP@0..3
+                                          APP_EXP@0..3
+                                            AT_EXP@0..1
+                                              VID_EXP@0..1
+                                                LONG_VID@0..1
+                                                  IDENT@0..1 "a"
+                                            WHITESPACE@1..2
+                                            AT_EXP@2..3
+                                              VID_EXP@2..3
+                                                LONG_VID@2..3
+                                                  IDENT@2..3 "b"
+                                        WHITESPACE@3..4
+                                        AT_EXP@4..5
+                                          VID_EXP@4..5
+                                            LONG_VID@4..5
+                                              IDENT@4..5 "c"
+                                    WHITESPACE@5..6
+                                    AT_EXP@6..7
+                                      VID_EXP@6..7
+                                        LONG_VID@6..7
+                                          IDENT@6..7 "d"
+                                WHITESPACE@7..8
+                                AT_EXP@8..9
+                                  VID_EXP@8..9
+                                    LONG_VID@8..9
+                                      IDENT@8..9 "e"
+                            WHITESPACE@9..10
+                            AT_EXP@10..11
+                              VID_EXP@10..11
+                                LONG_VID@10..11
+                                  IDENT@10..11 "f"
+                        WHITESPACE@11..12
+                        AT_EXP@12..13
+                          VID_EXP@12..13
+                            LONG_VID@12..13
+                              IDENT@12..13 "g"
+                    WHITESPACE@13..14
+                    AT_EXP@14..15
+                      VID_EXP@14..15
+                        LONG_VID@14..15
+                          IDENT@14..15 "x"
+            "#]],
+        )
+    }
+
+    #[test]
+    fn fn_application() {
+        check_with_f(
+            false,
+            super::expression,
+            "(fn x => x) (fn y => y) 1",
+            expect![[r#"
+                EXP@0..25
+                  APP_EXP@0..25
+                    EXP@0..23
+                      APP_EXP@0..23
+                        AT_EXP@0..11
+                          L_PAREN@0..1 "("
+                          EXP@1..10
+                            FN_EXP@1..10
+                              FN_KW@1..3 "fn"
+                              WHITESPACE@3..4
+                              MATCH@4..10
+                                MRULE@4..10
+                                  PAT@4..5
+                                    AT_PAT@4..5
+                                      VID_PAT@4..5
+                                        LONG_VID@4..5
+                                          IDENT@4..5 "x"
+                                  WHITESPACE@5..6
+                                  THICK_ARROW@6..8 "=>"
+                                  WHITESPACE@8..9
+                                  EXP@9..10
+                                    AT_EXP@9..10
+                                      VID_EXP@9..10
+                                        LONG_VID@9..10
+                                          IDENT@9..10 "x"
+                          R_PAREN@10..11 ")"
+                        WHITESPACE@11..12
+                        AT_EXP@12..23
+                          L_PAREN@12..13 "("
+                          EXP@13..22
+                            FN_EXP@13..22
+                              FN_KW@13..15 "fn"
+                              WHITESPACE@15..16
+                              MATCH@16..22
+                                MRULE@16..22
+                                  PAT@16..17
+                                    AT_PAT@16..17
+                                      VID_PAT@16..17
+                                        LONG_VID@16..17
+                                          IDENT@16..17 "y"
+                                  WHITESPACE@17..18
+                                  THICK_ARROW@18..20 "=>"
+                                  WHITESPACE@20..21
+                                  EXP@21..22
+                                    AT_EXP@21..22
+                                      VID_EXP@21..22
+                                        LONG_VID@21..22
+                                          IDENT@21..22 "y"
+                          R_PAREN@22..23 ")"
+                    WHITESPACE@23..24
+                    AT_EXP@24..25
+                      SCON_EXP@24..25
+                        INT@24..25 "1"
+            "#]],
+        )
+    }
+
+    #[test]
+    fn infix() {
+        check_with_f(
+            false,
+            super::expression,
+            "x + y",
+            expect![[r#"
+                EXP@0..25
+                  APP_EXP@0..25
+            "#]]
+        )
+    }
+
+    #[test]
+    fn several_infix() {
+        check_with_f(
+            false,
+            super::expression,
+            "a + b * c / d",
+            expect![[r#"
+                EXP@0..25
+                  APP_EXP@0..25
+            "#]]
         )
     }
 }
