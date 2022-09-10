@@ -1,4 +1,4 @@
-# pomelo
+# pomelo-parse
 
 [ ] Fix labels (can take numeric values)
 [ ] Correctly restrict TyCon to have no stars
