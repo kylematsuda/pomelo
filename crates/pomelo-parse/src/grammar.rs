@@ -30,7 +30,6 @@ pub(crate) fn source_file(p: &mut Parser) {
     let _ng = p.start_node(FILE);
 
     while !p.is_eof() {
-        eprintln!("i am stuck here: {:?}", p.peek());
         match p.peek_next_nontrivia(0) {
             k if k.is_dec_kw() => {
                 p.eat_trivia();
