@@ -92,26 +92,6 @@ fn infexp(p: &mut Parser) {
 fn appexp(p: &mut Parser) {
     let _ng = p.start_node(EXP);
     atomic_inner(p);
-
-    //  let continue_if = |p: &mut Parser| p.peek_next_nontrivia(0).is_atomic_exp_start();
-
-    //  let outer_checkpoint = p.checkpoint();
-    //  let inner_checkpoint = p.checkpoint();
-
-    //  atomic_inner(p);
-
-    //  if !continue_if(p) {
-    //      let _ng = p.start_node_at(outer_checkpoint, EXP);
-    //      return;
-    //  } else {
-    //      while continue_if(p) {
-    //          p.eat_trivia();
-    //          atomic_inner(p);
-
-    //          let _ng_outer = p.start_node_at(outer_checkpoint.clone(), EXP);
-    //          let _ng_inner = p.start_node_at(inner_checkpoint.clone(), APP_EXP);
-    //      }
-    //  }
 }
 
 pub(crate) fn fn_match(p: &mut Parser) {
