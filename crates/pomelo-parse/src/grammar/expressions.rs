@@ -62,51 +62,56 @@ fn keyword_or_infexp(p: &mut Parser) {
     }
 }
 
-/// This one is done a bit differently for now...
-/// It seems like it will be easier to parser any expression
-/// containing infix operators as a flat sequence of terms.
+/// SML allows user-defined infix operations.
+/// Thus, without additional context (keeping
+/// track of infix declarations), we do not know
+/// which identifiers are infix operators.
+/// In a series of expressions, e.g., "a b c d",
+/// we also don't know which are (prefix) function applications 
+/// and which are infix applications.
 ///
-/// This way, we can assign operator precedence later when we
-/// have resolved it.
+/// Therefore, for now we just parse this as a flat sequence 
+/// of atomic expressions. In a subsequent pass, we will try to 
+/// resolve operator associativity and fixity. After doing that, 
+/// we can infer which expressions are prefix function applications 
+/// and we can group them left-associatively.
 fn infexp(p: &mut Parser) {
     grammar::precedence_climber_flat(
         p,
         EXP,
-        INFIX_EXP,
+        UNRES_INFIX_APP_EXP,
         appexp,
-        |p| p.peek_next_nontrivia(0) == IDENT,
+        |p| p.peek_next_nontrivia(0).is_atomic_exp_start(),
         |p| {
             p.eat_trivia();
-            grammar::vid(p);
-            p.eat_trivia();
-
             appexp(p);
         },
     )
 }
 
-// This is disgusting... need to figure out a better way to make sure
-// these guys left associate
 fn appexp(p: &mut Parser) {
-    let continue_if = |p: &mut Parser| p.peek_next_nontrivia(0).is_atomic_exp_start();
-
-    let outer_checkpoint = p.checkpoint();
-    let inner_checkpoint = p.checkpoint();
-
+    let _ng = p.start_node(EXP);
     atomic_inner(p);
 
-    if !continue_if(p) {
-        let _ng = p.start_node_at(outer_checkpoint, EXP);
-        return;
-    } else {
-        while continue_if(p) {
-            p.eat_trivia();
-            atomic_inner(p);
+    //  let continue_if = |p: &mut Parser| p.peek_next_nontrivia(0).is_atomic_exp_start();
 
-            let _ng_outer = p.start_node_at(outer_checkpoint.clone(), EXP);
-            let _ng_inner = p.start_node_at(inner_checkpoint.clone(), APP_EXP);
-        }
-    }
+    //  let outer_checkpoint = p.checkpoint();
+    //  let inner_checkpoint = p.checkpoint();
+
+    //  atomic_inner(p);
+
+    //  if !continue_if(p) {
+    //      let _ng = p.start_node_at(outer_checkpoint, EXP);
+    //      return;
+    //  } else {
+    //      while continue_if(p) {
+    //          p.eat_trivia();
+    //          atomic_inner(p);
+
+    //          let _ng_outer = p.start_node_at(outer_checkpoint.clone(), EXP);
+    //          let _ng_inner = p.start_node_at(inner_checkpoint.clone(), APP_EXP);
+    //      }
+    //  }
 }
 
 pub(crate) fn fn_match(p: &mut Parser) {
@@ -1009,17 +1014,19 @@ mod tests {
             super::expression,
             "a b",
             expect![[r#"
-            EXP@0..3
-              APP_EXP@0..3
-                AT_EXP@0..1
-                  VID_EXP@0..1
-                    LONG_VID@0..1
-                      IDENT@0..1 "a"
-                WHITESPACE@1..2
-                AT_EXP@2..3
-                  VID_EXP@2..3
-                    LONG_VID@2..3
-                      IDENT@2..3 "b"
+                EXP@0..3
+                  UNRES_INFIX_APP_EXP@0..3
+                    EXP@0..1
+                      AT_EXP@0..1
+                        VID_EXP@0..1
+                          LONG_VID@0..1
+                            IDENT@0..1 "a"
+                    WHITESPACE@1..2
+                    EXP@2..3
+                      AT_EXP@2..3
+                        VID_EXP@2..3
+                          LONG_VID@2..3
+                            IDENT@2..3 "b"
             "#]],
         )
     }
@@ -1032,23 +1039,24 @@ mod tests {
             "a b c",
             expect![[r#"
                 EXP@0..5
-                  APP_EXP@0..5
-                    EXP@0..3
-                      APP_EXP@0..3
-                        AT_EXP@0..1
-                          VID_EXP@0..1
-                            LONG_VID@0..1
-                              IDENT@0..1 "a"
-                        WHITESPACE@1..2
-                        AT_EXP@2..3
-                          VID_EXP@2..3
-                            LONG_VID@2..3
-                              IDENT@2..3 "b"
+                  UNRES_INFIX_APP_EXP@0..5
+                    EXP@0..1
+                      AT_EXP@0..1
+                        VID_EXP@0..1
+                          LONG_VID@0..1
+                            IDENT@0..1 "a"
+                    WHITESPACE@1..2
+                    EXP@2..3
+                      AT_EXP@2..3
+                        VID_EXP@2..3
+                          LONG_VID@2..3
+                            IDENT@2..3 "b"
                     WHITESPACE@3..4
-                    AT_EXP@4..5
-                      VID_EXP@4..5
-                        LONG_VID@4..5
-                          IDENT@4..5 "c"
+                    EXP@4..5
+                      AT_EXP@4..5
+                        VID_EXP@4..5
+                          LONG_VID@4..5
+                            IDENT@4..5 "c"
             "#]],
         )
     }
@@ -1061,58 +1069,54 @@ mod tests {
             "a b c d e f g x",
             expect![[r#"
                 EXP@0..15
-                  APP_EXP@0..15
-                    EXP@0..13
-                      APP_EXP@0..13
-                        EXP@0..11
-                          APP_EXP@0..11
-                            EXP@0..9
-                              APP_EXP@0..9
-                                EXP@0..7
-                                  APP_EXP@0..7
-                                    EXP@0..5
-                                      APP_EXP@0..5
-                                        EXP@0..3
-                                          APP_EXP@0..3
-                                            AT_EXP@0..1
-                                              VID_EXP@0..1
-                                                LONG_VID@0..1
-                                                  IDENT@0..1 "a"
-                                            WHITESPACE@1..2
-                                            AT_EXP@2..3
-                                              VID_EXP@2..3
-                                                LONG_VID@2..3
-                                                  IDENT@2..3 "b"
-                                        WHITESPACE@3..4
-                                        AT_EXP@4..5
-                                          VID_EXP@4..5
-                                            LONG_VID@4..5
-                                              IDENT@4..5 "c"
-                                    WHITESPACE@5..6
-                                    AT_EXP@6..7
-                                      VID_EXP@6..7
-                                        LONG_VID@6..7
-                                          IDENT@6..7 "d"
-                                WHITESPACE@7..8
-                                AT_EXP@8..9
-                                  VID_EXP@8..9
-                                    LONG_VID@8..9
-                                      IDENT@8..9 "e"
-                            WHITESPACE@9..10
-                            AT_EXP@10..11
-                              VID_EXP@10..11
-                                LONG_VID@10..11
-                                  IDENT@10..11 "f"
-                        WHITESPACE@11..12
-                        AT_EXP@12..13
-                          VID_EXP@12..13
-                            LONG_VID@12..13
-                              IDENT@12..13 "g"
+                  UNRES_INFIX_APP_EXP@0..15
+                    EXP@0..1
+                      AT_EXP@0..1
+                        VID_EXP@0..1
+                          LONG_VID@0..1
+                            IDENT@0..1 "a"
+                    WHITESPACE@1..2
+                    EXP@2..3
+                      AT_EXP@2..3
+                        VID_EXP@2..3
+                          LONG_VID@2..3
+                            IDENT@2..3 "b"
+                    WHITESPACE@3..4
+                    EXP@4..5
+                      AT_EXP@4..5
+                        VID_EXP@4..5
+                          LONG_VID@4..5
+                            IDENT@4..5 "c"
+                    WHITESPACE@5..6
+                    EXP@6..7
+                      AT_EXP@6..7
+                        VID_EXP@6..7
+                          LONG_VID@6..7
+                            IDENT@6..7 "d"
+                    WHITESPACE@7..8
+                    EXP@8..9
+                      AT_EXP@8..9
+                        VID_EXP@8..9
+                          LONG_VID@8..9
+                            IDENT@8..9 "e"
+                    WHITESPACE@9..10
+                    EXP@10..11
+                      AT_EXP@10..11
+                        VID_EXP@10..11
+                          LONG_VID@10..11
+                            IDENT@10..11 "f"
+                    WHITESPACE@11..12
+                    EXP@12..13
+                      AT_EXP@12..13
+                        VID_EXP@12..13
+                          LONG_VID@12..13
+                            IDENT@12..13 "g"
                     WHITESPACE@13..14
-                    AT_EXP@14..15
-                      VID_EXP@14..15
-                        LONG_VID@14..15
-                          IDENT@14..15 "x"
+                    EXP@14..15
+                      AT_EXP@14..15
+                        VID_EXP@14..15
+                          LONG_VID@14..15
+                            IDENT@14..15 "x"
             "#]],
         )
     }
@@ -1125,58 +1129,59 @@ mod tests {
             "(fn x => x) (fn y => y) 1",
             expect![[r#"
                 EXP@0..25
-                  APP_EXP@0..25
-                    EXP@0..23
-                      APP_EXP@0..23
-                        AT_EXP@0..11
-                          L_PAREN@0..1 "("
-                          EXP@1..10
-                            FN_EXP@1..10
-                              FN_KW@1..3 "fn"
-                              WHITESPACE@3..4
-                              MATCH@4..10
-                                MRULE@4..10
-                                  PAT@4..5
-                                    AT_PAT@4..5
-                                      VID_PAT@4..5
-                                        LONG_VID@4..5
-                                          IDENT@4..5 "x"
-                                  WHITESPACE@5..6
-                                  THICK_ARROW@6..8 "=>"
-                                  WHITESPACE@8..9
-                                  EXP@9..10
-                                    AT_EXP@9..10
-                                      VID_EXP@9..10
-                                        LONG_VID@9..10
-                                          IDENT@9..10 "x"
-                          R_PAREN@10..11 ")"
-                        WHITESPACE@11..12
-                        AT_EXP@12..23
-                          L_PAREN@12..13 "("
-                          EXP@13..22
-                            FN_EXP@13..22
-                              FN_KW@13..15 "fn"
-                              WHITESPACE@15..16
-                              MATCH@16..22
-                                MRULE@16..22
-                                  PAT@16..17
-                                    AT_PAT@16..17
-                                      VID_PAT@16..17
-                                        LONG_VID@16..17
-                                          IDENT@16..17 "y"
-                                  WHITESPACE@17..18
-                                  THICK_ARROW@18..20 "=>"
-                                  WHITESPACE@20..21
-                                  EXP@21..22
-                                    AT_EXP@21..22
-                                      VID_EXP@21..22
-                                        LONG_VID@21..22
-                                          IDENT@21..22 "y"
-                          R_PAREN@22..23 ")"
+                  UNRES_INFIX_APP_EXP@0..25
+                    EXP@0..11
+                      AT_EXP@0..11
+                        L_PAREN@0..1 "("
+                        EXP@1..10
+                          FN_EXP@1..10
+                            FN_KW@1..3 "fn"
+                            WHITESPACE@3..4
+                            MATCH@4..10
+                              MRULE@4..10
+                                PAT@4..5
+                                  AT_PAT@4..5
+                                    VID_PAT@4..5
+                                      LONG_VID@4..5
+                                        IDENT@4..5 "x"
+                                WHITESPACE@5..6
+                                THICK_ARROW@6..8 "=>"
+                                WHITESPACE@8..9
+                                EXP@9..10
+                                  AT_EXP@9..10
+                                    VID_EXP@9..10
+                                      LONG_VID@9..10
+                                        IDENT@9..10 "x"
+                        R_PAREN@10..11 ")"
+                    WHITESPACE@11..12
+                    EXP@12..23
+                      AT_EXP@12..23
+                        L_PAREN@12..13 "("
+                        EXP@13..22
+                          FN_EXP@13..22
+                            FN_KW@13..15 "fn"
+                            WHITESPACE@15..16
+                            MATCH@16..22
+                              MRULE@16..22
+                                PAT@16..17
+                                  AT_PAT@16..17
+                                    VID_PAT@16..17
+                                      LONG_VID@16..17
+                                        IDENT@16..17 "y"
+                                WHITESPACE@17..18
+                                THICK_ARROW@18..20 "=>"
+                                WHITESPACE@20..21
+                                EXP@21..22
+                                  AT_EXP@21..22
+                                    VID_EXP@21..22
+                                      LONG_VID@21..22
+                                        IDENT@21..22 "y"
+                        R_PAREN@22..23 ")"
                     WHITESPACE@23..24
-                    AT_EXP@24..25
-                      SCON_EXP@24..25
-                        INT@24..25 "1"
+                    EXP@24..25
+                      AT_EXP@24..25
+                        SCON_EXP@24..25
+                          INT@24..25 "1"
             "#]],
         )
     }
@@ -1326,29 +1331,85 @@ mod tests {
     }
 
     #[test]
-    #[ignore] // This doesn't work yet
     fn infix() {
         check_with_f(
             false,
             super::expression,
             "x + y",
             expect![[r#"
-                EXP@0..25
-                  APP_EXP@0..25
+                EXP@0..5
+                  UNRES_INFIX_APP_EXP@0..5
+                    EXP@0..1
+                      AT_EXP@0..1
+                        VID_EXP@0..1
+                          LONG_VID@0..1
+                            IDENT@0..1 "x"
+                    WHITESPACE@1..2
+                    EXP@2..3
+                      AT_EXP@2..3
+                        VID_EXP@2..3
+                          LONG_VID@2..3
+                            IDENT@2..3 "+"
+                    WHITESPACE@3..4
+                    EXP@4..5
+                      AT_EXP@4..5
+                        VID_EXP@4..5
+                          LONG_VID@4..5
+                            IDENT@4..5 "y"
             "#]]
         )
     }
 
     #[test]
-    #[ignore] // This doesn't work yet
     fn several_infix() {
         check_with_f(
             false,
             super::expression,
             "a + b * c / d",
             expect![[r#"
-                EXP@0..25
-                  APP_EXP@0..25
+                EXP@0..13
+                  UNRES_INFIX_APP_EXP@0..13
+                    EXP@0..1
+                      AT_EXP@0..1
+                        VID_EXP@0..1
+                          LONG_VID@0..1
+                            IDENT@0..1 "a"
+                    WHITESPACE@1..2
+                    EXP@2..3
+                      AT_EXP@2..3
+                        VID_EXP@2..3
+                          LONG_VID@2..3
+                            IDENT@2..3 "+"
+                    WHITESPACE@3..4
+                    EXP@4..5
+                      AT_EXP@4..5
+                        VID_EXP@4..5
+                          LONG_VID@4..5
+                            IDENT@4..5 "b"
+                    WHITESPACE@5..6
+                    EXP@6..7
+                      AT_EXP@6..7
+                        VID_EXP@6..7
+                          LONG_VID@6..7
+                            IDENT@6..7 "*"
+                    WHITESPACE@7..8
+                    EXP@8..9
+                      AT_EXP@8..9
+                        VID_EXP@8..9
+                          LONG_VID@8..9
+                            IDENT@8..9 "c"
+                    WHITESPACE@9..10
+                    EXP@10..11
+                      AT_EXP@10..11
+                        VID_EXP@10..11
+                          LONG_VID@10..11
+                            IDENT@10..11 "/"
+                    WHITESPACE@11..12
+                    EXP@12..13
+                      AT_EXP@12..13
+                        VID_EXP@12..13
+                          LONG_VID@12..13
+                            IDENT@12..13 "d"
             "#]]
         )
     }

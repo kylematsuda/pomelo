@@ -5,10 +5,10 @@ use pomelo_lex::LexKind;
 #[repr(u16)]
 pub enum SyntaxKind {
     // Sentinel variants
-    TOMBSTONE = 0,
-    EOF,
+    EOF = 0,
     UNKNOWN,
     ERROR,
+    UNRES_INFIX_APP_EXP,
 
     // Unevaluated
     WHITESPACE,
