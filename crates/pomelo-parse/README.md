@@ -10,3 +10,7 @@
 [ ] Reduce tree nesting
     [ ] Compress VID and LONG_VID nodes (remove inner IDENT)
     [ ] Labels 
+    [ ] VID_PAT? VID_EXP?
+    [ ] LONG_TY_CON? TY_VAR?
+    [ ] (Then these will be treated as tokens instead of nodes)
+    [ ] Look for other places where we can do this...
