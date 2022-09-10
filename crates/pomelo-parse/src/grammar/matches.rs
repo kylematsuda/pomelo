@@ -40,7 +40,7 @@ mod tests {
                       AT_PAT@0..4
                         VID_PAT@0..4
                           LONG_VID@0..4
-                            IDENT@0..4 "apat"
+                            VID@0..4 "apat"
                     WHITESPACE@4..5
                     THICK_ARROW@5..7 "=>"
                     WHITESPACE@7..8
@@ -52,14 +52,14 @@ mod tests {
                             AT_EXP@9..10
                               VID_EXP@9..10
                                 LONG_VID@9..10
-                                  IDENT@9..10 "a"
+                                  VID@9..10 "a"
                           COMMA@10..11 ","
                           WHITESPACE@11..12
                           EXP@12..16
                             AT_EXP@12..16
                               VID_EXP@12..16
                                 LONG_VID@12..16
-                                  IDENT@12..16 "rule"
+                                  VID@12..16 "rule"
                           R_PAREN@16..17 ")"
                   WHITESPACE@17..29
                   PIPE@29..30 "|"
@@ -69,7 +69,7 @@ mod tests {
                       AT_PAT@31..42
                         VID_PAT@31..42
                           LONG_VID@31..42
-                            IDENT@31..42 "another_pat"
+                            VID@31..42 "another_pat"
                     WHITESPACE@42..43
                     THICK_ARROW@43..45 "=>"
                     WHITESPACE@45..46
@@ -81,14 +81,14 @@ mod tests {
                             AT_EXP@47..54
                               VID_EXP@47..54
                                 LONG_VID@47..54
-                                  IDENT@47..54 "another"
+                                  VID@47..54 "another"
                           COMMA@54..55 ","
                           WHITESPACE@55..56
                           EXP@56..60
                             AT_EXP@56..60
                               VID_EXP@56..60
                                 LONG_VID@56..60
-                                  IDENT@56..60 "rule"
+                                  VID@56..60 "rule"
                           R_BRACKET@60..61 "]"
                   WHITESPACE@61..73
                   PIPE@73..74 "|"

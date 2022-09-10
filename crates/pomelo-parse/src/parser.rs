@@ -276,6 +276,20 @@ impl Parser {
         }
     }
 
+    /// Check if the current token is a valid StrId.
+    pub fn is_strid(&self) -> bool {
+        let t = self.peek_token();
+
+        if let Some(t) = t {
+            match t.kind() {
+                SyntaxKind::IDENT => t.text().chars().all(char::is_alphanumeric),
+                _ => false,
+            }
+        } else {
+            false
+        }
+    }
+
     #[must_use]
     pub fn start_node(&mut self, kind: SyntaxKind) -> NodeGuard {
         self.builder.borrow_mut().start_node(kind.into());

@@ -165,7 +165,7 @@ mod tests {
                         AT_PAT@4..5
                           VID_PAT@4..5
                             LONG_VID@4..5
-                              IDENT@4..5 "a"
+                              VID@4..5 "a"
                       WHITESPACE@5..6
                       EQ@6..7 "="
                       WHITESPACE@7..8
@@ -199,7 +199,7 @@ mod tests {
                             AT_PAT@4..5
                               VID_PAT@4..5
                                 LONG_VID@4..5
-                                  IDENT@4..5 "a"
+                                  VID@4..5 "a"
                           WHITESPACE@5..6
                           EQ@6..7 "="
                           WHITESPACE@7..8
@@ -218,7 +218,7 @@ mod tests {
                             AT_PAT@27..28
                               VID_PAT@27..28
                                 LONG_VID@27..28
-                                  IDENT@27..28 "b"
+                                  VID@27..28 "b"
                           WHITESPACE@28..29
                           EQ@29..30 "="
                           WHITESPACE@30..31
@@ -236,7 +236,7 @@ mod tests {
                             AT_PAT@52..53
                               VID_PAT@52..53
                                 LONG_VID@52..53
-                                  IDENT@52..53 "c"
+                                  VID@52..53 "c"
                           WHITESPACE@53..54
                           EQ@54..55 "="
                           WHITESPACE@55..56
@@ -254,7 +254,7 @@ mod tests {
                             AT_PAT@77..78
                               VID_PAT@77..78
                                 LONG_VID@77..78
-                                  IDENT@77..78 "d"
+                                  VID@77..78 "d"
                           WHITESPACE@78..79
                           EQ@79..80 "="
                           WHITESPACE@80..81
@@ -273,7 +273,7 @@ mod tests {
                             AT_PAT@103..104
                               VID_PAT@103..104
                                 LONG_VID@103..104
-                                  IDENT@103..104 "e"
+                                  VID@103..104 "e"
                           WHITESPACE@104..105
                           EQ@105..106 "="
                           WHITESPACE@106..107
@@ -314,7 +314,7 @@ mod tests {
                         AT_PAT@8..14
                           VID_PAT@8..14
                             LONG_VID@8..14
-                              IDENT@8..14 "simple"
+                              VID@8..14 "simple"
                       WHITESPACE@14..15
                       EQ@15..16 "="
                       WHITESPACE@16..17
@@ -328,7 +328,7 @@ mod tests {
                                 AT_PAT@20..21
                                   VID_PAT@20..21
                                     LONG_VID@20..21
-                                      IDENT@20..21 "x"
+                                      VID@20..21 "x"
                               WHITESPACE@21..22
                               THICK_ARROW@22..24 "=>"
                               WHITESPACE@24..25
@@ -336,7 +336,7 @@ mod tests {
                                 AT_EXP@25..26
                                   VID_EXP@25..26
                                     LONG_VID@25..26
-                                      IDENT@25..26 "x"
+                                      VID@25..26 "x"
             "#]],
         )
     }
@@ -360,7 +360,7 @@ mod tests {
                         AT_PAT@8..14
                           VID_PAT@8..14
                             LONG_VID@8..14
-                              IDENT@8..14 "simple"
+                              VID@8..14 "simple"
                       WHITESPACE@14..15
                       EQ@15..16 "="
                       WHITESPACE@16..17
@@ -455,7 +455,7 @@ mod tests {
                         AT_PAT@93..94
                           VID_PAT@93..94
                             LONG_VID@93..94
-                              IDENT@93..94 "x"
+                              VID@93..94 "x"
                         WHITESPACE@94..95
                         EQ@95..96 "="
                         WHITESPACE@96..97
@@ -463,7 +463,7 @@ mod tests {
                           AT_EXP@97..98
                             VID_EXP@97..98
                               LONG_VID@97..98
-                                IDENT@97..98 "x"
+                                VID@97..98 "x"
             "#]],
         )
     }

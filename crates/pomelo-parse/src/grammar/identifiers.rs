@@ -5,7 +5,16 @@ use SyntaxKind::*;
 
 pub(crate) fn longvid(p: &mut Parser) {
     let _ng = p.start_node(LONG_VID);
-    grammar::sequential(p, ident, DOT);
+
+    // A longvid is a sequence of strids separated by DOTs,
+    // then a VID
+    while p.is_strid() && p.peek_next_nontrivia(1) == DOT {
+        strid(p);
+        p.eat_trivia();
+        assert!(p.eat(DOT));
+        p.eat_trivia();
+    }
+    vid(p)
 }
 
 fn ident(p: &mut Parser) {
@@ -21,17 +30,19 @@ pub(crate) fn vid(p: &mut Parser) {
 }
 
 pub(crate) fn longstrid(p: &mut Parser) {
-    let _ng = p.start_node(LONG_STR_ID);
+    let _ng = p.start_node(LONG_STRID);
     grammar::sequential(p, strid, DOT);
 }
 
 // TODO: make sure this is a valid STRID?
+// This should be handled in Parser::is_strid
 pub(crate) fn strid(p: &mut Parser) {
-    p.expect(IDENT);
+    if p.is_strid() {
+        p.eat_mapped(STRID);
+    } else {
+        p.error("expected structure identifier");
+    }
 }
-
-
-
 
 #[cfg(test)]
 mod tests {
@@ -40,7 +51,7 @@ mod tests {
 
     #[test]
     fn vid_alpha() {
-        // Since VID is now a token, 
+        // Since VID is now a token,
         // we need to parse it inside some node
         check_with_f(
             false,
@@ -59,7 +70,7 @@ mod tests {
                         AT_PAT@18..19
                           VID_PAT@18..19
                             LONG_VID@18..19
-                              IDENT@18..19 "x"
+                              VID@18..19 "x"
                         WHITESPACE@19..20
                         EQ@20..21 "="
                         WHITESPACE@21..22
@@ -67,7 +78,7 @@ mod tests {
                           AT_EXP@22..23
                             SCON_EXP@22..23
                               INT@22..23 "0"
-            "#]]
+            "#]],
         )
     }
 
@@ -79,16 +90,16 @@ mod tests {
             "A.Long.Vid.StrId.x",
             expect![[r#"
                 LONG_VID@0..18
-                  IDENT@0..1 "A"
+                  STRID@0..1 "A"
                   DOT@1..2 "."
-                  IDENT@2..6 "Long"
+                  STRID@2..6 "Long"
                   DOT@6..7 "."
-                  IDENT@7..10 "Vid"
+                  STRID@7..10 "Vid"
                   DOT@10..11 "."
-                  IDENT@11..16 "StrId"
+                  STRID@11..16 "StrId"
                   DOT@16..17 "."
-                  IDENT@17..18 "x"
-            "#]]
+                  VID@17..18 "x"
+            "#]],
         )
     }
 }

@@ -188,8 +188,8 @@ pub enum SyntaxKind {
     TY_CON,
     LONG_TY_CON,
     LAB,
-    STR_ID,
-    LONG_STR_ID,
+    STRID,
+    LONG_STRID,
 
     // Program level
     FILE,

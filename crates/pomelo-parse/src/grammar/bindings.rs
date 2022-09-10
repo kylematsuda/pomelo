@@ -113,7 +113,7 @@ mod tests {
                         AT_PAT@4..10
                           VID_PAT@4..10
                             LONG_VID@4..10
-                              IDENT@4..10 "simple"
+                              VID@4..10 "simple"
                       WHITESPACE@10..11
                       EQ@11..12 "="
                       WHITESPACE@12..13
@@ -121,7 +121,7 @@ mod tests {
                         AT_EXP@13..20
                           VID_EXP@13..20
                             LONG_VID@13..20
-                              IDENT@13..20 "valbind"
+                              VID@13..20 "valbind"
             "#]],
         )
     }
@@ -142,7 +142,7 @@ mod tests {
                         AT_PAT@4..10
                           VID_PAT@4..10
                             LONG_VID@4..10
-                              IDENT@4..10 "simple"
+                              VID@4..10 "simple"
                       WHITESPACE@10..11
                       EQ@11..12 "="
                       WHITESPACE@12..13
@@ -150,7 +150,7 @@ mod tests {
                         AT_EXP@13..20
                           VID_EXP@13..20
                             LONG_VID@13..20
-                              IDENT@13..20 "valbind"
+                              VID@13..20 "valbind"
                       WHITESPACE@20..21
                       AND_KW@21..24 "and"
                       WHITESPACE@24..25
@@ -158,7 +158,7 @@ mod tests {
                         AT_PAT@25..32
                           VID_PAT@25..32
                             LONG_VID@25..32
-                              IDENT@25..32 "another"
+                              VID@25..32 "another"
                       WHITESPACE@32..33
                       EQ@33..34 "="
                       WHITESPACE@34..35
@@ -166,7 +166,7 @@ mod tests {
                         AT_EXP@35..38
                           VID_EXP@35..38
                             LONG_VID@35..38
-                              IDENT@35..38 "one"
+                              VID@35..38 "one"
                       WHITESPACE@38..39
                       AND_KW@39..42 "and"
                       WHITESPACE@42..43
@@ -174,7 +174,7 @@ mod tests {
                         AT_PAT@43..46
                           VID_PAT@43..46
                             LONG_VID@43..46
-                              IDENT@43..46 "yet"
+                              VID@43..46 "yet"
                       WHITESPACE@46..47
                       EQ@47..48 "="
                       WHITESPACE@48..49
@@ -182,7 +182,7 @@ mod tests {
                         AT_EXP@49..56
                           VID_EXP@49..56
                             LONG_VID@49..56
-                              IDENT@49..56 "another"
+                              VID@49..56 "another"
             "#]],
         )
     }
