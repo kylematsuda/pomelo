@@ -2,7 +2,7 @@
 
 [x] Fix labels (can take numeric values)
 [ ] Correctly restrict TyCon to have no stars
-[ ] Remove Real constants from patterns
+[x] Remove Real constants from patterns
 [ ] Make sure all legal vid work 
     [ ] add method to parser to peek correctly
     [ ] cons :: operator

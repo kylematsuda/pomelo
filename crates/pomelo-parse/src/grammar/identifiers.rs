@@ -47,11 +47,10 @@ pub(crate) fn label(p: &mut Parser) {
                 p.error("record labels may not start with \'0\'");
             }
             p.eat_mapped(LAB);
-        },
+        }
         _ => p.error("expected label"),
     }
 }
-
 
 #[cfg(test)]
 mod tests {

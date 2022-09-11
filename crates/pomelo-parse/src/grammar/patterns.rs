@@ -61,6 +61,10 @@ pub(crate) fn atomic_pattern(p: &mut Parser) {
         }
         k if k.is_special_constant() => {
             let _ng = p.start_node(SCON_PAT);
+
+            if p.peek() == REAL {
+                p.error("real constants may not appear in patterns");
+            }
             p.eat_any();
         }
         OP_KW | IDENT => {
@@ -234,6 +238,23 @@ mod tests {
     use expect_test::expect;
 
     #[test]
+    fn may_not_contain_real_constant() {
+        check_with_f(
+            true,
+            super::pattern,
+            "100.0",
+            expect![[r#"
+                PAT@0..5
+                  AT_PAT@0..5
+                    SCON_PAT@0..5
+                      ERROR@0..0 ""
+                      REAL@0..5 "100.0"
+            "#]],
+        )
+    }
+
+
+    #[test]
     fn wildcard_pat() {
         check_with_f(
             false,
@@ -253,11 +274,11 @@ mod tests {
         check_with_f(
             false,
             super::pattern,
-            "(0, 0xFF, 11.5, 0w10, 1.0E5, #\"c\", \"a string\")",
+            "(0, 0xFF, 0w10, ~2, #\"c\", \"a string\")",
             expect![[r##"
-                PAT@0..46
-                  AT_PAT@0..46
-                    TUPLE_PAT@0..46
+                PAT@0..37
+                  AT_PAT@0..37
+                    TUPLE_PAT@0..37
                       L_PAREN@0..1 "("
                       PAT@1..2
                         AT_PAT@1..2
@@ -274,32 +295,26 @@ mod tests {
                       PAT@10..14
                         AT_PAT@10..14
                           SCON_PAT@10..14
-                            REAL@10..14 "11.5"
+                            WORD@10..14 "0w10"
                       COMMA@14..15 ","
                       WHITESPACE@15..16
-                      PAT@16..20
-                        AT_PAT@16..20
-                          SCON_PAT@16..20
-                            WORD@16..20 "0w10"
-                      COMMA@20..21 ","
-                      WHITESPACE@21..22
-                      PAT@22..27
-                        AT_PAT@22..27
-                          SCON_PAT@22..27
-                            REAL@22..27 "1.0E5"
-                      COMMA@27..28 ","
-                      WHITESPACE@28..29
-                      PAT@29..33
-                        AT_PAT@29..33
-                          SCON_PAT@29..33
-                            CHAR@29..33 "#\"c\""
-                      COMMA@33..34 ","
-                      WHITESPACE@34..35
-                      PAT@35..45
-                        AT_PAT@35..45
-                          SCON_PAT@35..45
-                            STRING@35..45 "\"a string\""
-                      R_PAREN@45..46 ")"
+                      PAT@16..18
+                        AT_PAT@16..18
+                          SCON_PAT@16..18
+                            INT@16..18 "~2"
+                      COMMA@18..19 ","
+                      WHITESPACE@19..20
+                      PAT@20..24
+                        AT_PAT@20..24
+                          SCON_PAT@20..24
+                            CHAR@20..24 "#\"c\""
+                      COMMA@24..25 ","
+                      WHITESPACE@25..26
+                      PAT@26..36
+                        AT_PAT@26..36
+                          SCON_PAT@26..36
+                            STRING@26..36 "\"a string\""
+                      R_PAREN@36..37 ")"
             "##]],
         )
     }
@@ -640,11 +655,11 @@ mod tests {
         check_with_f(
             false,
             super::pattern,
-            "(x, y, 0, 15.0, 0xF, #\"a\", op My.Long.id)",
+            "(x, y, 0, 0xF, #\"a\", op My.Long.id)",
             expect![[r##"
-                PAT@0..41
-                  AT_PAT@0..41
-                    TUPLE_PAT@0..41
+                PAT@0..35
+                  AT_PAT@0..35
+                    TUPLE_PAT@0..35
                       L_PAREN@0..1 "("
                       PAT@1..2
                         AT_PAT@1..2
@@ -666,36 +681,30 @@ mod tests {
                             INT@7..8 "0"
                       COMMA@8..9 ","
                       WHITESPACE@9..10
-                      PAT@10..14
-                        AT_PAT@10..14
-                          SCON_PAT@10..14
-                            REAL@10..14 "15.0"
-                      COMMA@14..15 ","
-                      WHITESPACE@15..16
-                      PAT@16..19
-                        AT_PAT@16..19
-                          SCON_PAT@16..19
-                            INT@16..19 "0xF"
+                      PAT@10..13
+                        AT_PAT@10..13
+                          SCON_PAT@10..13
+                            INT@10..13 "0xF"
+                      COMMA@13..14 ","
+                      WHITESPACE@14..15
+                      PAT@15..19
+                        AT_PAT@15..19
+                          SCON_PAT@15..19
+                            CHAR@15..19 "#\"a\""
                       COMMA@19..20 ","
                       WHITESPACE@20..21
-                      PAT@21..25
-                        AT_PAT@21..25
-                          SCON_PAT@21..25
-                            CHAR@21..25 "#\"a\""
-                      COMMA@25..26 ","
-                      WHITESPACE@26..27
-                      PAT@27..40
-                        AT_PAT@27..40
-                          VID_PAT@27..40
-                            OP_KW@27..29 "op"
-                            WHITESPACE@29..30
-                            LONG_VID@30..40
-                              STRID@30..32 "My"
-                              DOT@32..33 "."
-                              STRID@33..37 "Long"
-                              DOT@37..38 "."
-                              VID@38..40 "id"
-                      R_PAREN@40..41 ")"
+                      PAT@21..34
+                        AT_PAT@21..34
+                          VID_PAT@21..34
+                            OP_KW@21..23 "op"
+                            WHITESPACE@23..24
+                            LONG_VID@24..34
+                              STRID@24..26 "My"
+                              DOT@26..27 "."
+                              STRID@27..31 "Long"
+                              DOT@31..32 "."
+                              VID@32..34 "id"
+                      R_PAREN@34..35 ")"
             "##]],
         )
     }
@@ -705,7 +714,7 @@ mod tests {
         check_with_f(
             false,
             super::pattern,
-            "[x, y, 0, 15.0, 0xF, #\"a\", op My.Long.id]",
+            "[x, y, 0, 1500, 0xF, #\"a\", op My.Long.id]",
             expect![[r##"
                 PAT@0..41
                   AT_PAT@0..41
@@ -734,7 +743,7 @@ mod tests {
                       PAT@10..14
                         AT_PAT@10..14
                           SCON_PAT@10..14
-                            REAL@10..14 "15.0"
+                            INT@10..14 "1500"
                       COMMA@14..15 ","
                       WHITESPACE@15..16
                       PAT@16..19
@@ -770,11 +779,11 @@ mod tests {
         check_with_f(
             false,
             super::pattern,
-            "[(x), (y, 0), ([15.0, 0xF, #\"a\", op My.Long.id])]",
+            "[(x), (y, 0), ([10, 0xF, #\"a\", op My.Long.id])]",
             expect![[r##"
-                PAT@0..49
-                  AT_PAT@0..49
-                    LIST_PAT@0..49
+                PAT@0..47
+                  AT_PAT@0..47
+                    LIST_PAT@0..47
                       L_BRACKET@0..1 "["
                       PAT@1..4
                         AT_PAT@1..4
@@ -805,45 +814,45 @@ mod tests {
                             R_PAREN@11..12 ")"
                       COMMA@12..13 ","
                       WHITESPACE@13..14
-                      PAT@14..48
-                        AT_PAT@14..48
+                      PAT@14..46
+                        AT_PAT@14..46
                           L_PAREN@14..15 "("
-                          PAT@15..47
-                            AT_PAT@15..47
-                              LIST_PAT@15..47
+                          PAT@15..45
+                            AT_PAT@15..45
+                              LIST_PAT@15..45
                                 L_BRACKET@15..16 "["
-                                PAT@16..20
-                                  AT_PAT@16..20
-                                    SCON_PAT@16..20
-                                      REAL@16..20 "15.0"
-                                COMMA@20..21 ","
-                                WHITESPACE@21..22
-                                PAT@22..25
-                                  AT_PAT@22..25
-                                    SCON_PAT@22..25
-                                      INT@22..25 "0xF"
-                                COMMA@25..26 ","
-                                WHITESPACE@26..27
-                                PAT@27..31
-                                  AT_PAT@27..31
-                                    SCON_PAT@27..31
-                                      CHAR@27..31 "#\"a\""
-                                COMMA@31..32 ","
-                                WHITESPACE@32..33
-                                PAT@33..46
-                                  AT_PAT@33..46
-                                    VID_PAT@33..46
-                                      OP_KW@33..35 "op"
-                                      WHITESPACE@35..36
-                                      LONG_VID@36..46
-                                        STRID@36..38 "My"
-                                        DOT@38..39 "."
-                                        STRID@39..43 "Long"
-                                        DOT@43..44 "."
-                                        VID@44..46 "id"
-                                R_BRACKET@46..47 "]"
-                          R_PAREN@47..48 ")"
-                      R_BRACKET@48..49 "]"
+                                PAT@16..18
+                                  AT_PAT@16..18
+                                    SCON_PAT@16..18
+                                      INT@16..18 "10"
+                                COMMA@18..19 ","
+                                WHITESPACE@19..20
+                                PAT@20..23
+                                  AT_PAT@20..23
+                                    SCON_PAT@20..23
+                                      INT@20..23 "0xF"
+                                COMMA@23..24 ","
+                                WHITESPACE@24..25
+                                PAT@25..29
+                                  AT_PAT@25..29
+                                    SCON_PAT@25..29
+                                      CHAR@25..29 "#\"a\""
+                                COMMA@29..30 ","
+                                WHITESPACE@30..31
+                                PAT@31..44
+                                  AT_PAT@31..44
+                                    VID_PAT@31..44
+                                      OP_KW@31..33 "op"
+                                      WHITESPACE@33..34
+                                      LONG_VID@34..44
+                                        STRID@34..36 "My"
+                                        DOT@36..37 "."
+                                        STRID@37..41 "Long"
+                                        DOT@41..42 "."
+                                        VID@42..44 "id"
+                                R_BRACKET@44..45 "]"
+                          R_PAREN@45..46 ")"
+                      R_BRACKET@46..47 "]"
             "##]],
         )
     }
