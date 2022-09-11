@@ -187,7 +187,7 @@ fn atomic_inner(p: &mut Parser) {
             let _ng = p.start_node(RECORD_SEL_EXP);
             p.expect(HASH);
             p.eat_trivia();
-            p.expect(IDENT);
+            grammar::label(p);
         }
         L_PAREN => {
             // Unit expression can contain whitespace,
@@ -229,10 +229,13 @@ fn record_exp(p: &mut Parser) {
 
 fn exprow(p: &mut Parser) {
     let _ng = p.start_node(EXP_ROW);
-    p.expect(IDENT);
+
+    grammar::label(p);
     p.eat_trivia();
+
     p.expect(EQ);
     p.eat_trivia();
+
     grammar::expression(p);
 }
 
@@ -441,7 +444,7 @@ mod tests {
                       L_BRACE@0..1 "{"
                       WHITESPACE@1..2
                       EXP_ROW@2..8
-                        IDENT@2..4 "hi"
+                        LAB@2..4 "hi"
                         WHITESPACE@4..5
                         EQ@5..6 "="
                         WHITESPACE@6..7
@@ -453,7 +456,7 @@ mod tests {
                       COMMA@8..9 ","
                       WHITESPACE@9..10
                       EXP_ROW@10..16
-                        IDENT@10..12 "am"
+                        LAB@10..12 "am"
                         WHITESPACE@12..13
                         EQ@13..14 "="
                         WHITESPACE@14..15
@@ -465,7 +468,7 @@ mod tests {
                       COMMA@16..17 ","
                       WHITESPACE@17..18
                       EXP_ROW@18..28
-                        IDENT@18..24 "record"
+                        LAB@18..24 "record"
                         WHITESPACE@24..25
                         EQ@25..26 "="
                         WHITESPACE@26..27
@@ -476,6 +479,99 @@ mod tests {
                                 VID@27..28 "x"
                       WHITESPACE@28..29
                       R_BRACE@29..30 "}"
+            "#]],
+        )
+    }
+
+    #[test]
+    fn record_numeric_labels() {
+        check_with_f(
+            false,
+            super::expression,
+            "{ 1 = i, 2 = am, 3 = desugared, 4 = tuple }",
+            expect![[r#"
+                EXP@0..43
+                  AT_EXP@0..43
+                    RECORD_EXP@0..43
+                      L_BRACE@0..1 "{"
+                      WHITESPACE@1..2
+                      EXP_ROW@2..7
+                        LAB@2..3 "1"
+                        WHITESPACE@3..4
+                        EQ@4..5 "="
+                        WHITESPACE@5..6
+                        EXP@6..7
+                          AT_EXP@6..7
+                            VID_EXP@6..7
+                              LONG_VID@6..7
+                                VID@6..7 "i"
+                      COMMA@7..8 ","
+                      WHITESPACE@8..9
+                      EXP_ROW@9..15
+                        LAB@9..10 "2"
+                        WHITESPACE@10..11
+                        EQ@11..12 "="
+                        WHITESPACE@12..13
+                        EXP@13..15
+                          AT_EXP@13..15
+                            VID_EXP@13..15
+                              LONG_VID@13..15
+                                VID@13..15 "am"
+                      COMMA@15..16 ","
+                      WHITESPACE@16..17
+                      EXP_ROW@17..30
+                        LAB@17..18 "3"
+                        WHITESPACE@18..19
+                        EQ@19..20 "="
+                        WHITESPACE@20..21
+                        EXP@21..30
+                          AT_EXP@21..30
+                            VID_EXP@21..30
+                              LONG_VID@21..30
+                                VID@21..30 "desugared"
+                      COMMA@30..31 ","
+                      WHITESPACE@31..32
+                      EXP_ROW@32..41
+                        LAB@32..33 "4"
+                        WHITESPACE@33..34
+                        EQ@34..35 "="
+                        WHITESPACE@35..36
+                        EXP@36..41
+                          AT_EXP@36..41
+                            VID_EXP@36..41
+                              LONG_VID@36..41
+                                VID@36..41 "tuple"
+                      WHITESPACE@41..42
+                      R_BRACE@42..43 "}"
+            "#]],
+        )
+    }
+
+    #[test]
+    fn bad_record_numeric_label() {
+        check_with_f(
+            true,
+            super::expression,
+            "{ 0 = bad_potato }",
+            expect![[r#"
+                EXP@0..18
+                  AT_EXP@0..18
+                    RECORD_EXP@0..18
+                      L_BRACE@0..1 "{"
+                      WHITESPACE@1..2
+                      EXP_ROW@2..16
+                        ERROR@2..2 ""
+                        LAB@2..3 "0"
+                        WHITESPACE@3..4
+                        EQ@4..5 "="
+                        WHITESPACE@5..6
+                        EXP@6..16
+                          AT_EXP@6..16
+                            VID_EXP@6..16
+                              LONG_VID@6..16
+                                VID@6..16 "bad_potato"
+                      WHITESPACE@16..17
+                      R_BRACE@17..18 "}"
             "#]],
         )
     }
@@ -492,7 +588,24 @@ mod tests {
                     RECORD_SEL_EXP@0..4
                       HASH@0..1 "#"
                       WHITESPACE@1..2
-                      IDENT@2..4 "hi"
+                      LAB@2..4 "hi"
+            "##]],
+        )
+    }
+
+    #[test]
+    fn record_selector_numeric() {
+        check_with_f(
+            false,
+            super::expression,
+            "# 2",
+            expect![[r##"
+                EXP@0..3
+                  AT_EXP@0..3
+                    RECORD_SEL_EXP@0..3
+                      HASH@0..1 "#"
+                      WHITESPACE@1..2
+                      LAB@2..3 "2"
             "##]],
         )
     }

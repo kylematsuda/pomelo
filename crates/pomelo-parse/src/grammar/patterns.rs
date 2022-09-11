@@ -111,7 +111,7 @@ fn patrow_inner(p: &mut Parser) {
                 patrow_inner(p);
             }
         }
-        IDENT => {
+        IDENT | INT => {
             pattern_row_or_label_as_var(p);
 
             if p.eat_through_trivia(COMMA) {
@@ -139,12 +139,13 @@ fn pattern_row_or_label_as_var(p: &mut Parser) {
 
 fn pattern_row(p: &mut Parser) {
     let _ng = p.start_node(PAT_ROW_PAT);
-    p.expect(IDENT);
 
+    grammar::label(p);
     p.eat_trivia();
+
     p.expect(EQ);
-
     p.eat_trivia();
+
     pattern(p);
 }
 
@@ -401,7 +402,7 @@ mod tests {
                       WHITESPACE@1..2
                       PAT_ROW@2..15
                         PAT_ROW_PAT@2..8
-                          IDENT@2..3 "x"
+                          LAB@2..3 "x"
                           WHITESPACE@3..4
                           EQ@4..5 "="
                           WHITESPACE@5..6
@@ -412,7 +413,7 @@ mod tests {
                         COMMA@8..9 ","
                         WHITESPACE@9..10
                         PAT_ROW_PAT@10..15
-                          IDENT@10..11 "y"
+                          LAB@10..11 "y"
                           WHITESPACE@11..12
                           EQ@12..13 "="
                           WHITESPACE@13..14
@@ -502,7 +503,7 @@ mod tests {
                       WHITESPACE@1..2
                       PAT_ROW@2..44
                         PAT_ROW_PAT@2..7
-                          IDENT@2..3 "a"
+                          LAB@2..3 "a"
                           WHITESPACE@3..4
                           EQ@4..5 "="
                           WHITESPACE@5..6
@@ -603,7 +604,7 @@ mod tests {
                         COMMA@20..21 ","
                         WHITESPACE@21..22
                         PAT_ROW_PAT@22..27
-                          IDENT@22..23 "c"
+                          LAB@22..23 "c"
                           WHITESPACE@23..24
                           EQ@24..25 "="
                           WHITESPACE@25..26
@@ -948,7 +949,7 @@ mod tests {
                           WHITESPACE@1..2
                           PAT_ROW@2..7
                             PAT_ROW_PAT@2..7
-                              IDENT@2..3 "x"
+                              LAB@2..3 "x"
                               WHITESPACE@3..4
                               EQ@4..5 "="
                               WHITESPACE@5..6

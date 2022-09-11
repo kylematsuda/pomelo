@@ -40,6 +40,19 @@ pub(crate) fn strid(p: &mut Parser) {
     }
 }
 
+pub(crate) fn label(p: &mut Parser) {
+    match p.peek() {
+        IDENT | INT => {
+            if p.peek_text().chars().next().unwrap() == '0' {
+                p.error("record labels may not start with \'0\'");
+            }
+            p.eat_mapped(LAB);
+        },
+        _ => p.error("expected label"),
+    }
+}
+
+
 #[cfg(test)]
 mod tests {
     use crate::tests::check_with_f;

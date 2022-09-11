@@ -159,8 +159,12 @@ impl Parser {
             .unwrap_or(SyntaxKind::EOF)
     }
 
-    fn peek_token(&self) -> Option<&Token> {
+    pub fn peek_token(&self) -> Option<&Token> {
         self.tokens.last()
+    }
+
+    pub fn peek_text(&self) -> &str {
+        self.peek_token().map(Token::text).unwrap_or("\0")
     }
 
     /// Peeks past `skip` nontrivia tokens, then peeks at the next one.

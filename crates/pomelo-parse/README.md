@@ -1,6 +1,6 @@
 # pomelo-parse
 
-[ ] Fix labels (can take numeric values)
+[x] Fix labels (can take numeric values)
 [ ] Correctly restrict TyCon to have no stars
 [ ] Remove Real constants from patterns
 [ ] Make sure all legal vid work 
@@ -10,6 +10,6 @@
 [ ] Reduce tree nesting
     [x] Compress VID nodes (remove inner IDENT)
     [x] Improve LONG_VID nodes (sequence of STRID followed by VID?) 
-    [ ] Labels 
+    [x] Labels 
     [x] TY_CON? 
     [ ] Look for other places where we can do this...

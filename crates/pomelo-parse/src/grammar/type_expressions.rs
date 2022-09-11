@@ -147,7 +147,7 @@ fn record_ty(p: &mut Parser) {
 fn tyrow(p: &mut Parser) {
     let _ng = p.start_node(TY_ROW);
 
-    p.expect(IDENT);
+    grammar::label(p);
     p.eat_trivia();
 
     p.expect(COLON);
@@ -186,7 +186,7 @@ mod tests {
                     L_BRACE@0..1 "{"
                     WHITESPACE@1..2
                     TY_ROW@2..7
-                      IDENT@2..3 "a"
+                      LAB@2..3 "a"
                       COLON@3..4 ":"
                       WHITESPACE@4..5
                       TY@5..7
@@ -194,7 +194,7 @@ mod tests {
                     COMMA@7..8 ","
                     WHITESPACE@8..9
                     TY_ROW@9..14
-                      IDENT@9..10 "b"
+                      LAB@9..10 "b"
                       COLON@10..11 ":"
                       WHITESPACE@11..12
                       TY@12..14
@@ -202,7 +202,7 @@ mod tests {
                     COMMA@14..15 ","
                     WHITESPACE@15..16
                     TY_ROW@16..22
-                      IDENT@16..17 "c"
+                      LAB@16..17 "c"
                       COLON@17..18 ":"
                       WHITESPACE@18..19
                       TY@19..22
@@ -211,7 +211,7 @@ mod tests {
                     COMMA@22..23 ","
                     WHITESPACE@23..24
                     TY_ROW@24..38
-                      IDENT@24..30 "apples"
+                      LAB@24..30 "apples"
                       COLON@30..31 ":"
                       WHITESPACE@31..32
                       TY@32..38
