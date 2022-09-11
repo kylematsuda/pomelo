@@ -17,10 +17,6 @@ pub(crate) fn longvid(p: &mut Parser) {
     vid(p)
 }
 
-fn ident(p: &mut Parser) {
-    p.expect(IDENT);
-}
-
 pub(crate) fn vid(p: &mut Parser) {
     if p.is_vid() {
         p.eat_mapped(VID);

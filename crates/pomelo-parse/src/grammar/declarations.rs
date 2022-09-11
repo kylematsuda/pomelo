@@ -583,8 +583,7 @@ mod tests {
                         WHITESPACE@10..11
                         TY_VAR@11..13 "'c"
                       WHITESPACE@13..14
-                      TY_CON@14..20
-                        IDENT@14..20 "mytype"
+                      TY_CON@14..20 "mytype"
                       WHITESPACE@20..21
                       EQ@21..22 "="
                       WHITESPACE@22..23

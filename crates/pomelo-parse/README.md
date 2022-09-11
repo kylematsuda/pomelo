@@ -9,9 +9,7 @@
     [ ] special identifiers (e.g., "=") work
 [ ] Reduce tree nesting
     [x] Compress VID nodes (remove inner IDENT)
-    [ ] Improve LONG_VID nodes (sequence of STRID followed by VID?) 
+    [x] Improve LONG_VID nodes (sequence of STRID followed by VID?) 
     [ ] Labels 
-    [ ] VID_PAT? VID_EXP?
-    [ ] LONG_TY_CON? TY_VAR?
-    [ ] (Then these will be treated as tokens instead of nodes)
+    [x] TY_CON? 
     [ ] Look for other places where we can do this...

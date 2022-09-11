@@ -901,7 +901,7 @@ mod tests {
                             WHITESPACE@12..13
                             TY@13..17
                               LONG_TY_CON@13..17
-                                IDENT@13..17 "list"
+                                TY_CON@13..17 "list"
                     WHITESPACE@17..18
                     AS_KW@18..20 "as"
                     WHITESPACE@20..21
@@ -964,7 +964,7 @@ mod tests {
                     WHITESPACE@11..12
                     TY@12..20
                       LONG_TY_CON@12..20
-                        IDENT@12..20 "myrecord"
+                        TY_CON@12..20 "myrecord"
             "#]],
         )
     }
