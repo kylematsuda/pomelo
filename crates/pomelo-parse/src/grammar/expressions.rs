@@ -171,17 +171,17 @@ fn raise_exp(p: &mut Parser) {
 fn atomic_inner(p: &mut Parser) {
     let _ng = p.start_node(AT_EXP);
 
+    if p.is_vid() {
+        vid_exp(p);
+        return;
+    }
+
     match p.peek() {
         k if k.is_special_constant() => {
             let _ng = p.start_node(SCON_EXP);
             p.eat_any();
         }
-        OP_KW | IDENT => {
-            let _ng = p.start_node(VID_EXP);
-            p.eat(OP_KW);
-            p.eat_trivia();
-            grammar::longvid(p);
-        }
+        OP_KW => vid_exp(p),
         L_BRACE => record_exp(p),
         HASH => {
             let _ng = p.start_node(RECORD_SEL_EXP);
@@ -210,6 +210,13 @@ fn atomic_inner(p: &mut Parser) {
         LET_KW => let_dec(p),
         _ => p.error("unexpected token"),
     }
+}
+
+fn vid_exp(p: &mut Parser) {
+    let _ng = p.start_node(VID_EXP);
+    p.eat(OP_KW);
+    p.eat_trivia();
+    grammar::longvid(p);
 }
 
 fn record_exp(p: &mut Parser) {

@@ -6,7 +6,7 @@
 [ ] Make sure all legal vid work 
     [ ] add method to parser to peek correctly
     [x] cons :: operator
-    [ ] special identifiers (e.g., "=") work
+    [x] special identifiers (e.g., "=") work (only in expressions)
 [ ] Reduce tree nesting
     [x] Compress VID nodes (remove inner IDENT)
     [x] Improve LONG_VID nodes (sequence of STRID followed by VID?) 

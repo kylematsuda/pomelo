@@ -271,20 +271,22 @@ impl SyntaxKind {
     pub fn is_atomic_exp_start(&self) -> bool {
         use SyntaxKind::*;
 
+        // EQ is an identifier!
         self.is_special_constant()
             || matches!(
                 self,
-                OP_KW | IDENT | L_BRACE | HASH | L_PAREN | L_BRACKET | LET_KW
+                OP_KW | IDENT | L_BRACE | HASH | L_PAREN | L_BRACKET | LET_KW | EQ
             )
     }
 
     pub fn is_atomic_pat_start(&self) -> bool {
         use SyntaxKind::*;
 
+        // EQ is an identifier.. but..
         self.is_special_constant()
             || matches!(
                 self,
-                OP_KW | IDENT | L_BRACE | L_PAREN | L_BRACKET | UNDERSCORE
+                OP_KW | IDENT | L_BRACE | L_PAREN | L_BRACKET | UNDERSCORE 
             )
     }
 

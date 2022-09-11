@@ -265,18 +265,20 @@ impl Parser {
     }
 
     /// Check if the current token is a valid VId.
-    /// This is not done yet!!! Just a stub to be filled out.
-    /// We need to deal with special identifiers....
+    ///
+    /// With the current lexing strategy, correct 
+    /// symbolic identifiers are caught at lexing stage.
+    /// Thus, the only special one we need to check for is EQ.
+    ///
+    /// However, not sure if this is a good strategy for being 
+    /// error-resilient. The lexer obviously has less context than 
+    /// the parser for determining what to do if there is an error.
+    /// This may be generally an issue with gluing together tokens at 
+    /// lex-time (like "=>" as THICK_ARROW, "..." as ELLIPSIS, etc.)
     pub fn is_vid(&self) -> bool {
-        let t = self.peek_token();
-
-        if let Some(t) = t {
-            match t.kind() {
-                SyntaxKind::IDENT => true,
-                _ => false, // TODO, check for special identifiers here
-            }
-        } else {
-            false
+        match self.peek() {
+            SyntaxKind::IDENT | SyntaxKind::EQ => true,
+            _ => false, 
         }
     }
 
