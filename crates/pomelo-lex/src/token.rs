@@ -152,6 +152,22 @@ impl<'a> Cursor<'a> {
                 }
             }
 
+            ':' => {
+                if is_ident_symb(self.first()) {
+                    self.ident_symb()
+                } else {
+                    LexKind::Colon
+                }
+            }
+
+            '|' => {
+                if is_ident_symb(self.first()) {
+                    self.ident_symb()
+                } else {
+                    LexKind::Pipe
+                }
+            }
+
             '.' => {
                 let c1 = self.first();
                 let c2 = self.second();

@@ -984,10 +984,10 @@ mod tests {
         check_with_f(
             false,
             super::pattern,
-            "pat + another * last",
+            "pat + another :: last",
             expect![[r#"
-                PAT@0..20
-                  UNRES_INFIX_APP_PAT@0..20
+                PAT@0..21
+                  UNRES_INFIX_APP_PAT@0..21
                     PAT@0..3
                       AT_PAT@0..3
                         VID_PAT@0..3
@@ -1006,17 +1006,17 @@ mod tests {
                           LONG_VID@6..13
                             VID@6..13 "another"
                     WHITESPACE@13..14
-                    PAT@14..15
-                      AT_PAT@14..15
-                        VID_PAT@14..15
-                          LONG_VID@14..15
-                            VID@14..15 "*"
-                    WHITESPACE@15..16
-                    PAT@16..20
-                      AT_PAT@16..20
-                        VID_PAT@16..20
-                          LONG_VID@16..20
-                            VID@16..20 "last"
+                    PAT@14..16
+                      AT_PAT@14..16
+                        VID_PAT@14..16
+                          LONG_VID@14..16
+                            VID@14..16 "::"
+                    WHITESPACE@16..17
+                    PAT@17..21
+                      AT_PAT@17..21
+                        VID_PAT@17..21
+                          LONG_VID@17..21
+                            VID@17..21 "last"
             "#]],
         )
     }

@@ -5,7 +5,7 @@
 [x] Remove Real constants from patterns
 [ ] Make sure all legal vid work 
     [ ] add method to parser to peek correctly
-    [ ] cons :: operator
+    [x] cons :: operator
     [ ] special identifiers (e.g., "=") work
 [ ] Reduce tree nesting
     [x] Compress VID nodes (remove inner IDENT)
