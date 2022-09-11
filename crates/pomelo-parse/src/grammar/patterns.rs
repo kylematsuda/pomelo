@@ -253,7 +253,6 @@ mod tests {
         )
     }
 
-
     #[test]
     fn wildcard_pat() {
         check_with_f(

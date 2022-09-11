@@ -282,11 +282,13 @@ impl SyntaxKind {
     pub fn is_atomic_pat_start(&self) -> bool {
         use SyntaxKind::*;
 
-        // EQ is an identifier.. but..
+        // EQ is an identifier so it can be a part of an infix pattern... but
+        // we ignore it for now to avoid weird things happening in bindings.
+        // probably a hack, should be fixed at some point
         self.is_special_constant()
             || matches!(
                 self,
-                OP_KW | IDENT | L_BRACE | L_PAREN | L_BRACKET | UNDERSCORE 
+                OP_KW | IDENT | L_BRACE | L_PAREN | L_BRACKET | UNDERSCORE
             )
     }
 
