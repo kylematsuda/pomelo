@@ -8,16 +8,16 @@ use std::rc::Rc;
 use rowan::{GreenNode, GreenNodeBuilder};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Token {
+pub struct Token<'a> {
     kind: SyntaxKind,
-    text: String,
+    text: &'a str,
 }
 
-impl Token {
-    pub fn new(kind: SyntaxKind, text: impl Into<String>) -> Self {
+impl<'a> Token<'a> {
+    pub fn new(kind: SyntaxKind, text: &'a str) -> Self {
         Self {
             kind,
-            text: text.into(),
+            text,
         }
     }
 
@@ -31,7 +31,7 @@ impl Token {
 
     fn from_lex_token(
         lex: pomelo_lex::LexToken,
-        src: &str,
+        src: &'a str,
         offset: usize,
     ) -> (Self, Option<crate::Error>) {
         let text = &src[offset..offset + lex.len()];
@@ -98,16 +98,16 @@ impl fmt::Display for SyntaxTree {
 }
 
 #[derive(Debug, Clone)]
-pub struct Parser {
+pub struct Parser<'a> {
     current_pos: usize,
     /// Tokens are stored in reverse order
-    tokens: Vec<Token>,
+    tokens: Vec<Token<'a>>,
     errors: Vec<Error>,
     builder: Rc<RefCell<GreenNodeBuilder<'static>>>,
 }
 
-impl Parser {
-    pub fn new(src: &str) -> Self {
+impl<'a> Parser<'a> {
+    pub fn new(src: &'a str) -> Self {
         let mut tokens = Vec::new();
         let mut errors = Vec::new();
 
@@ -250,7 +250,7 @@ impl Parser {
         token.kind()
     }
 
-    fn pop(&mut self) -> Token {
+    fn pop(&mut self) -> Token<'a> {
         match self.tokens.pop() {
             Some(t) => {
                 self.current_pos += t.text().len();
