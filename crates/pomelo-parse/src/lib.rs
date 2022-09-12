@@ -4,10 +4,15 @@ pub mod syntax;
 pub use syntax::SyntaxKind;
 
 pub mod language;
-pub use language::{SyntaxElement, SyntaxNode};
+pub use language::{SyntaxElement, SyntaxNode, SyntaxToken};
 
 pub mod parser;
 pub use parser::{Checkpoint, NodeGuard, Parser};
+
+pub mod ast;
+pub use ast::AstNode;
+
+pub mod infix;
 
 #[cfg(test)]
 pub(crate) mod tests;

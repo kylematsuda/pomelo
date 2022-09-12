@@ -15,10 +15,7 @@ pub struct Token<'a> {
 
 impl<'a> Token<'a> {
     pub fn new(kind: SyntaxKind, text: &'a str) -> Self {
-        Self {
-            kind,
-            text,
-        }
+        Self { kind, text }
     }
 
     pub fn kind(&self) -> SyntaxKind {

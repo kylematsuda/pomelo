@@ -1,6 +1,7 @@
 use crate::SyntaxKind;
 
 pub type SyntaxNode = rowan::SyntaxNode<SML>;
+pub type SyntaxToken = rowan::SyntaxToken<SML>;
 pub type SyntaxElement = rowan::SyntaxElement<SML>;
 
 impl From<SyntaxKind> for rowan::SyntaxKind {

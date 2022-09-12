@@ -110,7 +110,7 @@ pub(crate) fn tycon(p: &mut Parser) {
         if p.peek_text().contains('*') {
             p.error("type constructors cannot contain stars (\'*\')");
         }
-        // TODO: decide if eating in this situation is the best policy 
+        // TODO: decide if eating in this situation is the best policy
         p.eat_mapped(TY_CON);
     } else {
         p.error("expected type constructor");
