@@ -1,10 +1,10 @@
 # pomelo-parse
 
 [x] Fix labels (can take numeric values)
-[ ] Correctly restrict TyCon to have no stars
+[x] Correctly restrict TyCon to have no stars
 [x] Remove Real constants from patterns
 [ ] Make sure all legal vid work 
-    [ ] add method to parser to peek correctly
+    [x] add method to parser to peek correctly
     [x] cons :: operator
     [x] special identifiers (e.g., "=") work (only in expressions)
 [ ] Reduce tree nesting
