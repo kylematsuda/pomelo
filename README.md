@@ -1,6 +1,14 @@
 # pomelo
 
-## Plan
+Pomelo is a fun project for me to learn more about compilers.
+It will hopefully eventually become a Language Server, interpreter, and compiler for Standard ML '97.
+It is NOT intended to be used for any serious purpose, and it will probably remain riddled with bugs forever.
+
+## Name
+
+A pomelo is a very large citrus fruit, which also happens to have "ML" in its name.
+
+## Todos
 
 - [ ] Lexer and parser
     - [ ] Don't glue tokens at lex stage to improve error messages?
