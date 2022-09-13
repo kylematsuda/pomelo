@@ -104,24 +104,19 @@ mod tests {
             crate::grammar::declaration,
             "val simple = valbind",
             expect![[r#"
-                DEC@0..20
-                  VAL_DEC@0..20
-                    VAL_KW@0..3 "val"
-                    WHITESPACE@3..4
-                    VAL_BIND@4..20
-                      PAT@4..10
-                        AT_PAT@4..10
-                          VID_PAT@4..10
-                            LONG_VID@4..10
-                              VID@4..10 "simple"
-                      WHITESPACE@10..11
-                      EQ@11..12 "="
-                      WHITESPACE@12..13
-                      EXP@13..20
-                        AT_EXP@13..20
-                          VID_EXP@13..20
-                            LONG_VID@13..20
-                              VID@13..20 "valbind"
+                VAL_DEC@0..20
+                  VAL_KW@0..3 "val"
+                  WHITESPACE@3..4
+                  VAL_BIND@4..20
+                    VID_PAT@4..10
+                      LONG_VID@4..10
+                        VID@4..10 "simple"
+                    WHITESPACE@10..11
+                    EQ@11..12 "="
+                    WHITESPACE@12..13
+                    VID_EXP@13..20
+                      LONG_VID@13..20
+                        VID@13..20 "valbind"
             "#]],
         )
     }
@@ -133,56 +128,43 @@ mod tests {
             crate::grammar::declaration,
             "val simple = valbind and another = one and yet = another",
             expect![[r#"
-                DEC@0..56
-                  VAL_DEC@0..56
-                    VAL_KW@0..3 "val"
-                    WHITESPACE@3..4
-                    VAL_BIND@4..56
-                      PAT@4..10
-                        AT_PAT@4..10
-                          VID_PAT@4..10
-                            LONG_VID@4..10
-                              VID@4..10 "simple"
-                      WHITESPACE@10..11
-                      EQ@11..12 "="
-                      WHITESPACE@12..13
-                      EXP@13..20
-                        AT_EXP@13..20
-                          VID_EXP@13..20
-                            LONG_VID@13..20
-                              VID@13..20 "valbind"
-                      WHITESPACE@20..21
-                      AND_KW@21..24 "and"
-                      WHITESPACE@24..25
-                      PAT@25..32
-                        AT_PAT@25..32
-                          VID_PAT@25..32
-                            LONG_VID@25..32
-                              VID@25..32 "another"
-                      WHITESPACE@32..33
-                      EQ@33..34 "="
-                      WHITESPACE@34..35
-                      EXP@35..38
-                        AT_EXP@35..38
-                          VID_EXP@35..38
-                            LONG_VID@35..38
-                              VID@35..38 "one"
-                      WHITESPACE@38..39
-                      AND_KW@39..42 "and"
-                      WHITESPACE@42..43
-                      PAT@43..46
-                        AT_PAT@43..46
-                          VID_PAT@43..46
-                            LONG_VID@43..46
-                              VID@43..46 "yet"
-                      WHITESPACE@46..47
-                      EQ@47..48 "="
-                      WHITESPACE@48..49
-                      EXP@49..56
-                        AT_EXP@49..56
-                          VID_EXP@49..56
-                            LONG_VID@49..56
-                              VID@49..56 "another"
+                VAL_DEC@0..56
+                  VAL_KW@0..3 "val"
+                  WHITESPACE@3..4
+                  VAL_BIND@4..56
+                    VID_PAT@4..10
+                      LONG_VID@4..10
+                        VID@4..10 "simple"
+                    WHITESPACE@10..11
+                    EQ@11..12 "="
+                    WHITESPACE@12..13
+                    VID_EXP@13..20
+                      LONG_VID@13..20
+                        VID@13..20 "valbind"
+                    WHITESPACE@20..21
+                    AND_KW@21..24 "and"
+                    WHITESPACE@24..25
+                    VID_PAT@25..32
+                      LONG_VID@25..32
+                        VID@25..32 "another"
+                    WHITESPACE@32..33
+                    EQ@33..34 "="
+                    WHITESPACE@34..35
+                    VID_EXP@35..38
+                      LONG_VID@35..38
+                        VID@35..38 "one"
+                    WHITESPACE@38..39
+                    AND_KW@39..42 "and"
+                    WHITESPACE@42..43
+                    VID_PAT@43..46
+                      LONG_VID@43..46
+                        VID@43..46 "yet"
+                    WHITESPACE@46..47
+                    EQ@47..48 "="
+                    WHITESPACE@48..49
+                    VID_EXP@49..56
+                      LONG_VID@49..56
+                        VID@49..56 "another"
             "#]],
         )
     }

@@ -66,26 +66,21 @@ mod tests {
             crate::grammar::declaration,
             "fun iamavid123456 x = 0",
             expect![[r#"
-                DEC@0..23
-                  FUN_DEC@0..23
-                    FUN_KW@0..3 "fun"
-                    WHITESPACE@3..4
-                    TY_VAR_SEQ@4..4
-                    FVAL_BIND@4..23
-                      FVAL_BIND_ROW@4..23
-                        VID@4..17 "iamavid123456"
-                        WHITESPACE@17..18
-                        AT_PAT@18..19
-                          VID_PAT@18..19
-                            LONG_VID@18..19
-                              VID@18..19 "x"
-                        WHITESPACE@19..20
-                        EQ@20..21 "="
-                        WHITESPACE@21..22
-                        EXP@22..23
-                          AT_EXP@22..23
-                            SCON_EXP@22..23
-                              INT@22..23 "0"
+                FUN_DEC@0..23
+                  FUN_KW@0..3 "fun"
+                  WHITESPACE@3..4
+                  FVAL_BIND@4..23
+                    FVAL_BIND_ROW@4..23
+                      VID@4..17 "iamavid123456"
+                      WHITESPACE@17..18
+                      VID_PAT@18..19
+                        LONG_VID@18..19
+                          VID@18..19 "x"
+                      WHITESPACE@19..20
+                      EQ@20..21 "="
+                      WHITESPACE@21..22
+                      SCON_EXP@22..23
+                        INT@22..23 "0"
             "#]],
         )
     }

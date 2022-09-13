@@ -133,6 +133,7 @@ pub enum SyntaxKind {
     LAYERED_PAT,
 
     TY,
+    TY_VAR_TY,
     RECORD_TY_EXP,
     TY_CON_EXP,
     FUN_TY_EXP,

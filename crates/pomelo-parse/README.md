@@ -12,7 +12,7 @@
     - [x] Improve LONG_VID nodes (sequence of STRID followed by VID?) 
     - [x] Labels 
     - [x] TY_CON? 
-    - [ ] Remove nesting on EXP, TY, PAT, DEC etc.?
-    -     - [ ] Can hold the inner variants in an enum when going to AST
+    - [x] Remove nesting on EXP, TY, PAT, DEC etc.?
+    -     - [x] Can hold the inner variants in an enum when going to AST
     - [ ] Look for other places where we can do this...
 - [ ] AST
