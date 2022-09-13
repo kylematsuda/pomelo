@@ -70,17 +70,15 @@ pub enum SyntaxKind {
     STAR, // Only used in TUPLE_TY_EXP
 
     // Core Grammar: Expressions, Matches, Declarations, and Bindings
-    AT_EXP,
     SCON_EXP,
     VID_EXP,
     RECORD_EXP,
     RECORD_SEL_EXP,
-    LET_DEC,
+    LET_EXP,
     PAREN_EXP,
 
     EXP_ROW,
 
-    EXP,
     APP_EXP,
     INFIX_EXP,
     TY_EXP,
@@ -91,7 +89,6 @@ pub enum SyntaxKind {
     MATCH,
     MRULE,
 
-    DEC,
     VAL_DEC,
     TY_DEC,
     DATATYPE_DEC,
@@ -117,7 +114,6 @@ pub enum SyntaxKind {
     EX_BIND_EQ,
 
     // Core Grammar: Patterns and Type expressions
-    AT_PAT,
     WILDCARD_PAT,
     SCON_PAT,
     VID_PAT,
@@ -126,17 +122,16 @@ pub enum SyntaxKind {
     PAT_ROW,
     PAT_ROW_PAT,
 
-    PAT,
     CONS_PAT,
     INFIX_CONS_PAT,
     TY_PAT,
     LAYERED_PAT,
 
     TY,
-    TY_VAR_TY,
-    RECORD_TY_EXP,
-    TY_CON_EXP,
-    FUN_TY_EXP,
+    TYVAR_TY,
+    RECORD_TY,
+    CON_TY,
+    FUN_TY,
 
     TY_ROW,
 
@@ -184,8 +179,7 @@ pub enum SyntaxKind {
     IDENT, // Generic identifier that hasn't been resolved
     VID,
     LONG_VID,
-    TY_VAR,
-    TY_VAR_SEQ,
+    TYVAR,
     TY_CON,
     LONG_TY_CON,
     LAB,
@@ -227,7 +221,7 @@ impl SyntaxKind {
 
     pub fn is_ty_atom(&self) -> bool {
         use SyntaxKind::*;
-        matches!(self, TY_VAR | L_BRACE | L_PAREN)
+        matches!(self, TYVAR | L_BRACE | L_PAREN)
     }
 
     pub fn is_kw(&self) -> bool {
@@ -413,7 +407,7 @@ impl SyntaxKind {
             Ident => match Self::from_keyword(text) {
                 Some(k) => k,
                 None => match text.chars().next() {
-                    Some(c) if c == '\'' => TY_VAR,
+                    Some(c) if c == '\'' => TYVAR,
                     _ => IDENT,
                 },
             },

@@ -260,7 +260,7 @@ fn listexp(p: &mut Parser) {
 }
 
 fn let_dec(p: &mut Parser) {
-    let _ng = p.start_node(LET_DEC);
+    let _ng = p.start_node(LET_EXP);
 
     p.expect(LET_KW);
     p.eat_trivia();
@@ -616,29 +616,29 @@ mod tests {
                 x
             end",
             expect![[r#"
-                    LET_DEC@0..80
-                      LET_KW@0..3 "let"
-                      WHITESPACE@3..21
-                      VAL_DEC@21..30
-                        VAL_KW@21..24 "val"
-                        WHITESPACE@24..25
-                        VAL_BIND@25..30
-                          VID_PAT@25..26
-                            LONG_VID@25..26
-                              VID@25..26 "x"
-                          WHITESPACE@26..27
-                          EQ@27..28 "="
-                          WHITESPACE@28..29
-                          SCON_EXP@29..30
-                            INT@29..30 "1"
-                      WHITESPACE@30..43
-                      IN_KW@43..45 "in"
-                      WHITESPACE@45..63
-                      VID_EXP@63..64
-                        LONG_VID@63..64
-                          VID@63..64 "x"
-                      WHITESPACE@64..77
-                      END_KW@77..80 "end"
+                LET_EXP@0..80
+                  LET_KW@0..3 "let"
+                  WHITESPACE@3..21
+                  VAL_DEC@21..30
+                    VAL_KW@21..24 "val"
+                    WHITESPACE@24..25
+                    VAL_BIND@25..30
+                      VID_PAT@25..26
+                        LONG_VID@25..26
+                          VID@25..26 "x"
+                      WHITESPACE@26..27
+                      EQ@27..28 "="
+                      WHITESPACE@28..29
+                      SCON_EXP@29..30
+                        INT@29..30 "1"
+                  WHITESPACE@30..43
+                  IN_KW@43..45 "in"
+                  WHITESPACE@45..63
+                  VID_EXP@63..64
+                    LONG_VID@63..64
+                      VID@63..64 "x"
+                  WHITESPACE@64..77
+                  END_KW@77..80 "end"
             "#]],
         )
     }
@@ -659,103 +659,103 @@ mod tests {
                 x
             end",
             expect![[r#"
-                    LET_DEC@0..258
-                      LET_KW@0..3 "let"
-                      WHITESPACE@3..21
-                      SEQ_DEC@21..208
-                        VAL_DEC@21..30
-                          VAL_KW@21..24 "val"
-                          WHITESPACE@24..25
-                          VAL_BIND@25..30
-                            VID_PAT@25..26
-                              LONG_VID@25..26
-                                VID@25..26 "x"
-                            WHITESPACE@26..27
-                            EQ@27..28 "="
-                            WHITESPACE@28..29
-                            SCON_EXP@29..30
-                              INT@29..30 "1"
-                        WHITESPACE@30..47
-                        VAL_DEC@47..63
-                          VAL_KW@47..50 "val"
-                          WHITESPACE@50..51
-                          VAL_BIND@51..63
-                            VID_PAT@51..55
-                              LONG_VID@51..55
-                                VID@51..55 "here"
-                            WHITESPACE@55..56
-                            EQ@56..57 "="
-                            WHITESPACE@57..58
-                            SCON_EXP@58..63
-                              STRING@58..63 "\"are\""
-                        SEMICOLON@63..64 ";"
-                        WHITESPACE@64..81
-                        VAL_DEC@81..98
-                          VAL_KW@81..84 "val"
-                          WHITESPACE@84..85
-                          VAL_BIND@85..98
-                            VID_PAT@85..89
-                              LONG_VID@85..89
-                                VID@85..89 "some"
-                            WHITESPACE@89..90
-                            EQ@90..91 "="
-                            WHITESPACE@91..92
-                            VID_EXP@92..98
-                              LONG_VID@92..98
-                                VID@92..98 "random"
-                        WHITESPACE@98..115
-                        FUN_DEC@115..134
-                          FUN_KW@115..118 "fun"
-                          WHITESPACE@118..119
-                          FVAL_BIND@119..134
-                            FVAL_BIND_ROW@119..133
-                              VID@119..124 "other"
-                              WHITESPACE@124..125
-                              VID_PAT@125..129
-                                LONG_VID@125..129
-                                  VID@125..129 "decs"
-                              WHITESPACE@129..130
-                              EQ@130..131 "="
-                              WHITESPACE@131..132
-                              SCON_EXP@132..133
-                                INT@132..133 "0"
-                            WHITESPACE@133..134
-                        SEMICOLON@134..135 ";"
-                        WHITESPACE@135..152
-                        VAL_DEC@152..167
-                          VAL_KW@152..155 "val"
-                          WHITESPACE@155..156
-                          VAL_BIND@156..167
-                            VID_PAT@156..160
-                              LONG_VID@156..160
-                                VID@156..160 "only"
-                            WHITESPACE@160..161
-                            EQ@161..162 "="
-                            WHITESPACE@162..163
-                            VID_EXP@163..167
-                              LONG_VID@163..167
-                                VID@163..167 "some"
-                        WHITESPACE@167..185
-                        VAL_DEC@185..208
-                          VAL_KW@185..188 "val"
-                          WHITESPACE@188..189
-                          VAL_BIND@189..208
-                            VID_PAT@189..193
-                              LONG_VID@189..193
-                                VID@189..193 "have"
-                            WHITESPACE@193..194
-                            EQ@194..195 "="
-                            WHITESPACE@195..196
-                            SCON_EXP@196..208
-                              STRING@196..208 "\"semicolons\""
-                      WHITESPACE@208..221
-                      IN_KW@221..223 "in"
-                      WHITESPACE@223..241
-                      VID_EXP@241..242
-                        LONG_VID@241..242
-                          VID@241..242 "x"
-                      WHITESPACE@242..255
-                      END_KW@255..258 "end"
+                LET_EXP@0..258
+                  LET_KW@0..3 "let"
+                  WHITESPACE@3..21
+                  SEQ_DEC@21..208
+                    VAL_DEC@21..30
+                      VAL_KW@21..24 "val"
+                      WHITESPACE@24..25
+                      VAL_BIND@25..30
+                        VID_PAT@25..26
+                          LONG_VID@25..26
+                            VID@25..26 "x"
+                        WHITESPACE@26..27
+                        EQ@27..28 "="
+                        WHITESPACE@28..29
+                        SCON_EXP@29..30
+                          INT@29..30 "1"
+                    WHITESPACE@30..47
+                    VAL_DEC@47..63
+                      VAL_KW@47..50 "val"
+                      WHITESPACE@50..51
+                      VAL_BIND@51..63
+                        VID_PAT@51..55
+                          LONG_VID@51..55
+                            VID@51..55 "here"
+                        WHITESPACE@55..56
+                        EQ@56..57 "="
+                        WHITESPACE@57..58
+                        SCON_EXP@58..63
+                          STRING@58..63 "\"are\""
+                    SEMICOLON@63..64 ";"
+                    WHITESPACE@64..81
+                    VAL_DEC@81..98
+                      VAL_KW@81..84 "val"
+                      WHITESPACE@84..85
+                      VAL_BIND@85..98
+                        VID_PAT@85..89
+                          LONG_VID@85..89
+                            VID@85..89 "some"
+                        WHITESPACE@89..90
+                        EQ@90..91 "="
+                        WHITESPACE@91..92
+                        VID_EXP@92..98
+                          LONG_VID@92..98
+                            VID@92..98 "random"
+                    WHITESPACE@98..115
+                    FUN_DEC@115..134
+                      FUN_KW@115..118 "fun"
+                      WHITESPACE@118..119
+                      FVAL_BIND@119..134
+                        FVAL_BIND_ROW@119..133
+                          VID@119..124 "other"
+                          WHITESPACE@124..125
+                          VID_PAT@125..129
+                            LONG_VID@125..129
+                              VID@125..129 "decs"
+                          WHITESPACE@129..130
+                          EQ@130..131 "="
+                          WHITESPACE@131..132
+                          SCON_EXP@132..133
+                            INT@132..133 "0"
+                        WHITESPACE@133..134
+                    SEMICOLON@134..135 ";"
+                    WHITESPACE@135..152
+                    VAL_DEC@152..167
+                      VAL_KW@152..155 "val"
+                      WHITESPACE@155..156
+                      VAL_BIND@156..167
+                        VID_PAT@156..160
+                          LONG_VID@156..160
+                            VID@156..160 "only"
+                        WHITESPACE@160..161
+                        EQ@161..162 "="
+                        WHITESPACE@162..163
+                        VID_EXP@163..167
+                          LONG_VID@163..167
+                            VID@163..167 "some"
+                    WHITESPACE@167..185
+                    VAL_DEC@185..208
+                      VAL_KW@185..188 "val"
+                      WHITESPACE@188..189
+                      VAL_BIND@189..208
+                        VID_PAT@189..193
+                          LONG_VID@189..193
+                            VID@189..193 "have"
+                        WHITESPACE@193..194
+                        EQ@194..195 "="
+                        WHITESPACE@195..196
+                        SCON_EXP@196..208
+                          STRING@196..208 "\"semicolons\""
+                  WHITESPACE@208..221
+                  IN_KW@221..223 "in"
+                  WHITESPACE@223..241
+                  VID_EXP@241..242
+                    LONG_VID@241..242
+                      VID@241..242 "x"
+                  WHITESPACE@242..255
+                  END_KW@255..258 "end"
             "#]],
         )
     }
@@ -767,7 +767,7 @@ mod tests {
             super::expression,
             "let in (\"a single parenthesized exp\") end",
             expect![[r#"
-                LET_DEC@0..41
+                LET_EXP@0..41
                   LET_KW@0..3 "let"
                   WHITESPACE@3..4
                   IN_KW@4..6 "in"
@@ -882,8 +882,8 @@ mod tests {
                   WHITESPACE@1..2
                   COLON@2..3 ":"
                   WHITESPACE@3..4
-                  TY_VAR_TY@4..6
-                    TY_VAR@4..6 "'a"
+                  TYVAR_TY@4..6
+                    TYVAR@4..6 "'a"
             "#]],
         )
     }
@@ -935,7 +935,7 @@ mod tests {
                   WHITESPACE@25..26
                   COLON@26..27 ":"
                   WHITESPACE@27..28
-                  TY_CON_EXP@28..41
+                  TY_CON@28..41
                     LONG_TY_CON@28..31
                       TY_CON@28..31 "int"
                     WHITESPACE@31..32

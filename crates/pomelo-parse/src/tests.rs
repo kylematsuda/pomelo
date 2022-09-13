@@ -115,7 +115,7 @@ val part_two = simulate 256 initial_timers
                       WHITESPACE@74..75
                       EQ@75..76 "="
                       WHITESPACE@76..77
-                      LET_DEC@77..283
+                      LET_EXP@77..283
                         LET_KW@77..80 "let"
                         WHITESPACE@80..83
                         SEQ_DEC@83..234
@@ -431,7 +431,7 @@ val part_two = simulate 256 initial_timers
                       WHITESPACE@541..542
                       EQ@542..543 "="
                       WHITESPACE@543..546
-                      LET_DEC@546..741
+                      LET_EXP@546..741
                         LET_KW@546..549 "let"
                         WHITESPACE@549..555
                         SEQ_DEC@555..705
@@ -588,7 +588,7 @@ val part_two = simulate 256 initial_timers
                       WHITESPACE@779..780
                       EQ@780..781 "="
                       WHITESPACE@781..785
-                      LET_DEC@785..961
+                      LET_EXP@785..961
                         LET_KW@785..788 "let"
                         WHITESPACE@788..794
                         FUN_DEC@794..909

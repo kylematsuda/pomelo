@@ -27,19 +27,41 @@ pub trait AstToken {
 #[macro_export]
 macro_rules! impl_ast_node {
     ($target:ty, $kind:ident) => {
-        impl crate::AstNode for $target {
-            fn cast(node: crate::SyntaxNode) -> Option<Self>
+        impl $crate::AstNode for $target {
+            fn cast(node: $crate::SyntaxNode) -> Option<Self>
             where
                 Self: Sized,
             {
-                use crate::SyntaxKind::*;
+                use $crate::SyntaxKind::*;
                 match node.kind() {
                     $kind => Some(Self { syntax: node }),
                     _ => None,
                 }
             }
 
-            fn syntax(&self) -> &crate::SyntaxNode {
+            fn syntax(&self) -> &$crate::SyntaxNode {
+                &self.syntax
+            }
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! impl_ast_token {
+    ($target:ty, $kind:ident) => {
+        impl $crate::AstToken for $target {
+            fn cast(node: $crate::SyntaxToken) -> Option<Self>
+            where
+                Self: Sized,
+            {
+                use $crate::SyntaxKind::*;
+                match node.kind() {
+                    $kind => Some(Self { syntax: node }),
+                    _ => None,
+                }
+            }
+
+            fn syntax(&self) -> &$crate::SyntaxToken {
                 &self.syntax
             }
         }

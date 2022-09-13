@@ -416,49 +416,49 @@ mod tests {
             super::pattern,
             "{ My.Module.x : 'a as (a, tuple), Another.Module.y }",
             expect![[r#"
-                  RECORD_PAT@0..52
-                    L_BRACE@0..1 "{"
-                    WHITESPACE@1..2
-                    PAT_ROW@2..50
-                      LAB_AS_VAR_PAT@2..32
-                        LONG_VID@2..13
-                          STRID@2..4 "My"
-                          DOT@4..5 "."
-                          STRID@5..11 "Module"
-                          DOT@11..12 "."
-                          VID@12..13 "x"
-                        WHITESPACE@13..14
-                        COLON@14..15 ":"
-                        WHITESPACE@15..16
-                        LAB_AS_VAR_TY@16..18
-                          TY_VAR_TY@16..18
-                            TY_VAR@16..18 "'a"
-                        WHITESPACE@18..19
-                        AS_KW@19..21 "as"
-                        WHITESPACE@21..22
-                        LAB_AS_VAR_AS_PAT@22..32
-                          TUPLE_PAT@22..32
-                            L_PAREN@22..23 "("
-                            VID_PAT@23..24
-                              LONG_VID@23..24
-                                VID@23..24 "a"
-                            COMMA@24..25 ","
-                            WHITESPACE@25..26
-                            VID_PAT@26..31
-                              LONG_VID@26..31
-                                VID@26..31 "tuple"
-                            R_PAREN@31..32 ")"
-                      COMMA@32..33 ","
-                      WHITESPACE@33..34
-                      LAB_AS_VAR_PAT@34..50
-                        LONG_VID@34..50
-                          STRID@34..41 "Another"
-                          DOT@41..42 "."
-                          STRID@42..48 "Module"
-                          DOT@48..49 "."
-                          VID@49..50 "y"
-                    WHITESPACE@50..51
-                    R_BRACE@51..52 "}"
+                RECORD_PAT@0..52
+                  L_BRACE@0..1 "{"
+                  WHITESPACE@1..2
+                  PAT_ROW@2..50
+                    LAB_AS_VAR_PAT@2..32
+                      LONG_VID@2..13
+                        STRID@2..4 "My"
+                        DOT@4..5 "."
+                        STRID@5..11 "Module"
+                        DOT@11..12 "."
+                        VID@12..13 "x"
+                      WHITESPACE@13..14
+                      COLON@14..15 ":"
+                      WHITESPACE@15..16
+                      LAB_AS_VAR_TY@16..18
+                        TYVAR_TY@16..18
+                          TYVAR@16..18 "'a"
+                      WHITESPACE@18..19
+                      AS_KW@19..21 "as"
+                      WHITESPACE@21..22
+                      LAB_AS_VAR_AS_PAT@22..32
+                        TUPLE_PAT@22..32
+                          L_PAREN@22..23 "("
+                          VID_PAT@23..24
+                            LONG_VID@23..24
+                              VID@23..24 "a"
+                          COMMA@24..25 ","
+                          WHITESPACE@25..26
+                          VID_PAT@26..31
+                            LONG_VID@26..31
+                              VID@26..31 "tuple"
+                          R_PAREN@31..32 ")"
+                    COMMA@32..33 ","
+                    WHITESPACE@33..34
+                    LAB_AS_VAR_PAT@34..50
+                      LONG_VID@34..50
+                        STRID@34..41 "Another"
+                        DOT@41..42 "."
+                        STRID@42..48 "Module"
+                        DOT@48..49 "."
+                        VID@49..50 "y"
+                  WHITESPACE@50..51
+                  R_BRACE@51..52 "}"
             "#]],
         )
     }
@@ -494,8 +494,8 @@ mod tests {
                       COLON@21..22 ":"
                       WHITESPACE@22..23
                       LAB_AS_VAR_TY@23..25
-                        TY_VAR_TY@23..25
-                          TY_VAR@23..25 "'a"
+                        TYVAR_TY@23..25
+                          TYVAR@23..25 "'a"
                       WHITESPACE@25..26
                       AS_KW@26..28 "as"
                       WHITESPACE@28..29
@@ -768,40 +768,40 @@ mod tests {
             super::pattern,
             "op myid : 'a list as [my, complicated, \"pat\"]",
             expect![[r#"
-                  LAYERED_PAT@0..45
-                    TY_PAT@0..17
-                      VID_PAT@0..7
-                        OP_KW@0..2 "op"
-                        WHITESPACE@2..3
-                        LONG_VID@3..7
-                          VID@3..7 "myid"
-                      WHITESPACE@7..8
-                      COLON@8..9 ":"
-                      WHITESPACE@9..10
-                      TY_CON_EXP@10..17
-                        TY_VAR_TY@10..12
-                          TY_VAR@10..12 "'a"
-                        WHITESPACE@12..13
-                        LONG_TY_CON@13..17
-                          TY_CON@13..17 "list"
-                    WHITESPACE@17..18
-                    AS_KW@18..20 "as"
-                    WHITESPACE@20..21
-                    LIST_PAT@21..45
-                      L_BRACKET@21..22 "["
-                      VID_PAT@22..24
-                        LONG_VID@22..24
-                          VID@22..24 "my"
-                      COMMA@24..25 ","
-                      WHITESPACE@25..26
-                      VID_PAT@26..37
-                        LONG_VID@26..37
-                          VID@26..37 "complicated"
-                      COMMA@37..38 ","
-                      WHITESPACE@38..39
-                      SCON_PAT@39..44
-                        STRING@39..44 "\"pat\""
-                      R_BRACKET@44..45 "]"
+                LAYERED_PAT@0..45
+                  TY_PAT@0..17
+                    VID_PAT@0..7
+                      OP_KW@0..2 "op"
+                      WHITESPACE@2..3
+                      LONG_VID@3..7
+                        VID@3..7 "myid"
+                    WHITESPACE@7..8
+                    COLON@8..9 ":"
+                    WHITESPACE@9..10
+                    TY_CON@10..17
+                      TYVAR_TY@10..12
+                        TYVAR@10..12 "'a"
+                      WHITESPACE@12..13
+                      LONG_TY_CON@13..17
+                        TY_CON@13..17 "list"
+                  WHITESPACE@17..18
+                  AS_KW@18..20 "as"
+                  WHITESPACE@20..21
+                  LIST_PAT@21..45
+                    L_BRACKET@21..22 "["
+                    VID_PAT@22..24
+                      LONG_VID@22..24
+                        VID@22..24 "my"
+                    COMMA@24..25 ","
+                    WHITESPACE@25..26
+                    VID_PAT@26..37
+                      LONG_VID@26..37
+                        VID@26..37 "complicated"
+                    COMMA@37..38 ","
+                    WHITESPACE@38..39
+                    SCON_PAT@39..44
+                      STRING@39..44 "\"pat\""
+                    R_BRACKET@44..45 "]"
             "#]],
         )
     }

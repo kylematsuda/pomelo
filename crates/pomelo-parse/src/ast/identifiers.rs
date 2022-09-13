@@ -1,4 +1,4 @@
-use crate::{impl_ast_node, SyntaxNode};
+use crate::{impl_ast_node, impl_ast_token, SyntaxNode, SyntaxToken};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct LongVId {
@@ -9,10 +9,10 @@ impl_ast_node!(LongVId, LONG_VID);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct VId {
-    pub syntax: SyntaxNode,
+    pub syntax: SyntaxToken,
 }
 
-impl_ast_node!(VId, VID);
+impl_ast_token!(VId, VID);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct LongStrId {
@@ -23,10 +23,10 @@ impl_ast_node!(LongStrId, LONG_STRID);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct StrId {
-    pub syntax: SyntaxNode,
+    pub syntax: SyntaxToken,
 }
 
-impl_ast_node!(StrId, STRID);
+impl_ast_token!(StrId, STRID);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Label {

@@ -10,7 +10,7 @@ pub mod parser;
 pub use parser::{Checkpoint, NodeGuard, Parser};
 
 pub mod ast;
-pub use ast::AstNode;
+pub use ast::{AstNode, AstToken};
 
 pub mod infix;
 

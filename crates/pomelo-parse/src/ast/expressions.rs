@@ -23,19 +23,18 @@ impl AstNode for Expr {
         Self: Sized,
     {
         let out = match node.kind() {
-            FN_EXP => Self::Fn(FnExpr { syntax: node }),
-            CASE_MATCH_EXP => Self::Case(CaseExpr { syntax: node }),
-            WHILE_EXP => Self::While(WhileExpr { syntax: node }),
-            IF_EXP => Self::If(IfExpr { syntax: node }),
-            RAISE_EXP => Self::Raise(RaiseExpr { syntax: node }),
-            HANDLE_EXP => Self::Handle(HandleExpr { syntax: node }),
-            ORELSE_EXP => Self::OrElse(OrElseExpr { syntax: node }),
-            ANDALSO_EXP => Self::AndAlso(AndAlsoExpr { syntax: node }),
-            TY_EXP => Self::Typed(TypedExpr { syntax: node }),
-            INFIX_EXP => Self::Infix(InfixExpr { syntax: node }),
-            APP_EXP => Self::Application(ApplicationExpr { syntax: node }),
-            AT_EXP => Self::Atomic(AtomicExpr { syntax: node }),
-            _ => return None,
+            FN_EXP => Self::Fn(FnExpr::cast(node)?),
+            CASE_MATCH_EXP => Self::Case(CaseExpr::cast(node)?),
+            WHILE_EXP => Self::While(WhileExpr::cast(node)?),
+            IF_EXP => Self::If(IfExpr::cast(node)?),
+            RAISE_EXP => Self::Raise(RaiseExpr::cast(node)?),
+            HANDLE_EXP => Self::Handle(HandleExpr::cast(node)?),
+            ORELSE_EXP => Self::OrElse(OrElseExpr::cast(node)?),
+            ANDALSO_EXP => Self::AndAlso(AndAlsoExpr::cast(node)?),
+            TY_EXP => Self::Typed(TypedExpr::cast(node)?),
+            INFIX_EXP => Self::Infix(InfixExpr::cast(node)?),
+            APP_EXP => Self::Application(ApplicationExpr::cast(node)?),
+            _ => Self::Atomic(AtomicExpr::cast(node)?),
         };
         Some(out)
     }
@@ -136,8 +135,112 @@ pub struct ApplicationExpr {
 impl_ast_node!(ApplicationExpr, APP_EXP);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct AtomicExpr {
+pub enum AtomicExpr {
+    SCon(SConExpr),
+    VId(VIdExpr),
+    Record(RecordExpr),
+    RecSel(RecSelExpr),
+    Unit(UnitExpr),
+    Tuple(TupleExpr),
+    List(ListExpr),
+    Seq(SeqExpr),
+    Let(LetExpr),
+}
+
+impl AstNode for AtomicExpr {
+    fn cast(node: SyntaxNode) -> Option<Self>
+    where
+        Self: Sized,
+    {
+        let out = match node.kind() {
+            SCON_EXP => Self::SCon(SConExpr::cast(node)?),
+            VID_EXP => Self::VId(VIdExpr::cast(node)?),
+            RECORD_EXP => Self::Record(RecordExpr::cast(node)?),
+            RECORD_SEL_EXP => Self::RecSel(RecSelExpr::cast(node)?),
+            UNIT_EXP => Self::Unit(UnitExpr::cast(node)?),
+            TUPLE_EXP => Self::Tuple(TupleExpr::cast(node)?),
+            LIST_EXP => Self::List(ListExpr::cast(node)?),
+            SEQ_EXP => Self::Seq(SeqExpr::cast(node)?),
+            LET_EXP => Self::Let(LetExpr::cast(node)?),
+            _ => return None,
+        };
+        Some(out)
+    }
+
+    fn syntax(&self) -> &SyntaxNode {
+        match self {
+            Self::SCon(inner) => inner.syntax(),
+            Self::VId(inner) => inner.syntax(),
+            Self::Record(inner) => inner.syntax(),
+            Self::RecSel(inner) => inner.syntax(),
+            Self::Unit(inner) => inner.syntax(),
+            Self::Tuple(inner) => inner.syntax(),
+            Self::List(inner) => inner.syntax(),
+            Self::Seq(inner) => inner.syntax(),
+            Self::Let(inner) => inner.syntax(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct SConExpr {
     syntax: SyntaxNode,
 }
 
-impl_ast_node!(AtomicExpr, AT_EXP);
+impl_ast_node!(SConExpr, SCON_EXP);
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct VIdExpr {
+    syntax: SyntaxNode,
+}
+
+impl_ast_node!(VIdExpr, VID_EXP);
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct RecordExpr {
+    syntax: SyntaxNode,
+}
+
+impl_ast_node!(RecordExpr, RECORD_EXP);
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct RecSelExpr {
+    syntax: SyntaxNode,
+}
+
+impl_ast_node!(RecSelExpr, RECORD_SEL_EXP);
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct UnitExpr {
+    syntax: SyntaxNode,
+}
+
+impl_ast_node!(UnitExpr, UNIT_EXP);
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TupleExpr {
+    syntax: SyntaxNode,
+}
+
+impl_ast_node!(TupleExpr, TUPLE_EXP);
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ListExpr {
+    syntax: SyntaxNode,
+}
+
+impl_ast_node!(ListExpr, LIST_EXP);
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct SeqExpr {
+    syntax: SyntaxNode,
+}
+
+impl_ast_node!(SeqExpr, SEQ_EXP);
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct LetExpr {
+    syntax: SyntaxNode,
+}
+
+impl_ast_node!(LetExpr, LET_EXP);
