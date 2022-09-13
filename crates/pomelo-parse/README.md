@@ -3,11 +3,11 @@
 - [x] Fix labels (can take numeric values)
 - [x] Correctly restrict TyCon to have no stars
 - [x] Remove Real constants from patterns
-- [ ] Make sure all legal vid work 
+- [x] Make sure all legal vid work 
     - [x] add method to parser to peek correctly
     - [x] cons :: operator
     - [x] special identifiers (e.g., "=") work (only in expressions)
-- [ ] Reduce tree nesting
+- [x] Reduce tree nesting
     - [x] Compress VID nodes (remove inner IDENT)
     - [x] Improve LONG_VID nodes (sequence of STRID followed by VID?) 
     - [x] Labels 
@@ -15,4 +15,11 @@
     - [x] Remove nesting on EXP, TY, PAT, DEC etc.?
     -     - [x] Can hold the inner variants in an enum when going to AST
     - [ ] Look for other places where we can do this...
+- [ ] Fix infix operators vs function applications 
+    - [ ] Single pass? Simultaneously:
+        - [ ] Keep track of which infix operators are in scope
+        - [ ] Rearrange the syntax tree
+    - [ ] Question: do this on the AST instead of CST? It's probably easier...
 - [ ] AST
+    - [x] Stub out types
+    - [x] Define getters for subparts
