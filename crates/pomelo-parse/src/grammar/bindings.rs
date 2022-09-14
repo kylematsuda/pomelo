@@ -12,7 +12,7 @@ pub(crate) fn valbind(p: &mut Parser) {
     let rec = p.eat(REC_KW);
     p.eat_trivia();
 
-    grammar::sequential(p, |p| valbind_inner(p, rec), AND_KW);
+    valbind_inner(p, rec);
 }
 
 fn valbind_inner(p: &mut Parser, rec: bool) {
@@ -131,7 +131,7 @@ mod tests {
                 VAL_DEC@0..56
                   VAL_KW@0..3 "val"
                   WHITESPACE@3..4
-                  VAL_BIND@4..56
+                  VAL_BIND@4..20
                     VID_PAT@4..10
                       LONG_VID@4..10
                         VID@4..10 "simple"
@@ -141,9 +141,10 @@ mod tests {
                     VID_EXP@13..20
                       LONG_VID@13..20
                         VID@13..20 "valbind"
-                    WHITESPACE@20..21
-                    AND_KW@21..24 "and"
-                    WHITESPACE@24..25
+                  WHITESPACE@20..21
+                  AND_KW@21..24 "and"
+                  WHITESPACE@24..25
+                  VAL_BIND@25..38
                     VID_PAT@25..32
                       LONG_VID@25..32
                         VID@25..32 "another"
@@ -153,9 +154,10 @@ mod tests {
                     VID_EXP@35..38
                       LONG_VID@35..38
                         VID@35..38 "one"
-                    WHITESPACE@38..39
-                    AND_KW@39..42 "and"
-                    WHITESPACE@42..43
+                  WHITESPACE@38..39
+                  AND_KW@39..42 "and"
+                  WHITESPACE@42..43
+                  VAL_BIND@43..56
                     VID_PAT@43..46
                       LONG_VID@43..46
                         VID@43..46 "yet"

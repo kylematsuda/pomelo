@@ -51,7 +51,8 @@ pub(crate) fn val_declaration(p: &mut Parser) {
     let _ng = p.start_node(VAL_DEC);
     assert_eq!(p.eat_any(), VAL_KW);
     p.eat_trivia();
-    grammar::valbind(p);
+
+    grammar::sequential(p, grammar::valbind, AND_KW);
 }
 
 pub(crate) fn fun_declaration(p: &mut Parser) {
