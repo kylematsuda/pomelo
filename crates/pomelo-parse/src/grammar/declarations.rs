@@ -61,7 +61,7 @@ pub(crate) fn fun_declaration(p: &mut Parser) {
     p.eat_trivia();
     grammar::tyvarseq(p);
     p.eat_trivia();
-    grammar::fvalbind(p);
+    grammar::sequential(p, grammar::fvalbind, AND_KW);
 }
 
 pub(crate) fn type_declaration(p: &mut Parser) {
