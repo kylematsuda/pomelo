@@ -68,18 +68,7 @@ pub(crate) fn type_declaration(p: &mut Parser) {
     let _ng = p.start_node(TY_DEC);
     assert_eq!(p.eat_any(), TYPE_KW);
     p.eat_trivia();
-    typbind(p);
-}
-
-pub(crate) fn typbind(p: &mut Parser) {
-    let _ng = p.start_node(TY_BIND);
-    grammar::tyvarseq(p);
-    p.eat_trivia();
-    grammar::tycon(p);
-    p.eat_trivia();
-    p.expect(EQ);
-    p.eat_trivia();
-    grammar::ty(p);
+    grammar::sequential(p, grammar::typbind, AND_KW);
 }
 
 fn local_declaration(p: &mut Parser) {

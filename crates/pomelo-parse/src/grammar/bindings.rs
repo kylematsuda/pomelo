@@ -92,6 +92,17 @@ pub(crate) fn fvalbind_row(p: &mut Parser, row_index: u32) {
     grammar::expression(p);
 }
 
+pub(crate) fn typbind(p: &mut Parser) {
+    let _ng = p.start_node(TY_BIND);
+    grammar::tyvarseq(p);
+    p.eat_trivia();
+    grammar::tycon(p);
+    p.eat_trivia();
+    p.expect(EQ);
+    p.eat_trivia();
+    grammar::ty(p);
+}
+
 #[cfg(test)]
 mod tests {
     use crate::tests::check_with_f;
