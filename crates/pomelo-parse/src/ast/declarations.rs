@@ -78,11 +78,11 @@ impl_ast_node!(ValDec, VAL_DEC);
 
 impl ValDec {
     pub fn tyvarseq(&self) -> AstChildrenTokens<ast::TyVar> {
-        AstChildrenTokens::new(&self.syntax)
+        self.get_tokens()
     }
 
-    pub fn bindings(&self) -> Option<ast::ValBind> {
-        self.syntax.children().find_map(ast::ValBind::cast)
+    pub fn bindings(&self) -> AstChildren<ast::ValBind> {
+        self.get_nodes()
     }
 
     pub fn rec(&self) -> bool {
@@ -99,11 +99,11 @@ impl_ast_node!(FunDec, FUN_DEC);
 
 impl FunDec {
     pub fn tyvarseq(&self) -> AstChildrenTokens<ast::TyVar> {
-        AstChildrenTokens::new(&self.syntax)
+        self.get_tokens()
     }
 
-    pub fn bindings(&self) -> Option<ast::FvalBind> {
-        self.syntax.children().find_map(ast::FvalBind::cast)
+    pub fn bindings(&self) -> AstChildren<ast::FvalBind> {
+        self.get_nodes()
     }
 }
 
@@ -115,8 +115,8 @@ pub struct TypeDec {
 impl_ast_node!(TypeDec, TY_DEC);
 
 impl TypeDec {
-    pub fn bindings(&self) -> Option<ast::TyBind> {
-        self.syntax.children().find_map(ast::TyBind::cast)
+    pub fn bindings(&self) -> AstChildren<ast::TyBind> {
+        self.get_nodes()
     }
 }
 
@@ -171,7 +171,7 @@ impl_ast_node!(SeqDec, SEQ_DEC);
 
 impl SeqDec {
     pub fn declarations(&self) -> AstChildren<ast::Dec> {
-        AstChildren::new(&self.syntax)
+        self.get_nodes()
     }
 }
 
@@ -184,11 +184,11 @@ impl_ast_node!(InfixDec, INFIX_DEC);
 
 impl InfixDec {
     pub fn fixity(&self) -> Option<ast::Fixity> {
-        self.syntax.children().find_map(ast::Fixity::cast)
+        self.get_node()
     }
 
-    pub fn vid(&self) -> AstChildrenTokens<ast::VId> {
-        AstChildrenTokens::new(&self.syntax)
+    pub fn vids(&self) -> AstChildrenTokens<ast::VId> {
+        self.get_tokens()
     }
 }
 
@@ -201,11 +201,11 @@ impl_ast_node!(InfixrDec, INFIXR_DEC);
 
 impl InfixrDec {
     pub fn fixity(&self) -> Option<ast::Fixity> {
-        self.syntax.children().find_map(ast::Fixity::cast)
+        self.get_node()
     }
 
-    pub fn vid(&self) -> AstChildrenTokens<ast::VId> {
-        AstChildrenTokens::new(&self.syntax)
+    pub fn vids(&self) -> AstChildrenTokens<ast::VId> {
+        self.get_tokens()
     }
 }
 
@@ -218,7 +218,7 @@ impl_ast_node!(Fixity, FIXITY);
 
 impl Fixity {
     pub fn value(&self) -> Option<ast::Int> {
-        self.token(INT).and_then(ast::Int::cast)
+        self.get_token()
     }
 }
 

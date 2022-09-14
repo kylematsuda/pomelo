@@ -1,4 +1,4 @@
-use crate::{impl_ast_node, SyntaxNode};
+use crate::{impl_ast_node, SyntaxNode, ast, AstNode};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ValBind {
@@ -6,6 +6,16 @@ pub struct ValBind {
 }
 
 impl_ast_node!(ValBind, VAL_BIND);
+
+impl ValBind {
+    pub fn pat(&self) -> Option<ast::Pat> {
+        self.get_node()
+    }
+
+    pub fn expr(&self) -> Option<ast::Expr> {
+        self.get_node()
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct FvalBind {

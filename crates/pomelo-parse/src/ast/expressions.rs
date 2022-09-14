@@ -74,7 +74,7 @@ impl_ast_node!(FnExpr, FN_EXP);
 
 impl FnExpr {
     pub fn match_expr(&self) -> Option<ast::Match> {
-        self.syntax.children().find_map(ast::Match::cast)
+        self.get_node()
     }
 }
 
@@ -88,11 +88,11 @@ impl_ast_node!(CaseExpr, CASE_MATCH_EXP);
 
 impl CaseExpr {
     pub fn expr(&self) -> Option<ast::Expr> {
-        self.syntax.children().find_map(ast::Expr::cast)
+        self.get_node()
     }
 
     pub fn match_expr(&self) -> Option<ast::Match> {
-        self.syntax.children().find_map(ast::Match::cast)
+        self.get_node()
     }
 }
 
@@ -105,11 +105,11 @@ impl_ast_node!(WhileExpr, WHILE_EXP);
 
 impl WhileExpr {
     pub fn expr_1(&self) -> Option<ast::Expr> {
-        self.syntax.children().find_map(ast::Expr::cast)
+        self.get_node()
     }
 
     pub fn expr_2(&self) -> Option<ast::Expr> {
-        self.syntax.children().filter_map(ast::Expr::cast).skip(1).next()
+        self.get_nodes().skip(1).next()
     }
 }
 
@@ -122,15 +122,15 @@ impl_ast_node!(IfExpr, IF_EXP);
 
 impl IfExpr {
     pub fn expr_1(&self) -> Option<ast::Expr> {
-        self.syntax.children().find_map(ast::Expr::cast)
+        self.get_node()
     }
 
     pub fn expr_2(&self) -> Option<ast::Expr> {
-        self.syntax.children().filter_map(ast::Expr::cast).skip(1).next()
+        self.get_nodes().skip(1).next()
     }
 
     pub fn expr_3(&self) -> Option<ast::Expr> {
-        self.syntax.children().filter_map(ast::Expr::cast).skip(2).next()
+        self.get_nodes().skip(2).next()
     }
 }
 
@@ -143,7 +143,7 @@ impl_ast_node!(RaiseExpr, RAISE_EXP);
 
 impl RaiseExpr {
     pub fn expr(&self) -> Option<ast::Expr> {
-        self.syntax.children().find_map(ast::Expr::cast)
+        self.get_node()
     }
 }
 
@@ -156,11 +156,11 @@ impl_ast_node!(HandleExpr, HANDLE_EXP);
 
 impl HandleExpr {
     pub fn expr(&self) -> Option<ast::Expr> {
-        self.syntax.children().find_map(ast::Expr::cast)
+        self.get_node()
     }
 
     pub fn match_expr(&self) -> Option<ast::Match> {
-        self.syntax.children().find_map(ast::Match::cast)
+        self.get_node()
     }
 }
 
@@ -173,11 +173,11 @@ impl_ast_node!(OrElseExpr, ORELSE_EXP);
 
 impl OrElseExpr {
     pub fn expr_1(&self) -> Option<ast::Expr> {
-        self.syntax.children().find_map(ast::Expr::cast)
+        self.get_node()
     }
 
     pub fn expr_2(&self) -> Option<ast::Expr> {
-        self.syntax.children().filter_map(ast::Expr::cast).skip(1).next()
+        self.get_nodes().skip(1).next()
     }
 }
 
@@ -190,11 +190,11 @@ impl_ast_node!(AndAlsoExpr, ANDALSO_EXP);
 
 impl AndAlsoExpr {
     pub fn expr_1(&self) -> Option<ast::Expr> {
-        self.syntax.children().find_map(ast::Expr::cast)
+        self.get_node()
     }
 
     pub fn expr_2(&self) -> Option<ast::Expr> {
-        self.syntax.children().filter_map(ast::Expr::cast).skip(1).next()
+        self.get_nodes().skip(1).next()
     }
 }
 
@@ -207,11 +207,11 @@ impl_ast_node!(TypedExpr, TY_EXP);
 
 impl TypedExpr {
     pub fn expr(&self) -> Option<ast::Expr> {
-        self.syntax.children().find_map(ast::Expr::cast)
+        self.get_node()
     }
 
     pub fn ty(&self) -> Option<ast::Ty> {
-        self.syntax.children().find_map(ast::Ty::cast)
+        self.get_node()
     }
 }
 
@@ -224,15 +224,15 @@ impl_ast_node!(InfixExpr, INFIX_EXP);
 
 impl InfixExpr {
     pub fn expr_1(&self) -> Option<ast::Expr> {
-        self.syntax.children().find_map(ast::Expr::cast)
+        self.get_node()
     }
 
     pub fn vid(&self) -> Option<ast::VId> {
-        self.token(VID).and_then(ast::VId::cast)
+        self.get_token()
     }
 
     pub fn expr_2(&self) -> Option<ast::Expr> {
-        self.syntax.children().filter_map(ast::Expr::cast).skip(1).next()
+        self.get_nodes().skip(1).next()
     }
 }
 
@@ -245,11 +245,11 @@ impl_ast_node!(ApplicationExpr, APP_EXP);
 
 impl ApplicationExpr {
     pub fn application(&self) -> Option<ast::ApplicationExpr> {
-        self.syntax.children().find_map(ast::ApplicationExpr::cast)
+        self.get_node()
     }
 
     pub fn atomic(&self) -> Option<ast::AtomicExpr> {
-        self.syntax.children().find_map(ast::AtomicExpr::cast)
+        self.get_node()
     }
 }
 
@@ -316,23 +316,23 @@ impl_ast_node!(SConExpr, SCON_EXP);
 
 impl SConExpr {
     pub fn int(&self) -> Option<ast::Int> {
-        self.token(INT).and_then(ast::Int::cast)
+        self.get_token()
     }
 
     pub fn real(&self) -> Option<ast::Real> {
-        self.token(REAL).and_then(ast::Real::cast)
+        self.get_token()
     }
 
     pub fn word(&self) -> Option<ast::Word> {
-        self.token(WORD).and_then(ast::Word::cast)
+        self.get_token()
     }
 
     pub fn char(&self) -> Option<ast::Char> {
-        self.token(CHAR).and_then(ast::Char::cast)
+        self.get_token()
     }
 
     pub fn string(&self) -> Option<ast::String> {
-        self.token(STRING).and_then(ast::String::cast)
+        self.get_token()
     }
 }
 
@@ -349,7 +349,7 @@ impl VIdExpr {
     }
 
     pub fn vid(&self) -> Option<ast::VId> {
-        self.token(VID).and_then(ast::VId::cast)
+        self.get_token()
     }
 }
 
@@ -362,7 +362,7 @@ impl_ast_node!(RecordExpr, RECORD_EXP);
 
 impl RecordExpr {
     pub fn exprows(&self) -> AstChildren<ast::ExprRow> {
-        AstChildren::new(&self.syntax)
+        self.get_nodes()
     }
 }
 
@@ -382,7 +382,7 @@ impl_ast_node!(RecSelExpr, RECORD_SEL_EXP);
 
 impl RecSelExpr {
     pub fn label(&self) -> Option<ast::Label> {
-        self.syntax.children().find_map(ast::Label::cast)
+        self.get_node()
     }
 }
 
@@ -402,7 +402,7 @@ impl_ast_node!(TupleExpr, TUPLE_EXP);
 
 impl TupleExpr {
     pub fn exprs(&self) -> AstChildren<ast::Expr> {
-        AstChildren::new(&self.syntax)
+        self.get_nodes()
     }
 }
 
@@ -415,7 +415,7 @@ impl_ast_node!(ListExpr, LIST_EXP);
 
 impl ListExpr {
     pub fn exprs(&self) -> AstChildren<ast::Expr> {
-        AstChildren::new(&self.syntax)
+        self.get_nodes()
     }
 }
 
@@ -428,7 +428,7 @@ impl_ast_node!(SeqExpr, SEQ_EXP);
 
 impl SeqExpr {
     pub fn exprs(&self) -> AstChildren<ast::Expr> {
-        AstChildren::new(&self.syntax)
+        self.get_nodes()
     }
 }
 
@@ -441,10 +441,10 @@ impl_ast_node!(LetExpr, LET_EXP);
 
 impl LetExpr {
     pub fn dec(&self) -> Option<ast::Dec> {
-        self.syntax.children().find_map(ast::Dec::cast)
+        self.get_node()
     }
 
     pub fn exprs(&self) -> AstChildren<ast::Expr> {
-        AstChildren::new(&self.syntax)
+        self.get_nodes()
     }
 }

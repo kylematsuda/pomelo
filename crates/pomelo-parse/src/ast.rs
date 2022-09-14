@@ -38,6 +38,22 @@ pub trait AstNode {
             .filter_map(|it| it.into_token())
             .find(|it| it.kind() == kind)
     }
+
+    fn get_nodes<N: AstNode>(&self) -> AstChildren<N> {
+        AstChildren::new(&self.syntax())
+    }
+
+    fn get_node<N: AstNode>(&self) -> Option<N> {
+        self.get_nodes().next()
+    }
+
+    fn get_tokens<T: AstToken>(&self) -> AstChildrenTokens<T> {
+        AstChildrenTokens::new(&self.syntax())
+    }
+
+    fn get_token<T: AstToken>(&self) -> Option<T> {
+        self.get_tokens().next()
+    }
 }
 
 pub trait AstToken {

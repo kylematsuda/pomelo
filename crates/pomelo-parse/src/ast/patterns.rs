@@ -57,15 +57,15 @@ impl LayeredPat {
     }
 
     pub fn vid(&self) -> Option<ast::VId> {
-        self.token(VID).and_then(ast::VId::cast)
+        self.get_token()
     }
 
     pub fn ty(&self) -> Option<ast::Ty> {
-        self.syntax.children().find_map(ast::Ty::cast)
+        self.get_node()
     }
 
     pub fn pat(&self) -> Option<ast::Pat> {
-        self.syntax.children().find_map(ast::Pat::cast)
+        self.get_node()
     }
 }
 
@@ -78,11 +78,11 @@ impl_ast_node!(TypedPat, TY_PAT);
 
 impl TypedPat {
     pub fn pat(&self) -> Option<ast::Pat> {
-        self.syntax.children().find_map(ast::Pat::cast)
+        self.get_node()
     }
 
     pub fn ty(&self) -> Option<ast::Ty> {
-        self.syntax.children().find_map(ast::Ty::cast)
+        self.get_node()
     }
 }
 
@@ -95,15 +95,15 @@ impl_ast_node!(ConsInfixPat, INFIX_CONS_PAT);
 
 impl ConsInfixPat {
     pub fn pat_1(&self) -> Option<ast::Pat> {
-        self.syntax.children().find_map(ast::Pat::cast)
+        self.get_node()
     }
 
     pub fn vid(&self) -> Option<ast::VId> {
-        self.token(VID).and_then(ast::VId::cast)
+        self.get_token()
     }
 
     pub fn pat_2(&self) -> Option<ast::Pat> {
-        self.syntax.children().filter_map(ast::Pat::cast).skip(1).next()
+        self.get_nodes().skip(1).next()
     }
 }
 
@@ -120,11 +120,11 @@ impl ConsPat {
     }
 
     pub fn longvid(&self) -> Option<ast::LongVId> {
-        self.syntax.children().find_map(ast::LongVId::cast)
+        self.get_node()
     }
 
     pub fn atpat(&self) -> Option<ast::AtomicPat> {
-        self.syntax.children().find_map(ast::AtomicPat::cast)
+        self.get_node()
     }
 }
 
@@ -192,23 +192,23 @@ impl_ast_node!(SConPat, SCON_PAT);
 
 impl SConPat {
     pub fn int(&self) -> Option<ast::Int> {
-        self.token(INT).and_then(ast::Int::cast)
+        self.get_token()
     }
 
     pub fn real(&self) -> Option<ast::Real> {
-        self.token(REAL).and_then(ast::Real::cast)
+        self.get_token()
     }
 
     pub fn word(&self) -> Option<ast::Word> {
-        self.token(WORD).and_then(ast::Word::cast)
+        self.get_token()
     }
 
     pub fn char(&self) -> Option<ast::Char> {
-        self.token(CHAR).and_then(ast::Char::cast)
+        self.get_token()
     }
 
     pub fn string(&self) -> Option<ast::String> {
-        self.token(STRING).and_then(ast::String::cast)
+        self.get_token()
     }
 }
 
@@ -225,7 +225,7 @@ impl VIdPat {
     }
 
     pub fn vid(&self) -> Option<ast::VId> {
-        self.token(VID).and_then(ast::VId::cast)
+        self.get_token()
     }
 }
 
@@ -240,7 +240,7 @@ impl RecordPat {
     // Need to figure out what's actually happening with the various
     // patrow forms
     pub fn patrows(&self) -> AstChildren<ast::PatRow> {
-        AstChildren::new(&self.syntax)
+        self.get_nodes()
     }
 }
 
@@ -267,7 +267,7 @@ impl_ast_node!(TuplePat, TUPLE_PAT);
 
 impl TuplePat {
     pub fn pats(&self) -> AstChildren<ast::Pat> {
-        AstChildren::new(&self.syntax)
+        self.get_nodes()
     }
 }
 
@@ -280,6 +280,6 @@ impl_ast_node!(ListPat, LIST_PAT);
 
 impl ListPat {
     pub fn pats(&self) -> AstChildren<ast::Pat> {
-        AstChildren::new(&self.syntax)
+        self.get_nodes()
     }
 }

@@ -1,4 +1,4 @@
-use crate::{impl_ast_node, AstNode, AstToken, AstChildren, SyntaxKind, SyntaxNode, ast};
+use crate::{impl_ast_node, AstNode, AstChildren, SyntaxKind, SyntaxNode, ast};
 use SyntaxKind::*;
 
 use std::fmt;
@@ -54,11 +54,11 @@ impl_ast_node!(FunTy, FUN_TY);
 
 impl FunTy {
     pub fn ty_1(&self) -> Option<ast::Ty> {
-        self.syntax.children().find_map(ast::Ty::cast)
+        self.get_node()
     }
 
     pub fn ty_2(&self) -> Option<ast::Ty> {
-        self.syntax.children().filter_map(ast::Ty::cast).skip(1).next()
+        self.get_nodes().skip(1).next()
     }
 }
 
@@ -71,7 +71,7 @@ impl_ast_node!(TupleTy, TUPLE_TY_EXP);
 
 impl TupleTy {
     pub fn tys(&self) -> AstChildren<ast::Ty> {
-        AstChildren::new(&self.syntax)
+        self.get_nodes()
     }
 }
 
@@ -84,11 +84,11 @@ impl_ast_node!(ConsTy, TY_CON);
 
 impl ConsTy {
     pub fn tys(&self) -> AstChildren<ast::Ty> {
-        AstChildren::new(&self.syntax)
+        self.get_nodes()
     }
 
     pub fn longtycon(&self) -> Option<ast::LongTyCon> {
-        self.syntax.children().find_map(ast::LongTyCon::cast)
+        self.get_node()
     }
 }
 
@@ -101,7 +101,7 @@ impl_ast_node!(RecordTy, RECORD_TY);
 
 impl RecordTy {
     pub fn tyrows(&self) -> AstChildren<ast::TyRow> {
-        AstChildren::new(&self.syntax)
+        self.get_nodes()
     }
 }
 
@@ -121,6 +121,6 @@ impl_ast_node!(TyVarTy, TYVAR_TY);
 
 impl TyVarTy {
     pub fn tyvar(&self) -> Option<ast::TyVar> {
-        self.token(TYVAR).and_then(ast::TyVar::cast)
+        self.get_token()
     }
 }

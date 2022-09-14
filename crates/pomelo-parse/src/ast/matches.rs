@@ -9,7 +9,7 @@ impl_ast_node!(Match, MATCH);
 
 impl Match {
     pub fn mrules(&self) -> AstChildren<ast::Mrule> {
-        AstChildren::new(&self.syntax)
+        self.get_nodes()
     }
 }
 
@@ -22,10 +22,10 @@ impl_ast_node!(Mrule, MRULE);
 
 impl Mrule {
     pub fn pat(&self) -> Option<ast::Pat> {
-        self.syntax.children().find_map(ast::Pat::cast)
+        self.get_node()
     }
 
     pub fn expr(&self) -> Option<ast::Expr> {
-        self.syntax.children().find_map(ast::Expr::cast)
+        self.get_node()
     }
 }
