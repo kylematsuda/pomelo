@@ -144,9 +144,9 @@ fn infix_or_nonfix(p: &mut Parser) {
         p.error("expected VId");
     }
 
-    while p.is_vid() {
-        grammar::vid(p);
+    while p.next_nontrivia_is_vid() {
         p.eat_trivia();
+        grammar::vid(p);
     }
 }
 
@@ -530,7 +530,7 @@ mod tests {
             nonfix myinfix",
             expect![[r#"
                 SEQ_DEC@0..216
-                  INFIX_DEC@0..33
+                  INFIX_DEC@0..19
                     INFIX_KW@0..5 "infix"
                     WHITESPACE@5..6
                     FIXITY@6..7
@@ -543,8 +543,8 @@ mod tests {
                     VID@12..15 "mod"
                     WHITESPACE@15..16
                     VID@16..19 "div"
-                    WHITESPACE@19..33
-                  INFIX_DEC@33..59
+                  WHITESPACE@19..33
+                  INFIX_DEC@33..46
                     INFIX_KW@33..38 "infix"
                     WHITESPACE@38..39
                     FIXITY@39..40
@@ -555,8 +555,8 @@ mod tests {
                     VID@43..44 "-"
                     WHITESPACE@44..45
                     VID@45..46 "^"
-                    WHITESPACE@46..59
-                  INFIXR_DEC@59..85
+                  WHITESPACE@46..59
+                  INFIXR_DEC@59..72
                     INFIXR_KW@59..65 "infixr"
                     WHITESPACE@65..66
                     FIXITY@66..67
@@ -565,8 +565,8 @@ mod tests {
                     VID@68..70 "::"
                     WHITESPACE@70..71
                     VID@71..72 "@"
-                    WHITESPACE@72..85
-                  INFIX_DEC@85..120
+                  WHITESPACE@72..85
+                  INFIX_DEC@85..107
                     INFIX_KW@85..90 "infix"
                     WHITESPACE@90..91
                     FIXITY@91..92
@@ -583,8 +583,8 @@ mod tests {
                     VID@103..104 "<"
                     WHITESPACE@104..105
                     VID@105..107 "<="
-                    WHITESPACE@107..120
-                  INFIX_DEC@120..146
+                  WHITESPACE@107..120
+                  INFIX_DEC@120..132
                     INFIX_KW@120..125 "infix"
                     WHITESPACE@125..126
                     FIXITY@126..127
@@ -593,23 +593,23 @@ mod tests {
                     VID@128..130 ":="
                     WHITESPACE@130..131
                     VID@131..132 "o"
-                    WHITESPACE@132..146
-                  INFIX_DEC@146..173
+                  WHITESPACE@132..146
+                  INFIX_DEC@146..160
                     INFIX_KW@146..151 "infix"
                     WHITESPACE@151..152
                     FIXITY@152..153
                       INT@152..153 "0"
                     WHITESPACE@153..154
                     VID@154..160 "before"
-                    WHITESPACE@160..173
-                  INFIX_DEC@173..202
+                  WHITESPACE@160..173
+                  INFIX_DEC@173..188
                     INFIX_KW@173..178 "infix"
                     WHITESPACE@178..179
                     FIXITY@179..180
                       INT@179..180 "2"
                     WHITESPACE@180..181
                     VID@181..188 "myinfix"
-                    WHITESPACE@188..202
+                  WHITESPACE@188..202
                   NONFIX_DEC@202..216
                     NONFIX_KW@202..208 "nonfix"
                     WHITESPACE@208..209

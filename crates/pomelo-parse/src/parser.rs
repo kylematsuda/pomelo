@@ -279,6 +279,24 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// Check if the current token is a valid VId.
+    ///
+    /// With the current lexing strategy, correct
+    /// symbolic identifiers are caught at lexing stage.
+    /// Thus, the only special one we need to check for is EQ.
+    ///
+    /// However, not sure if this is a good strategy for being
+    /// error-resilient. The lexer obviously has less context than
+    /// the parser for determining what to do if there is an error.
+    /// This may be generally an issue with gluing together tokens at
+    /// lex-time (like "=>" as THICK_ARROW, "..." as ELLIPSIS, etc.)
+    pub fn next_nontrivia_is_vid(&self) -> bool {
+        match self.peek_next_nontrivia(0) {
+            SyntaxKind::IDENT | SyntaxKind::EQ => true,
+            _ => false,
+        }
+    }
+
     /// Check if the current token is a valid StrId.
     pub fn is_strid(&self) -> bool {
         let t = self.peek_token();
