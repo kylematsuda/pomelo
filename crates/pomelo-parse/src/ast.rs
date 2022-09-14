@@ -43,6 +43,12 @@ macro_rules! impl_ast_node {
                 &self.syntax
             }
         }
+
+        impl std::fmt::Display for $target {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                write!(f, "{}", <Self as $crate::AstNode>::syntax(self))
+            }
+        }
     };
 }
 
@@ -63,6 +69,12 @@ macro_rules! impl_ast_token {
 
             fn syntax(&self) -> &$crate::SyntaxToken {
                 &self.syntax
+            }
+        }
+
+        impl std::fmt::Display for $target {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                write!(f, "{}", <Self as $crate::AstToken>::syntax(self))
             }
         }
     };

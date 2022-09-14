@@ -1,6 +1,8 @@
 use crate::{impl_ast_node, AstNode, SyntaxKind, SyntaxNode};
 use SyntaxKind::*;
 
+use std::fmt;
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Expr {
     Fn(FnExpr),
@@ -54,6 +56,12 @@ impl AstNode for Expr {
             Self::Application(inner) => inner.syntax(),
             Self::Atomic(inner) => inner.syntax(),
         }
+    }
+}
+
+impl fmt::Display for Expr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.syntax())
     }
 }
 
@@ -179,6 +187,12 @@ impl AstNode for AtomicExpr {
             Self::Seq(inner) => inner.syntax(),
             Self::Let(inner) => inner.syntax(),
         }
+    }
+}
+
+impl fmt::Display for AtomicExpr {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.syntax())
     }
 }
 

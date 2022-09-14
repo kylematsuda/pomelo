@@ -1,6 +1,8 @@
 use crate::{impl_ast_node, AstNode, SyntaxKind, SyntaxNode};
 use SyntaxKind::*;
 
+use std::fmt;
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Pat {
     Layered(LayeredPat),
@@ -33,6 +35,12 @@ impl AstNode for Pat {
             Self::Cons(inner) => inner.syntax(),
             Self::Atomic(inner) => inner.syntax(),
         }
+    }
+}
+
+impl fmt::Display for Pat {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.syntax())
     }
 }
 
@@ -103,6 +111,12 @@ impl AstNode for AtomicPat {
             Self::Tuple(inner) => inner.syntax(),
             Self::List(inner) => inner.syntax(),
         }
+    }
+}
+
+impl fmt::Display for AtomicPat {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.syntax())
     }
 }
 

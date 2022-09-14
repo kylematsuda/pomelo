@@ -1,6 +1,8 @@
 use crate::{impl_ast_node, AstNode, SyntaxKind, SyntaxNode};
 use SyntaxKind::*;
 
+use std::fmt;
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Ty {
     Fun(FunTy),
@@ -34,6 +36,12 @@ impl AstNode for Ty {
             Self::Record(inner) => inner.syntax(),
             Self::TyVar(inner) => inner.syntax(),
         }
+    }
+}
+
+impl fmt::Display for Ty {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.syntax())
     }
 }
 

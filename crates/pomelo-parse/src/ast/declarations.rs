@@ -1,6 +1,8 @@
 use crate::{impl_ast_node, AstNode, SyntaxKind, SyntaxNode};
 use SyntaxKind::*;
 
+use std::fmt;
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Dec {
     Val(ValDec),
@@ -58,6 +60,12 @@ impl AstNode for Dec {
             Self::Infixr(inner) => inner.syntax(),
             Self::Nonfix(inner) => inner.syntax(),
         }
+    }
+}
+
+impl fmt::Display for Dec {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.syntax())
     }
 }
 
