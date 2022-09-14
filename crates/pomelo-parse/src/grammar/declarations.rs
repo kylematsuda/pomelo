@@ -140,8 +140,14 @@ fn infix_or_nonfix(p: &mut Parser) {
     }
     p.eat_trivia();
 
-    p.expect(IDENT); // need at least 1 IDENT
-    while p.eat_through_trivia(IDENT) {}
+    if !p.is_vid() {
+        p.error("expected VId");
+    }
+
+    while p.is_vid() {
+        grammar::vid(p);
+        p.eat_trivia();
+    }
 }
 
 #[cfg(test)]
@@ -505,6 +511,109 @@ mod tests {
                     WHITESPACE@22..23
                     TYVAR_TY@23..25
                       TYVAR@23..25 "'d"
+            "#]],
+        )
+    }
+
+    #[test]
+    fn infixes() {
+        check_with_f(
+            false,
+            crate::grammar::declaration,
+            "infix 7 * / mod div 
+            infix 6 + - ^
+            infixr 5 :: @
+            infix 4 = <> > >= < <=
+            infix 3 := o 
+            infix 0 before
+            infix 2 myinfix 
+            nonfix myinfix",
+            expect![[r#"
+                SEQ_DEC@0..216
+                  INFIX_DEC@0..33
+                    INFIX_KW@0..5 "infix"
+                    WHITESPACE@5..6
+                    FIXITY@6..7
+                      INT@6..7 "7"
+                    WHITESPACE@7..8
+                    VID@8..9 "*"
+                    WHITESPACE@9..10
+                    VID@10..11 "/"
+                    WHITESPACE@11..12
+                    VID@12..15 "mod"
+                    WHITESPACE@15..16
+                    VID@16..19 "div"
+                    WHITESPACE@19..33
+                  INFIX_DEC@33..59
+                    INFIX_KW@33..38 "infix"
+                    WHITESPACE@38..39
+                    FIXITY@39..40
+                      INT@39..40 "6"
+                    WHITESPACE@40..41
+                    VID@41..42 "+"
+                    WHITESPACE@42..43
+                    VID@43..44 "-"
+                    WHITESPACE@44..45
+                    VID@45..46 "^"
+                    WHITESPACE@46..59
+                  INFIXR_DEC@59..85
+                    INFIXR_KW@59..65 "infixr"
+                    WHITESPACE@65..66
+                    FIXITY@66..67
+                      INT@66..67 "5"
+                    WHITESPACE@67..68
+                    VID@68..70 "::"
+                    WHITESPACE@70..71
+                    VID@71..72 "@"
+                    WHITESPACE@72..85
+                  INFIX_DEC@85..120
+                    INFIX_KW@85..90 "infix"
+                    WHITESPACE@90..91
+                    FIXITY@91..92
+                      INT@91..92 "4"
+                    WHITESPACE@92..93
+                    VID@93..94 "="
+                    WHITESPACE@94..95
+                    VID@95..97 "<>"
+                    WHITESPACE@97..98
+                    VID@98..99 ">"
+                    WHITESPACE@99..100
+                    VID@100..102 ">="
+                    WHITESPACE@102..103
+                    VID@103..104 "<"
+                    WHITESPACE@104..105
+                    VID@105..107 "<="
+                    WHITESPACE@107..120
+                  INFIX_DEC@120..146
+                    INFIX_KW@120..125 "infix"
+                    WHITESPACE@125..126
+                    FIXITY@126..127
+                      INT@126..127 "3"
+                    WHITESPACE@127..128
+                    VID@128..130 ":="
+                    WHITESPACE@130..131
+                    VID@131..132 "o"
+                    WHITESPACE@132..146
+                  INFIX_DEC@146..173
+                    INFIX_KW@146..151 "infix"
+                    WHITESPACE@151..152
+                    FIXITY@152..153
+                      INT@152..153 "0"
+                    WHITESPACE@153..154
+                    VID@154..160 "before"
+                    WHITESPACE@160..173
+                  INFIX_DEC@173..202
+                    INFIX_KW@173..178 "infix"
+                    WHITESPACE@178..179
+                    FIXITY@179..180
+                      INT@179..180 "2"
+                    WHITESPACE@180..181
+                    VID@181..188 "myinfix"
+                    WHITESPACE@188..202
+                  NONFIX_DEC@202..216
+                    NONFIX_KW@202..208 "nonfix"
+                    WHITESPACE@208..209
+                    VID@209..216 "myinfix"
             "#]],
         )
     }
