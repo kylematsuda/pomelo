@@ -4,13 +4,15 @@ pub mod syntax;
 pub use syntax::SyntaxKind;
 
 pub mod language;
-pub use language::{SyntaxElement, SyntaxNode, SyntaxToken, SyntaxNodeChildren};
+pub use language::{
+    SyntaxElement, SyntaxElementChildren, SyntaxNode, SyntaxNodeChildren, SyntaxToken,
+};
 
 pub mod parser;
 pub use parser::{Checkpoint, NodeGuard, Parser};
 
 pub mod ast;
-pub use ast::{AstNode, AstToken};
+pub use ast::{AstChildren, AstChildrenTokens, AstNode, AstToken};
 
 pub mod infix;
 

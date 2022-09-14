@@ -4,6 +4,7 @@ pub type SyntaxNode = rowan::SyntaxNode<SML>;
 pub type SyntaxToken = rowan::SyntaxToken<SML>;
 pub type SyntaxElement = rowan::SyntaxElement<SML>;
 pub type SyntaxNodeChildren = rowan::SyntaxNodeChildren<SML>;
+pub type SyntaxElementChildren = rowan::SyntaxElementChildren<SML>;
 
 impl From<SyntaxKind> for rowan::SyntaxKind {
     fn from(kind: SyntaxKind) -> Self {

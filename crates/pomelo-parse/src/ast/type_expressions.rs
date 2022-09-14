@@ -1,4 +1,4 @@
-use crate::{impl_ast_node, AstNode, SyntaxKind, SyntaxNode};
+use crate::{impl_ast_node, AstNode, AstToken, AstChildren, SyntaxKind, SyntaxNode, ast};
 use SyntaxKind::*;
 
 use std::fmt;
@@ -52,12 +52,28 @@ pub struct FunTy {
 
 impl_ast_node!(FunTy, FUN_TY);
 
+impl FunTy {
+    pub fn ty_1(&self) -> Option<ast::Ty> {
+        self.syntax.children().find_map(ast::Ty::cast)
+    }
+
+    pub fn ty_2(&self) -> Option<ast::Ty> {
+        self.syntax.children().filter_map(ast::Ty::cast).skip(1).next()
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TupleTy {
     syntax: SyntaxNode,
 }
 
 impl_ast_node!(TupleTy, TUPLE_TY_EXP);
+
+impl TupleTy {
+    pub fn tys(&self) -> AstChildren<ast::Ty> {
+        AstChildren::new(&self.syntax)
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ConsTy {
@@ -66,6 +82,16 @@ pub struct ConsTy {
 
 impl_ast_node!(ConsTy, TY_CON);
 
+impl ConsTy {
+    pub fn tys(&self) -> AstChildren<ast::Ty> {
+        AstChildren::new(&self.syntax)
+    }
+
+    pub fn longtycon(&self) -> Option<ast::LongTyCon> {
+        self.syntax.children().find_map(ast::LongTyCon::cast)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RecordTy {
     syntax: SyntaxNode,
@@ -73,9 +99,28 @@ pub struct RecordTy {
 
 impl_ast_node!(RecordTy, RECORD_TY);
 
+impl RecordTy {
+    pub fn tyrows(&self) -> AstChildren<ast::TyRow> {
+        AstChildren::new(&self.syntax)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TyRow {
+    syntax: SyntaxNode,
+}
+
+impl_ast_node!(TyRow, TY_ROW);
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TyVarTy {
     syntax: SyntaxNode,
 }
 
 impl_ast_node!(TyVarTy, TYVAR_TY);
+
+impl TyVarTy {
+    pub fn tyvar(&self) -> Option<ast::TyVar> {
+        self.token(TYVAR).and_then(ast::TyVar::cast)
+    }
+}

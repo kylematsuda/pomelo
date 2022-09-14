@@ -1,4 +1,8 @@
+pub mod constants;
+pub use constants::*;
+
 pub mod bindings;
+pub use bindings::*;
 
 pub mod declarations;
 pub use declarations::*;
@@ -18,7 +22,7 @@ pub use patterns::*;
 pub mod type_expressions;
 pub use type_expressions::*;
 
-use crate::{SyntaxNode, SyntaxToken, SyntaxNodeChildren};
+use crate::{SyntaxElement, SyntaxElementChildren, SyntaxNode, SyntaxNodeChildren, SyntaxToken};
 use std::marker::PhantomData;
 
 pub trait AstNode {
@@ -27,6 +31,13 @@ pub trait AstNode {
         Self: Sized;
 
     fn syntax(&self) -> &SyntaxNode;
+
+    fn token(&self, kind: crate::SyntaxKind) -> Option<SyntaxToken> {
+        self.syntax()
+            .children_with_tokens()
+            .filter_map(|it| it.into_token())
+            .find(|it| it.kind() == kind)
+    }
 }
 
 pub trait AstToken {
@@ -44,9 +55,12 @@ pub struct AstChildren<N> {
     ph: PhantomData<N>,
 }
 
-impl<N> AstChildren<N> {
+impl<N: AstNode> AstChildren<N> {
     fn new(parent: &SyntaxNode) -> Self {
-        AstChildren { inner: parent.children(), ph: PhantomData }
+        AstChildren {
+            inner: parent.children(),
+            ph: PhantomData,
+        }
     }
 }
 
@@ -54,6 +68,32 @@ impl<N: AstNode> Iterator for AstChildren<N> {
     type Item = N;
     fn next(&mut self) -> Option<Self::Item> {
         self.inner.find_map(N::cast)
+    }
+}
+
+/// c.f. rust-analyzer/crates/syntax/src/ast.rs
+#[derive(Debug, Clone)]
+pub struct AstChildrenTokens<N> {
+    inner: SyntaxElementChildren,
+    ph: PhantomData<N>,
+}
+
+impl<N> AstChildrenTokens<N> {
+    pub fn new(parent: &SyntaxNode) -> Self {
+        AstChildrenTokens {
+            inner: parent.children_with_tokens(),
+            ph: PhantomData,
+        }
+    }
+}
+
+impl<N: AstToken> Iterator for AstChildrenTokens<N> {
+    type Item = N;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner.find_map(|elt| match elt {
+            SyntaxElement::Token(token) => N::cast(token),
+            _ => unreachable!(),
+        })
     }
 }
 
@@ -66,7 +106,7 @@ crate::impl_ast_node!(File, FILE);
 
 impl File {
     pub fn declarations(&self) -> AstChildren<crate::ast::Dec> {
-        AstChildren::new(&self.syntax) 
+        AstChildren::new(&self.syntax)
     }
 }
 
@@ -128,18 +168,18 @@ macro_rules! impl_ast_token {
 
 #[cfg(test)]
 mod tests {
-    use expect_test::{Expect, expect};
+    use expect_test::{expect, Expect};
 
     fn check(should_error: bool, src: &str, expect: Expect) {
-        use crate::{AstNode, Parser, ast::File};
+        use crate::{ast::File, AstNode, Parser};
         let parser = Parser::new(src);
         let tree = parser.parse();
         let file = File::cast(tree.syntax()).unwrap();
-    
+
         let actual: String = file.declarations().map(|d| format!("{}", d)).collect();
         expect.assert_eq(&actual);
-    
-        assert_eq!(tree.has_errors(), should_error); 
+
+        assert_eq!(tree.has_errors(), should_error);
     }
 
     #[test]
@@ -147,7 +187,7 @@ mod tests {
         check(
             false,
             "val a = b; fun f a = g a; type int = d",
-            expect!["val a = b; fun f a = g a; type int = d"]
+            expect!["val a = b; fun f a = g a; type int = d"],
         )
     }
 }

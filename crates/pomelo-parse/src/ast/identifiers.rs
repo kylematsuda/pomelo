@@ -15,6 +15,13 @@ pub struct VId {
 impl_ast_token!(VId, VID);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct LongTyCon { 
+    pub syntax: SyntaxNode,
+}
+
+impl_ast_node!(LongTyCon, LONG_TY_CON);
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct LongStrId {
     pub syntax: SyntaxNode,
 }
@@ -34,3 +41,10 @@ pub struct Label {
 }
 
 impl_ast_node!(Label, LAB);
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TyVar {
+    syntax: SyntaxToken,
+}
+
+impl_ast_token!(TyVar, TYVAR);

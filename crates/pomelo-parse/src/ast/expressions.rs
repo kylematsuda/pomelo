@@ -1,4 +1,4 @@
-use crate::{impl_ast_node, AstNode, SyntaxKind, SyntaxNode};
+use crate::{impl_ast_node, AstNode, AstToken, AstChildren, SyntaxKind, SyntaxNode, ast};
 use SyntaxKind::*;
 
 use std::fmt;
@@ -72,12 +72,29 @@ pub struct FnExpr {
 
 impl_ast_node!(FnExpr, FN_EXP);
 
+impl FnExpr {
+    pub fn match_expr(&self) -> Option<ast::Match> {
+        self.syntax.children().find_map(ast::Match::cast)
+    }
+}
+
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct CaseExpr {
     syntax: SyntaxNode,
 }
 
 impl_ast_node!(CaseExpr, CASE_MATCH_EXP);
+
+impl CaseExpr {
+    pub fn expr(&self) -> Option<ast::Expr> {
+        self.syntax.children().find_map(ast::Expr::cast)
+    }
+
+    pub fn match_expr(&self) -> Option<ast::Match> {
+        self.syntax.children().find_map(ast::Match::cast)
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct WhileExpr {
@@ -86,12 +103,36 @@ pub struct WhileExpr {
 
 impl_ast_node!(WhileExpr, WHILE_EXP);
 
+impl WhileExpr {
+    pub fn expr_1(&self) -> Option<ast::Expr> {
+        self.syntax.children().find_map(ast::Expr::cast)
+    }
+
+    pub fn expr_2(&self) -> Option<ast::Expr> {
+        self.syntax.children().filter_map(ast::Expr::cast).skip(1).next()
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct IfExpr {
     syntax: SyntaxNode,
 }
 
 impl_ast_node!(IfExpr, IF_EXP);
+
+impl IfExpr {
+    pub fn expr_1(&self) -> Option<ast::Expr> {
+        self.syntax.children().find_map(ast::Expr::cast)
+    }
+
+    pub fn expr_2(&self) -> Option<ast::Expr> {
+        self.syntax.children().filter_map(ast::Expr::cast).skip(1).next()
+    }
+
+    pub fn expr_3(&self) -> Option<ast::Expr> {
+        self.syntax.children().filter_map(ast::Expr::cast).skip(2).next()
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RaiseExpr {
@@ -100,12 +141,28 @@ pub struct RaiseExpr {
 
 impl_ast_node!(RaiseExpr, RAISE_EXP);
 
+impl RaiseExpr {
+    pub fn expr(&self) -> Option<ast::Expr> {
+        self.syntax.children().find_map(ast::Expr::cast)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct HandleExpr {
     syntax: SyntaxNode,
 }
 
 impl_ast_node!(HandleExpr, HANDLE_EXP);
+
+impl HandleExpr {
+    pub fn expr(&self) -> Option<ast::Expr> {
+        self.syntax.children().find_map(ast::Expr::cast)
+    }
+
+    pub fn match_expr(&self) -> Option<ast::Match> {
+        self.syntax.children().find_map(ast::Match::cast)
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct OrElseExpr {
@@ -114,12 +171,32 @@ pub struct OrElseExpr {
 
 impl_ast_node!(OrElseExpr, ORELSE_EXP);
 
+impl OrElseExpr {
+    pub fn expr_1(&self) -> Option<ast::Expr> {
+        self.syntax.children().find_map(ast::Expr::cast)
+    }
+
+    pub fn expr_2(&self) -> Option<ast::Expr> {
+        self.syntax.children().filter_map(ast::Expr::cast).skip(1).next()
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AndAlsoExpr {
     syntax: SyntaxNode,
 }
 
 impl_ast_node!(AndAlsoExpr, ANDALSO_EXP);
+
+impl AndAlsoExpr {
+    pub fn expr_1(&self) -> Option<ast::Expr> {
+        self.syntax.children().find_map(ast::Expr::cast)
+    }
+
+    pub fn expr_2(&self) -> Option<ast::Expr> {
+        self.syntax.children().filter_map(ast::Expr::cast).skip(1).next()
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TypedExpr {
@@ -128,6 +205,16 @@ pub struct TypedExpr {
 
 impl_ast_node!(TypedExpr, TY_EXP);
 
+impl TypedExpr {
+    pub fn expr(&self) -> Option<ast::Expr> {
+        self.syntax.children().find_map(ast::Expr::cast)
+    }
+
+    pub fn ty(&self) -> Option<ast::Ty> {
+        self.syntax.children().find_map(ast::Ty::cast)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct InfixExpr {
     syntax: SyntaxNode,
@@ -135,12 +222,36 @@ pub struct InfixExpr {
 
 impl_ast_node!(InfixExpr, INFIX_EXP);
 
+impl InfixExpr {
+    pub fn expr_1(&self) -> Option<ast::Expr> {
+        self.syntax.children().find_map(ast::Expr::cast)
+    }
+
+    pub fn vid(&self) -> Option<ast::VId> {
+        self.token(VID).and_then(ast::VId::cast)
+    }
+
+    pub fn expr_2(&self) -> Option<ast::Expr> {
+        self.syntax.children().filter_map(ast::Expr::cast).skip(1).next()
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ApplicationExpr {
     syntax: SyntaxNode,
 }
 
 impl_ast_node!(ApplicationExpr, APP_EXP);
+
+impl ApplicationExpr {
+    pub fn application(&self) -> Option<ast::ApplicationExpr> {
+        self.syntax.children().find_map(ast::ApplicationExpr::cast)
+    }
+
+    pub fn atomic(&self) -> Option<ast::AtomicExpr> {
+        self.syntax.children().find_map(ast::AtomicExpr::cast)
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum AtomicExpr {
@@ -203,12 +314,44 @@ pub struct SConExpr {
 
 impl_ast_node!(SConExpr, SCON_EXP);
 
+impl SConExpr {
+    pub fn int(&self) -> Option<ast::Int> {
+        self.token(INT).and_then(ast::Int::cast)
+    }
+
+    pub fn real(&self) -> Option<ast::Real> {
+        self.token(REAL).and_then(ast::Real::cast)
+    }
+
+    pub fn word(&self) -> Option<ast::Word> {
+        self.token(WORD).and_then(ast::Word::cast)
+    }
+
+    pub fn char(&self) -> Option<ast::Char> {
+        self.token(CHAR).and_then(ast::Char::cast)
+    }
+
+    pub fn string(&self) -> Option<ast::String> {
+        self.token(STRING).and_then(ast::String::cast)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct VIdExpr {
     syntax: SyntaxNode,
 }
 
 impl_ast_node!(VIdExpr, VID_EXP);
+
+impl VIdExpr {
+    pub fn op(&self) -> bool {
+        self.token(OP_KW).is_some()
+    }
+
+    pub fn vid(&self) -> Option<ast::VId> {
+        self.token(VID).and_then(ast::VId::cast)
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RecordExpr {
@@ -217,12 +360,31 @@ pub struct RecordExpr {
 
 impl_ast_node!(RecordExpr, RECORD_EXP);
 
+impl RecordExpr {
+    pub fn exprows(&self) -> AstChildren<ast::ExprRow> {
+        AstChildren::new(&self.syntax)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ExprRow {
+    syntax: SyntaxNode,
+}
+
+impl_ast_node!(ExprRow, EXP_ROW);
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RecSelExpr {
     syntax: SyntaxNode,
 }
 
 impl_ast_node!(RecSelExpr, RECORD_SEL_EXP);
+
+impl RecSelExpr {
+    pub fn label(&self) -> Option<ast::Label> {
+        self.syntax.children().find_map(ast::Label::cast)
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct UnitExpr {
@@ -238,12 +400,24 @@ pub struct TupleExpr {
 
 impl_ast_node!(TupleExpr, TUPLE_EXP);
 
+impl TupleExpr {
+    pub fn exprs(&self) -> AstChildren<ast::Expr> {
+        AstChildren::new(&self.syntax)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ListExpr {
     syntax: SyntaxNode,
 }
 
 impl_ast_node!(ListExpr, LIST_EXP);
+
+impl ListExpr {
+    pub fn exprs(&self) -> AstChildren<ast::Expr> {
+        AstChildren::new(&self.syntax)
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SeqExpr {
@@ -252,9 +426,25 @@ pub struct SeqExpr {
 
 impl_ast_node!(SeqExpr, SEQ_EXP);
 
+impl SeqExpr {
+    pub fn exprs(&self) -> AstChildren<ast::Expr> {
+        AstChildren::new(&self.syntax)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct LetExpr {
     syntax: SyntaxNode,
 }
 
 impl_ast_node!(LetExpr, LET_EXP);
+
+impl LetExpr {
+    pub fn dec(&self) -> Option<ast::Dec> {
+        self.syntax.children().find_map(ast::Dec::cast)
+    }
+
+    pub fn exprs(&self) -> AstChildren<ast::Expr> {
+        AstChildren::new(&self.syntax)
+    }
+}

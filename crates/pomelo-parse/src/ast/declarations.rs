@@ -1,4 +1,4 @@
-use crate::{impl_ast_node, AstNode, SyntaxKind, SyntaxNode};
+use crate::{ast, impl_ast_node, AstChildren, AstChildrenTokens, AstNode, AstToken, SyntaxKind, SyntaxNode};
 use SyntaxKind::*;
 
 use std::fmt;
@@ -76,6 +76,20 @@ pub struct ValDec {
 
 impl_ast_node!(ValDec, VAL_DEC);
 
+impl ValDec {
+    pub fn tyvarseq(&self) -> AstChildrenTokens<ast::TyVar> {
+        AstChildrenTokens::new(&self.syntax)
+    }
+
+    pub fn bindings(&self) -> Option<ast::ValBind> {
+        self.syntax.children().find_map(ast::ValBind::cast)
+    }
+
+    pub fn rec(&self) -> bool {
+        self.token(REC_KW).is_some()
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct FunDec {
     syntax: SyntaxNode,
@@ -83,12 +97,28 @@ pub struct FunDec {
 
 impl_ast_node!(FunDec, FUN_DEC);
 
+impl FunDec {
+    pub fn tyvarseq(&self) -> AstChildrenTokens<ast::TyVar> {
+        AstChildrenTokens::new(&self.syntax)
+    }
+
+    pub fn bindings(&self) -> Option<ast::FvalBind> {
+        self.syntax.children().find_map(ast::FvalBind::cast)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TypeDec {
     syntax: SyntaxNode,
 }
 
 impl_ast_node!(TypeDec, TY_DEC);
+
+impl TypeDec {
+    pub fn bindings(&self) -> Option<ast::TyBind> {
+        self.syntax.children().find_map(ast::TyBind::cast)
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DatatypeDec {
@@ -139,6 +169,12 @@ pub struct SeqDec {
 
 impl_ast_node!(SeqDec, SEQ_DEC);
 
+impl SeqDec {
+    pub fn declarations(&self) -> AstChildren<ast::Dec> {
+        AstChildren::new(&self.syntax)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct InfixDec {
     syntax: SyntaxNode,
@@ -146,12 +182,45 @@ pub struct InfixDec {
 
 impl_ast_node!(InfixDec, INFIX_DEC);
 
+impl InfixDec {
+    pub fn fixity(&self) -> Option<ast::Fixity> {
+        self.syntax.children().find_map(ast::Fixity::cast)
+    }
+
+    pub fn vid(&self) -> AstChildrenTokens<ast::VId> {
+        AstChildrenTokens::new(&self.syntax)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct InfixrDec {
     syntax: SyntaxNode,
 }
 
 impl_ast_node!(InfixrDec, INFIXR_DEC);
+
+impl InfixrDec {
+    pub fn fixity(&self) -> Option<ast::Fixity> {
+        self.syntax.children().find_map(ast::Fixity::cast)
+    }
+
+    pub fn vid(&self) -> AstChildrenTokens<ast::VId> {
+        AstChildrenTokens::new(&self.syntax)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct Fixity {
+    syntax: SyntaxNode,
+}
+
+impl_ast_node!(Fixity, FIXITY);
+
+impl Fixity {
+    pub fn value(&self) -> Option<ast::Int> {
+        self.token(INT).and_then(ast::Int::cast)
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct NonfixDec {
