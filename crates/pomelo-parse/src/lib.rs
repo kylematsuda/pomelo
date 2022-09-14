@@ -4,7 +4,7 @@ pub mod syntax;
 pub use syntax::SyntaxKind;
 
 pub mod language;
-pub use language::{SyntaxElement, SyntaxNode, SyntaxToken};
+pub use language::{SyntaxElement, SyntaxNode, SyntaxToken, SyntaxNodeChildren};
 
 pub mod parser;
 pub use parser::{Checkpoint, NodeGuard, Parser};

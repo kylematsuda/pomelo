@@ -1,12 +1,25 @@
-use crate::{SyntaxNode, SyntaxToken};
-
 pub mod bindings;
+
 pub mod declarations;
+pub use declarations::*;
+
 pub mod expressions;
+pub use expressions::*;
+
 pub mod identifiers;
+pub use identifiers::*;
+
 pub mod matches;
+pub use matches::*;
+
 pub mod patterns;
+pub use patterns::*;
+
 pub mod type_expressions;
+pub use type_expressions::*;
+
+use crate::{SyntaxNode, SyntaxToken, SyntaxNodeChildren};
+use std::marker::PhantomData;
 
 pub trait AstNode {
     fn cast(node: SyntaxNode) -> Option<Self>
@@ -22,6 +35,39 @@ pub trait AstToken {
         Self: Sized;
 
     fn syntax(&self) -> &SyntaxToken;
+}
+
+/// c.f. rust-analyzer/crates/syntax/src/ast.rs
+#[derive(Debug, Clone)]
+pub struct AstChildren<N> {
+    inner: SyntaxNodeChildren,
+    ph: PhantomData<N>,
+}
+
+impl<N> AstChildren<N> {
+    fn new(parent: &SyntaxNode) -> Self {
+        AstChildren { inner: parent.children(), ph: PhantomData }
+    }
+}
+
+impl<N: AstNode> Iterator for AstChildren<N> {
+    type Item = N;
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner.find_map(N::cast)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct File {
+    syntax: SyntaxNode,
+}
+
+crate::impl_ast_node!(File, FILE);
+
+impl File {
+    pub fn declarations(&self) -> AstChildren<crate::ast::Dec> {
+        AstChildren::new(&self.syntax) 
+    }
 }
 
 #[macro_export]
