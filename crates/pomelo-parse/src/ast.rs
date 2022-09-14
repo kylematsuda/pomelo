@@ -125,3 +125,29 @@ macro_rules! impl_ast_token {
         }
     };
 }
+
+#[cfg(test)]
+mod tests {
+    use expect_test::{Expect, expect};
+
+    fn check(should_error: bool, src: &str, expect: Expect) {
+        use crate::{AstNode, Parser, ast::File};
+        let parser = Parser::new(src);
+        let tree = parser.parse();
+        let file = File::cast(tree.syntax()).unwrap();
+    
+        let actual: String = file.declarations().map(|d| format!("{}", d)).collect();
+        expect.assert_eq(&actual);
+    
+        assert_eq!(tree.has_errors(), should_error); 
+    }
+
+    #[test]
+    fn file_test() {
+        check(
+            false,
+            "val a = b; fun f a = g a; type int = d",
+            expect!["val a = b; fun f a = g a; type int = d"]
+        )
+    }
+}
