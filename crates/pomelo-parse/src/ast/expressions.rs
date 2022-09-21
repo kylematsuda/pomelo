@@ -1,7 +1,20 @@
-use crate::{impl_ast_node, AstNode, AstToken, AstChildren, SyntaxKind, SyntaxNode, ast};
+use crate::{impl_ast_node, AstNode, AstChildren, SyntaxKind, SyntaxNode, ast};
 use SyntaxKind::*;
 
 use std::fmt;
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct InfixOrAppExpr {
+    syntax: SyntaxNode,
+}
+
+impl_ast_node!(InfixOrAppExpr, INFIX_OR_APP_EXP);
+
+impl InfixOrAppExpr {
+    pub fn exprs(&self) -> AstChildren<ast::Expr> {
+        self.get_nodes()
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Expr {

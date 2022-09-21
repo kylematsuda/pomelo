@@ -79,7 +79,7 @@ fn infexp(p: &mut Parser) {
     grammar::precedence_climber_flat(
         p,
         // EXP,
-        UNRES_INFIX_APP_EXP,
+        INFIX_OR_APP_EXP,
         appexp,
         |p| p.peek_next_nontrivia(0).is_atomic_exp_start(),
         |p| {

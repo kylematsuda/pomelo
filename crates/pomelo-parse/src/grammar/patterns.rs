@@ -36,7 +36,7 @@ fn infixed_pat(p: &mut Parser) {
     grammar::precedence_climber_flat(
         p,
         // PAT,
-        UNRES_INFIX_APP_PAT,
+        INFIX_OR_APP_PAT,
         atomic_in_pat,
         |p| p.peek_next_nontrivia(0).is_atomic_pat_start(),
         |p| {

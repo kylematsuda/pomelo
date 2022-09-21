@@ -8,8 +8,8 @@ pub enum SyntaxKind {
     EOF = 0,
     UNKNOWN,
     ERROR,
-    UNRES_INFIX_APP_EXP,
-    UNRES_INFIX_APP_PAT,
+    INFIX_OR_APP_EXP,
+    INFIX_OR_APP_PAT,
 
     // Unevaluated
     WHITESPACE,

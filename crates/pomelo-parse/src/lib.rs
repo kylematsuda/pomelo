@@ -14,7 +14,7 @@ pub use parser::{Checkpoint, NodeGuard, Parser};
 pub mod ast;
 pub use ast::{AstChildren, AstChildrenTokens, AstNode, AstToken};
 
-pub mod infix;
+pub mod passes;
 
 #[cfg(test)]
 pub(crate) mod tests;
