@@ -15,7 +15,7 @@ pub struct VId {
 impl_ast_token!(VId, VID);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct LongTyCon { 
+pub struct LongTyCon {
     pub syntax: SyntaxNode,
 }
 

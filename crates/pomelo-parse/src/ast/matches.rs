@@ -1,4 +1,4 @@
-use crate::{impl_ast_node, SyntaxNode, AstNode, AstChildren, ast};
+use crate::{ast, impl_ast_node, AstChildren, AstNode, SyntaxNode};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Match {

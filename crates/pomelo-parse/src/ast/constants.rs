@@ -19,7 +19,7 @@ pub struct Word {
     syntax: SyntaxToken,
 }
 
-impl_ast_token!(Word, WORD); 
+impl_ast_token!(Word, WORD);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Char {

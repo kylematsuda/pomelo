@@ -1,4 +1,4 @@
-use crate::{impl_ast_node, SyntaxNode, ast, AstNode};
+use crate::{ast, impl_ast_node, AstNode, SyntaxNode};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ValBind {

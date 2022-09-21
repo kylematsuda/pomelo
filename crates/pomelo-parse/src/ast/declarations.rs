@@ -1,4 +1,6 @@
-use crate::{ast, impl_ast_node, AstChildren, AstChildrenTokens, AstNode, AstToken, SyntaxKind, SyntaxNode};
+use crate::{
+    ast, impl_ast_node, AstChildren, AstChildrenTokens, AstNode, SyntaxKind, SyntaxNode,
+};
 use SyntaxKind::*;
 
 use std::fmt;
