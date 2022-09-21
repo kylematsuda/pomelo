@@ -844,26 +844,26 @@ mod tests {
             super::pattern,
             "pat + another :: last",
             expect![[r#"
-                  UNRES_INFIX_APP_PAT@0..21
-                    VID_PAT@0..3
-                      LONG_VID@0..3
-                        VID@0..3 "pat"
-                    WHITESPACE@3..4
-                    VID_PAT@4..5
-                      LONG_VID@4..5
-                        VID@4..5 "+"
-                    WHITESPACE@5..6
-                    VID_PAT@6..13
-                      LONG_VID@6..13
-                        VID@6..13 "another"
-                    WHITESPACE@13..14
-                    VID_PAT@14..16
-                      LONG_VID@14..16
-                        VID@14..16 "::"
-                    WHITESPACE@16..17
-                    VID_PAT@17..21
-                      LONG_VID@17..21
-                        VID@17..21 "last"
+                INFIX_OR_APP_PAT@0..21
+                  VID_PAT@0..3
+                    LONG_VID@0..3
+                      VID@0..3 "pat"
+                  WHITESPACE@3..4
+                  VID_PAT@4..5
+                    LONG_VID@4..5
+                      VID@4..5 "+"
+                  WHITESPACE@5..6
+                  VID_PAT@6..13
+                    LONG_VID@6..13
+                      VID@6..13 "another"
+                  WHITESPACE@13..14
+                  VID_PAT@14..16
+                    LONG_VID@14..16
+                      VID@14..16 "::"
+                  WHITESPACE@16..17
+                  VID_PAT@17..21
+                    LONG_VID@17..21
+                      VID@17..21 "last"
             "#]],
         )
     }

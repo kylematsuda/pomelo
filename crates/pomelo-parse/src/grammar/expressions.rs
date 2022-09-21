@@ -955,14 +955,14 @@ mod tests {
             super::expression,
             "a b",
             expect![[r#"
-                  UNRES_INFIX_APP_EXP@0..3
-                    VID_EXP@0..1
-                      LONG_VID@0..1
-                        VID@0..1 "a"
-                    WHITESPACE@1..2
-                    VID_EXP@2..3
-                      LONG_VID@2..3
-                        VID@2..3 "b"
+                INFIX_OR_APP_EXP@0..3
+                  VID_EXP@0..1
+                    LONG_VID@0..1
+                      VID@0..1 "a"
+                  WHITESPACE@1..2
+                  VID_EXP@2..3
+                    LONG_VID@2..3
+                      VID@2..3 "b"
             "#]],
         )
     }
@@ -974,18 +974,18 @@ mod tests {
             super::expression,
             "a b c",
             expect![[r#"
-                  UNRES_INFIX_APP_EXP@0..5
-                    VID_EXP@0..1
-                      LONG_VID@0..1
-                        VID@0..1 "a"
-                    WHITESPACE@1..2
-                    VID_EXP@2..3
-                      LONG_VID@2..3
-                        VID@2..3 "b"
-                    WHITESPACE@3..4
-                    VID_EXP@4..5
-                      LONG_VID@4..5
-                        VID@4..5 "c"
+                INFIX_OR_APP_EXP@0..5
+                  VID_EXP@0..1
+                    LONG_VID@0..1
+                      VID@0..1 "a"
+                  WHITESPACE@1..2
+                  VID_EXP@2..3
+                    LONG_VID@2..3
+                      VID@2..3 "b"
+                  WHITESPACE@3..4
+                  VID_EXP@4..5
+                    LONG_VID@4..5
+                      VID@4..5 "c"
             "#]],
         )
     }
@@ -997,38 +997,38 @@ mod tests {
             super::expression,
             "a b c d e f g x",
             expect![[r#"
-                  UNRES_INFIX_APP_EXP@0..15
-                    VID_EXP@0..1
-                      LONG_VID@0..1
-                        VID@0..1 "a"
-                    WHITESPACE@1..2
-                    VID_EXP@2..3
-                      LONG_VID@2..3
-                        VID@2..3 "b"
-                    WHITESPACE@3..4
-                    VID_EXP@4..5
-                      LONG_VID@4..5
-                        VID@4..5 "c"
-                    WHITESPACE@5..6
-                    VID_EXP@6..7
-                      LONG_VID@6..7
-                        VID@6..7 "d"
-                    WHITESPACE@7..8
-                    VID_EXP@8..9
-                      LONG_VID@8..9
-                        VID@8..9 "e"
-                    WHITESPACE@9..10
-                    VID_EXP@10..11
-                      LONG_VID@10..11
-                        VID@10..11 "f"
-                    WHITESPACE@11..12
-                    VID_EXP@12..13
-                      LONG_VID@12..13
-                        VID@12..13 "g"
-                    WHITESPACE@13..14
-                    VID_EXP@14..15
-                      LONG_VID@14..15
-                        VID@14..15 "x"
+                INFIX_OR_APP_EXP@0..15
+                  VID_EXP@0..1
+                    LONG_VID@0..1
+                      VID@0..1 "a"
+                  WHITESPACE@1..2
+                  VID_EXP@2..3
+                    LONG_VID@2..3
+                      VID@2..3 "b"
+                  WHITESPACE@3..4
+                  VID_EXP@4..5
+                    LONG_VID@4..5
+                      VID@4..5 "c"
+                  WHITESPACE@5..6
+                  VID_EXP@6..7
+                    LONG_VID@6..7
+                      VID@6..7 "d"
+                  WHITESPACE@7..8
+                  VID_EXP@8..9
+                    LONG_VID@8..9
+                      VID@8..9 "e"
+                  WHITESPACE@9..10
+                  VID_EXP@10..11
+                    LONG_VID@10..11
+                      VID@10..11 "f"
+                  WHITESPACE@11..12
+                  VID_EXP@12..13
+                    LONG_VID@12..13
+                      VID@12..13 "g"
+                  WHITESPACE@13..14
+                  VID_EXP@14..15
+                    LONG_VID@14..15
+                      VID@14..15 "x"
             "#]],
         )
     }
@@ -1040,43 +1040,43 @@ mod tests {
             super::expression,
             "(fn x => x) (fn y => y) 1",
             expect![[r#"
-                  UNRES_INFIX_APP_EXP@0..25
-                    L_PAREN@0..1 "("
-                    FN_EXP@1..10
-                      FN_KW@1..3 "fn"
-                      WHITESPACE@3..4
-                      MATCH@4..10
-                        MRULE@4..10
-                          VID_PAT@4..5
-                            LONG_VID@4..5
-                              VID@4..5 "x"
-                          WHITESPACE@5..6
-                          THICK_ARROW@6..8 "=>"
-                          WHITESPACE@8..9
-                          VID_EXP@9..10
-                            LONG_VID@9..10
-                              VID@9..10 "x"
-                    R_PAREN@10..11 ")"
-                    WHITESPACE@11..12
-                    L_PAREN@12..13 "("
-                    FN_EXP@13..22
-                      FN_KW@13..15 "fn"
-                      WHITESPACE@15..16
-                      MATCH@16..22
-                        MRULE@16..22
-                          VID_PAT@16..17
-                            LONG_VID@16..17
-                              VID@16..17 "y"
-                          WHITESPACE@17..18
-                          THICK_ARROW@18..20 "=>"
-                          WHITESPACE@20..21
-                          VID_EXP@21..22
-                            LONG_VID@21..22
-                              VID@21..22 "y"
-                    R_PAREN@22..23 ")"
-                    WHITESPACE@23..24
-                    SCON_EXP@24..25
-                      INT@24..25 "1"
+                INFIX_OR_APP_EXP@0..25
+                  L_PAREN@0..1 "("
+                  FN_EXP@1..10
+                    FN_KW@1..3 "fn"
+                    WHITESPACE@3..4
+                    MATCH@4..10
+                      MRULE@4..10
+                        VID_PAT@4..5
+                          LONG_VID@4..5
+                            VID@4..5 "x"
+                        WHITESPACE@5..6
+                        THICK_ARROW@6..8 "=>"
+                        WHITESPACE@8..9
+                        VID_EXP@9..10
+                          LONG_VID@9..10
+                            VID@9..10 "x"
+                  R_PAREN@10..11 ")"
+                  WHITESPACE@11..12
+                  L_PAREN@12..13 "("
+                  FN_EXP@13..22
+                    FN_KW@13..15 "fn"
+                    WHITESPACE@15..16
+                    MATCH@16..22
+                      MRULE@16..22
+                        VID_PAT@16..17
+                          LONG_VID@16..17
+                            VID@16..17 "y"
+                        WHITESPACE@17..18
+                        THICK_ARROW@18..20 "=>"
+                        WHITESPACE@20..21
+                        VID_EXP@21..22
+                          LONG_VID@21..22
+                            VID@21..22 "y"
+                  R_PAREN@22..23 ")"
+                  WHITESPACE@23..24
+                  SCON_EXP@24..25
+                    INT@24..25 "1"
             "#]],
         )
     }
@@ -1141,25 +1141,25 @@ mod tests {
             super::expression,
             "raise a really nasty problem",
             expect![[r#"
-                  RAISE_EXP@0..28
-                    RAISE_KW@0..5 "raise"
-                    WHITESPACE@5..6
-                    UNRES_INFIX_APP_EXP@6..28
-                      VID_EXP@6..7
-                        LONG_VID@6..7
-                          VID@6..7 "a"
-                      WHITESPACE@7..8
-                      VID_EXP@8..14
-                        LONG_VID@8..14
-                          VID@8..14 "really"
-                      WHITESPACE@14..15
-                      VID_EXP@15..20
-                        LONG_VID@15..20
-                          VID@15..20 "nasty"
-                      WHITESPACE@20..21
-                      VID_EXP@21..28
-                        LONG_VID@21..28
-                          VID@21..28 "problem"
+                RAISE_EXP@0..28
+                  RAISE_KW@0..5 "raise"
+                  WHITESPACE@5..6
+                  INFIX_OR_APP_EXP@6..28
+                    VID_EXP@6..7
+                      LONG_VID@6..7
+                        VID@6..7 "a"
+                    WHITESPACE@7..8
+                    VID_EXP@8..14
+                      LONG_VID@8..14
+                        VID@8..14 "really"
+                    WHITESPACE@14..15
+                    VID_EXP@15..20
+                      LONG_VID@15..20
+                        VID@15..20 "nasty"
+                    WHITESPACE@20..21
+                    VID_EXP@21..28
+                      LONG_VID@21..28
+                        VID@21..28 "problem"
             "#]],
         )
     }
@@ -1423,18 +1423,18 @@ mod tests {
             super::expression,
             "x + y",
             expect![[r#"
-                  UNRES_INFIX_APP_EXP@0..5
-                    VID_EXP@0..1
-                      LONG_VID@0..1
-                        VID@0..1 "x"
-                    WHITESPACE@1..2
-                    VID_EXP@2..3
-                      LONG_VID@2..3
-                        VID@2..3 "+"
-                    WHITESPACE@3..4
-                    VID_EXP@4..5
-                      LONG_VID@4..5
-                        VID@4..5 "y"
+                INFIX_OR_APP_EXP@0..5
+                  VID_EXP@0..1
+                    LONG_VID@0..1
+                      VID@0..1 "x"
+                  WHITESPACE@1..2
+                  VID_EXP@2..3
+                    LONG_VID@2..3
+                      VID@2..3 "+"
+                  WHITESPACE@3..4
+                  VID_EXP@4..5
+                    LONG_VID@4..5
+                      VID@4..5 "y"
             "#]],
         )
     }
@@ -1446,34 +1446,34 @@ mod tests {
             super::expression,
             "a + b * c / d",
             expect![[r#"
-                  UNRES_INFIX_APP_EXP@0..13
-                    VID_EXP@0..1
-                      LONG_VID@0..1
-                        VID@0..1 "a"
-                    WHITESPACE@1..2
-                    VID_EXP@2..3
-                      LONG_VID@2..3
-                        VID@2..3 "+"
-                    WHITESPACE@3..4
-                    VID_EXP@4..5
-                      LONG_VID@4..5
-                        VID@4..5 "b"
-                    WHITESPACE@5..6
-                    VID_EXP@6..7
-                      LONG_VID@6..7
-                        VID@6..7 "*"
-                    WHITESPACE@7..8
-                    VID_EXP@8..9
-                      LONG_VID@8..9
-                        VID@8..9 "c"
-                    WHITESPACE@9..10
-                    VID_EXP@10..11
-                      LONG_VID@10..11
-                        VID@10..11 "/"
-                    WHITESPACE@11..12
-                    VID_EXP@12..13
-                      LONG_VID@12..13
-                        VID@12..13 "d"
+                INFIX_OR_APP_EXP@0..13
+                  VID_EXP@0..1
+                    LONG_VID@0..1
+                      VID@0..1 "a"
+                  WHITESPACE@1..2
+                  VID_EXP@2..3
+                    LONG_VID@2..3
+                      VID@2..3 "+"
+                  WHITESPACE@3..4
+                  VID_EXP@4..5
+                    LONG_VID@4..5
+                      VID@4..5 "b"
+                  WHITESPACE@5..6
+                  VID_EXP@6..7
+                    LONG_VID@6..7
+                      VID@6..7 "*"
+                  WHITESPACE@7..8
+                  VID_EXP@8..9
+                    LONG_VID@8..9
+                      VID@8..9 "c"
+                  WHITESPACE@9..10
+                  VID_EXP@10..11
+                    LONG_VID@10..11
+                      VID@10..11 "/"
+                  WHITESPACE@11..12
+                  VID_EXP@12..13
+                    LONG_VID@12..13
+                      VID@12..13 "d"
             "#]],
         )
     }

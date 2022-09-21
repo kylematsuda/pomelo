@@ -129,7 +129,7 @@ val part_two = simulate 256 initial_timers
                               WHITESPACE@90..91
                               EQ@91..92 "="
                               WHITESPACE@92..93
-                              UNRES_INFIX_APP_EXP@93..113
+                              INFIX_OR_APP_EXP@93..113
                                 VID_EXP@93..106
                                   LONG_VID@93..106
                                     STRID@93..99 "TextIO"
@@ -156,7 +156,7 @@ val part_two = simulate 256 initial_timers
                                 CASE_MATCH_EXP@137..231
                                   CASE_KW@137..141 "case"
                                   WHITESPACE@141..142
-                                  UNRES_INFIX_APP_EXP@142..162
+                                  INFIX_OR_APP_EXP@142..162
                                     VID_EXP@142..158
                                       LONG_VID@142..158
                                         STRID@142..148 "TextIO"
@@ -171,7 +171,7 @@ val part_two = simulate 256 initial_timers
                                   WHITESPACE@165..175
                                   MATCH@175..231
                                     MRULE@175..206
-                                      UNRES_INFIX_APP_PAT@175..184
+                                      INFIX_OR_APP_PAT@175..184
                                         VID_PAT@175..179
                                           LONG_VID@175..179
                                             VID@175..179 "SOME"
@@ -182,7 +182,7 @@ val part_two = simulate 256 initial_timers
                                       WHITESPACE@184..185
                                       THICK_ARROW@185..187 "=>"
                                       WHITESPACE@187..188
-                                      UNRES_INFIX_APP_EXP@188..206
+                                      INFIX_OR_APP_EXP@188..206
                                         VID_EXP@188..192
                                           LONG_VID@188..192
                                             VID@188..192 "line"
@@ -192,7 +192,7 @@ val part_two = simulate 256 initial_timers
                                             VID@193..195 "::"
                                         WHITESPACE@195..196
                                         L_PAREN@196..197 "("
-                                        UNRES_INFIX_APP_EXP@197..205
+                                        INFIX_OR_APP_EXP@197..205
                                           VID_EXP@197..201
                                             LONG_VID@197..201
                                               VID@197..201 "loop"
@@ -217,7 +217,7 @@ val part_two = simulate 256 initial_timers
                               WHITESPACE@231..234
                         IN_KW@234..236 "in"
                         WHITESPACE@236..242
-                        UNRES_INFIX_APP_EXP@242..276
+                        INFIX_OR_APP_EXP@242..276
                           VID_EXP@242..246
                             LONG_VID@242..246
                               VID@242..246 "loop"
@@ -252,7 +252,7 @@ val part_two = simulate 256 initial_timers
                     WHITESPACE@296..297
                     EQ@297..298 "="
                     WHITESPACE@298..299
-                    UNRES_INFIX_APP_EXP@299..389
+                    INFIX_OR_APP_EXP@299..389
                       VID_EXP@299..314
                         LONG_VID@299..314
                           STRID@299..303 "List"
@@ -266,7 +266,7 @@ val part_two = simulate 256 initial_timers
                           VID@319..329 "fromString"
                       WHITESPACE@329..332
                       L_PAREN@332..333 "("
-                      UNRES_INFIX_APP_EXP@333..388
+                      INFIX_OR_APP_EXP@333..388
                         VID_EXP@333..346
                           LONG_VID@333..346
                             STRID@333..339 "String"
@@ -285,7 +285,7 @@ val part_two = simulate 256 initial_timers
                               WHITESPACE@352..353
                               THICK_ARROW@353..355 "=>"
                               WHITESPACE@355..356
-                              UNRES_INFIX_APP_EXP@356..364
+                              INFIX_OR_APP_EXP@356..364
                                 VID_EXP@356..357
                                   LONG_VID@356..357
                                     VID@356..357 "c"
@@ -299,13 +299,13 @@ val part_two = simulate 256 initial_timers
                         R_PAREN@364..365 ")"
                         WHITESPACE@365..366
                         L_PAREN@366..367 "("
-                        UNRES_INFIX_APP_EXP@367..387
+                        INFIX_OR_APP_EXP@367..387
                           VID_EXP@367..369
                             LONG_VID@367..369
                               VID@367..369 "hd"
                           WHITESPACE@369..370
                           L_PAREN@370..371 "("
-                          UNRES_INFIX_APP_EXP@371..386
+                          INFIX_OR_APP_EXP@371..386
                             VID_EXP@371..380
                               LONG_VID@371..380
                                 VID@371..380 "readlines"
@@ -339,9 +339,9 @@ val part_two = simulate 256 initial_timers
                           WHITESPACE@416..417
                           THICK_ARROW@417..419 "=>"
                           WHITESPACE@419..420
-                          UNRES_INFIX_APP_EXP@420..468
+                          INFIX_OR_APP_EXP@420..468
                             L_PAREN@420..421 "("
-                            UNRES_INFIX_APP_EXP@421..459
+                            INFIX_OR_APP_EXP@421..459
                               VID_EXP@421..427
                                 LONG_VID@421..427
                                   VID@421..427 "length"
@@ -351,7 +351,7 @@ val part_two = simulate 256 initial_timers
                                   VID@428..429 "o"
                               WHITESPACE@429..430
                               L_PAREN@430..431 "("
-                              UNRES_INFIX_APP_EXP@431..458
+                              INFIX_OR_APP_EXP@431..458
                                 VID_EXP@431..442
                                   LONG_VID@431..442
                                     STRID@431..435 "List"
@@ -370,7 +370,7 @@ val part_two = simulate 256 initial_timers
                                       WHITESPACE@448..449
                                       THICK_ARROW@449..451 "=>"
                                       WHITESPACE@451..452
-                                      UNRES_INFIX_APP_EXP@452..457
+                                      INFIX_OR_APP_EXP@452..457
                                         VID_EXP@452..453
                                           LONG_VID@452..453
                                             VID@452..453 "x"
@@ -401,7 +401,7 @@ val part_two = simulate 256 initial_timers
                     WHITESPACE@489..490
                     EQ@490..491 "="
                     WHITESPACE@491..492
-                    UNRES_INFIX_APP_EXP@492..520
+                    INFIX_OR_APP_EXP@492..520
                       VID_EXP@492..505
                         LONG_VID@492..505
                           STRID@492..496 "List"
@@ -445,7 +445,7 @@ val part_two = simulate 256 initial_timers
                               WHITESPACE@566..567
                               EQ@567..568 "="
                               WHITESPACE@568..569
-                              UNRES_INFIX_APP_EXP@569..588
+                              INFIX_OR_APP_EXP@569..588
                                 VID_EXP@569..577
                                   LONG_VID@569..577
                                     STRID@569..573 "List"
@@ -488,7 +488,7 @@ val part_two = simulate 256 initial_timers
                                 WHITESPACE@629..630
                                 EQ@630..631 "="
                                 WHITESPACE@631..632
-                                UNRES_INFIX_APP_EXP@632..661
+                                INFIX_OR_APP_EXP@632..661
                                   VID_EXP@632..639
                                     LONG_VID@632..639
                                       VID@632..639 "at_zero"
@@ -524,7 +524,7 @@ val part_two = simulate 256 initial_timers
                                 WHITESPACE@676..677
                                 EQ@677..678 "="
                                 WHITESPACE@678..679
-                                UNRES_INFIX_APP_EXP@679..702
+                                INFIX_OR_APP_EXP@679..702
                                   VID_EXP@679..687
                                     LONG_VID@679..687
                                       STRID@679..683 "List"
@@ -537,7 +537,7 @@ val part_two = simulate 256 initial_timers
                                         VID@688..694 "timers"
                                     COMMA@694..695 ","
                                     WHITESPACE@695..696
-                                    UNRES_INFIX_APP_EXP@696..701
+                                    INFIX_OR_APP_EXP@696..701
                                       VID_EXP@696..697
                                         LONG_VID@696..697
                                           VID@696..697 "n"
@@ -552,7 +552,7 @@ val part_two = simulate 256 initial_timers
                               WHITESPACE@702..705
                         IN_KW@705..707 "in"
                         WHITESPACE@707..713
-                        UNRES_INFIX_APP_EXP@713..735
+                        INFIX_OR_APP_EXP@713..735
                           VID_EXP@713..726
                             LONG_VID@713..726
                               STRID@713..717 "List"
@@ -611,7 +611,7 @@ val part_two = simulate 256 initial_timers
                               IF_EXP@821..906
                                 IF_KW@821..823 "if"
                                 WHITESPACE@823..824
-                                UNRES_INFIX_APP_EXP@824..840
+                                INFIX_OR_APP_EXP@824..840
                                   VID_EXP@824..829
                                     LONG_VID@824..829
                                       VID@824..829 "count"
@@ -632,13 +632,13 @@ val part_two = simulate 256 initial_timers
                                 WHITESPACE@856..864
                                 ELSE_KW@864..868 "else"
                                 WHITESPACE@868..877
-                                UNRES_INFIX_APP_EXP@877..906
+                                INFIX_OR_APP_EXP@877..906
                                   VID_EXP@877..881
                                     LONG_VID@877..881
                                       VID@877..881 "loop"
                                   WHITESPACE@881..882
                                   L_PAREN@882..883 "("
-                                  UNRES_INFIX_APP_EXP@883..892
+                                  INFIX_OR_APP_EXP@883..892
                                     VID_EXP@883..888
                                       LONG_VID@883..888
                                         VID@883..888 "count"
@@ -652,7 +652,7 @@ val part_two = simulate 256 initial_timers
                                   R_PAREN@892..893 ")"
                                   WHITESPACE@893..894
                                   L_PAREN@894..895 "("
-                                  UNRES_INFIX_APP_EXP@895..905
+                                  INFIX_OR_APP_EXP@895..905
                                     VID_EXP@895..902
                                       LONG_VID@895..902
                                         VID@895..902 "advance"
@@ -664,7 +664,7 @@ val part_two = simulate 256 initial_timers
                             WHITESPACE@906..909
                         IN_KW@909..911 "in"
                         WHITESPACE@911..917
-                        UNRES_INFIX_APP_EXP@917..955
+                        INFIX_OR_APP_EXP@917..955
                           VID_EXP@917..922
                             LONG_VID@917..922
                               VID@917..922 "foldl"
@@ -681,7 +681,7 @@ val part_two = simulate 256 initial_timers
                             INT@930..931 "0"
                           WHITESPACE@931..932
                           L_PAREN@932..933 "("
-                          UNRES_INFIX_APP_EXP@933..954
+                          INFIX_OR_APP_EXP@933..954
                             VID_EXP@933..937
                               LONG_VID@933..937
                                 VID@933..937 "loop"
@@ -706,7 +706,7 @@ val part_two = simulate 256 initial_timers
                     WHITESPACE@975..976
                     EQ@976..977 "="
                     WHITESPACE@977..978
-                    UNRES_INFIX_APP_EXP@978..1004
+                    INFIX_OR_APP_EXP@978..1004
                       VID_EXP@978..986
                         LONG_VID@978..986
                           VID@978..986 "simulate"
@@ -728,7 +728,7 @@ val part_two = simulate 256 initial_timers
                     WHITESPACE@1017..1018
                     EQ@1018..1019 "="
                     WHITESPACE@1019..1020
-                    UNRES_INFIX_APP_EXP@1020..1047
+                    INFIX_OR_APP_EXP@1020..1047
                       VID_EXP@1020..1028
                         LONG_VID@1020..1028
                           VID@1020..1028 "simulate"
