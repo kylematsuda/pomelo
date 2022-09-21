@@ -9,7 +9,7 @@ pub use language::{
 };
 
 pub mod parser;
-pub use parser::{Checkpoint, NodeGuard, Parser};
+pub use parser::{Checkpoint, NodeGuard, Parser, SyntaxTree};
 
 pub mod ast;
 pub use ast::{AstChildren, AstChildrenTokens, AstNode, AstToken};

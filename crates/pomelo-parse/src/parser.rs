@@ -62,6 +62,10 @@ impl SyntaxTree {
     pub fn has_errors(&self) -> bool {
         self.errors.len() != 0
     }
+
+    pub fn node(&self) -> GreenNode {
+        self.node.clone()
+    }
 }
 
 impl fmt::Display for SyntaxTree {
