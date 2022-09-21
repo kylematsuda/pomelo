@@ -11,7 +11,7 @@ pub struct InfixOrAppPat {
 impl_ast_node!(InfixOrAppPat, INFIX_OR_APP_PAT);
 
 impl InfixOrAppPat {
-    pub fn exprs(&self) -> AstChildren<ast::Pat> {
+    pub fn pats(&self) -> AstChildren<ast::Pat> {
         self.get_nodes()
     }
 }
