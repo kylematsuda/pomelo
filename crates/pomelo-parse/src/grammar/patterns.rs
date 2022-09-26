@@ -8,9 +8,8 @@ pub(crate) fn pattern(p: &mut Parser) {
 }
 
 fn layered_pat(p: &mut Parser) {
-    grammar::precedence_climber_once(
+    grammar::descend_once(
         p,
-        //     PAT,
         LAYERED_PAT,
         typed_pat,
         |p| p.eat_through_trivia(AS_KW),
@@ -19,9 +18,8 @@ fn layered_pat(p: &mut Parser) {
 }
 
 fn typed_pat(p: &mut Parser) {
-    grammar::precedence_climber_once(
+    grammar::descend_once(
         p,
-        // PAT,
         TY_PAT,
         infixed_pat,
         |p| p.eat_through_trivia(COLON),
@@ -33,9 +31,8 @@ fn typed_pat(p: &mut Parser) {
 /// we don't have enough information here
 /// to decide which operators are infix.
 fn infixed_pat(p: &mut Parser) {
-    grammar::precedence_climber_flat(
+    grammar::descend_flat(
         p,
-        // PAT,
         INFIX_OR_APP_PAT,
         atomic_in_pat,
         |p| p.peek_next_nontrivia(0).is_atomic_pat_start(),
@@ -47,13 +44,10 @@ fn infixed_pat(p: &mut Parser) {
 }
 
 fn atomic_in_pat(p: &mut Parser) {
-    // let _ng = p.start_node(PAT);
     atomic_pattern(p);
 }
 
 pub(crate) fn atomic_pattern(p: &mut Parser) {
-    //    let _ng = p.start_node(AT_PAT);
-
     match p.peek() {
         UNDERSCORE => {
             let _ng = p.start_node(WILDCARD_PAT);

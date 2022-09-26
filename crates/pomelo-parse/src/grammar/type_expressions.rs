@@ -8,9 +8,8 @@ pub(crate) fn ty(p: &mut Parser) {
 }
 
 fn fun_ty(p: &mut Parser) {
-    grammar::precedence_climber_right(
+    grammar::descend_right(
         p,
-        //        TY,
         FUN_TY,
         tuple_ty,
         |p| p.eat_through_trivia(THIN_ARROW),
@@ -19,9 +18,8 @@ fn fun_ty(p: &mut Parser) {
 }
 
 fn tuple_ty(p: &mut Parser) {
-    grammar::precedence_climber_flat(
+    grammar::descend_flat(
         p,
-        //       TY,
         TUPLE_TY_EXP,
         tycon_seq,
         |p| {
@@ -45,9 +43,8 @@ fn star_ident(p: &Parser) -> bool {
 }
 
 fn tycon_seq(p: &mut Parser) {
-    grammar::precedence_climber_flat(
+    grammar::descend_flat(
         p,
-        //      TY,
         TY_CON,
         ty_atom_or_longtycon,
         |p| non_star_ident(p),
@@ -80,8 +77,6 @@ fn ty_atom_or_longtycon(p: &mut Parser) {
 }
 
 fn ty_atom(p: &mut Parser) {
-    // let _ng = p.start_node(TY);
-
     match p.peek() {
         TYVAR => {
             let _ng = p.start_node(TYVAR_TY);
@@ -118,7 +113,6 @@ pub(crate) fn tycon(p: &mut Parser) {
 }
 
 fn longtycon(p: &mut Parser) {
-    // let _ty = p.start_node(TY);
     let _ng = p.start_node(LONG_TY_CON);
 
     // A longtycon is a sequence of strids separated by DOTs,
