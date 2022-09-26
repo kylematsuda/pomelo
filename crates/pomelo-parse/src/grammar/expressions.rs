@@ -1,10 +1,142 @@
 use crate::grammar;
-use crate::{Parser, SyntaxKind};
+use crate::{Checkpoint, Parser, SyntaxKind};
 
 use SyntaxKind::*;
 
 pub(crate) fn expression(p: &mut Parser) {
-    handle_exp(p)
+    // handle_exp(p)
+    expr_bp(p, 0)
+}
+
+// Pratt parser following this blog post:
+// https://matklad.github.io/2020/04/13/simple-but-powerful-pratt-parsing.html
+//
+// Here, expression keywords are playing the role of infix/postfix operators.
+// Prefix keywords ("raise", "if", etc.) can be handled more simply than in the
+// linked post because the prefixed forms are the forms with lowest precedence.
+fn expr_bp(p: &mut Parser, min_bp: u8) {
+    let checkpoint = p.checkpoint();
+
+    let _lhs = match p.peek() {
+        RAISE_KW => raise_exp(p),
+        IF_KW => if_exp(p),
+        WHILE_KW => while_exp(p),
+        CASE_KW => case_match(p),
+        FN_KW => fn_match(p),
+        _ => infix_or_app(p),
+    };
+
+    loop {
+        let kw = p.peek_next_nontrivia(0);
+
+        // Get out if this is not a compound expr
+        if !matches!(kw, COLON | ANDALSO_KW | ORELSE_KW | HANDLE_KW) {
+            break;
+        }
+
+        if let Some((l_bp, ())) = postfix_bp(kw) {
+            if l_bp < min_bp {
+                break;
+            }
+
+            // Postfix expr keyword
+            match kw {
+                COLON => ty_bp(p, checkpoint.clone()),
+                HANDLE_KW => handle_bp(p, checkpoint.clone()),
+                _ => panic!("fix me later"),
+            }
+            continue;
+        }
+
+        let (l_bp, r_bp) = infix_bp(kw);
+        if l_bp < min_bp {
+            break;
+        }
+
+        // Infix expr keyword
+        match kw {
+            ANDALSO_KW => andalso_bp(p, checkpoint.clone(), r_bp),
+            ORELSE_KW => orelse_bp(p, checkpoint.clone(), r_bp),
+            _ => panic!("fix me later"),
+        }
+    }
+}
+
+// See pg. 77 of https://smlfamily.github.io/sml97-defn.pdf
+fn infix_bp(s: SyntaxKind) -> (u8, u8) {
+    match s {
+        ANDALSO_KW => (6, 5),
+        ORELSE_KW => (4, 3),
+        _ => panic!("bad expr kw - FIX ME LATER"),
+    }
+}
+
+// See pg. 77 of https://smlfamily.github.io/sml97-defn.pdf
+fn postfix_bp(s: SyntaxKind) -> Option<(u8, ())> {
+    match s {
+        COLON => Some((7, ())),
+        HANDLE_KW => Some((1, ())),
+        _ => None,
+    }
+}
+
+fn handle_bp(p: &mut Parser, checkpoint: Checkpoint) {
+    let _ng = p.start_node_at(checkpoint, HANDLE_EXP);
+    p.eat_trivia();
+    assert!(p.eat(HANDLE_KW));
+    p.eat_trivia();
+    grammar::match_exp(p);
+}
+
+fn ty_bp(p: &mut Parser, checkpoint: Checkpoint) {
+    let _ng = p.start_node_at(checkpoint, TY_EXP);
+    p.eat_trivia();
+    assert!(p.eat(COLON));
+    p.eat_trivia();
+    grammar::ty(p);
+}
+
+fn andalso_bp(p: &mut Parser, checkpoint: Checkpoint, r_bp: u8) {
+    let _ng = p.start_node_at(checkpoint, ANDALSO_EXP);
+    p.eat_trivia();
+    assert!(p.eat(ANDALSO_KW));
+    p.eat_trivia();
+    expr_bp(p, r_bp);
+}
+
+fn orelse_bp(p: &mut Parser, checkpoint: Checkpoint, r_bp: u8) {
+    let _ng = p.start_node_at(checkpoint, ORELSE_EXP);
+    p.eat_trivia();
+    assert!(p.eat(ORELSE_KW));
+    p.eat_trivia();
+    expr_bp(p, r_bp);
+}
+
+// SML allows user-defined infix operations.
+// Without additional context (keeping track of infix declarations), we do not
+// know which identifiers are infix operators.
+// In a series of expressions, e.g., "a b c d", we also don't know which are
+// function applications and which are infix applications.
+//
+// Therefore, for now we just parse this as a flat sequence of atomic expressions.
+// In a subsequent pass, we will try to resolve operator associativity and fixity.
+// After doing that, we can infer which expressions are prefix function applications
+// and we can group them left-associatively.
+fn infix_or_app(p: &mut Parser) {
+    let checkpoint = p.checkpoint();
+
+    appexp(p);
+
+    let continue_if = |p: &mut Parser| p.peek_next_nontrivia(0).is_atomic_exp_start();
+
+    if continue_if(p) {
+        let _ng_inner = p.start_node_at(checkpoint, INFIX_OR_APP_EXP);
+
+        while continue_if(p) {
+            p.eat_trivia();
+            appexp(p);
+        }
+    }
 }
 
 fn handle_exp(p: &mut Parser) {
