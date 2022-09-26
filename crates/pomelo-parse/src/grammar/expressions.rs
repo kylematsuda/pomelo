@@ -4,7 +4,6 @@ use crate::{Checkpoint, Parser, SyntaxKind};
 use SyntaxKind::*;
 
 pub(crate) fn expression(p: &mut Parser) {
-    // handle_exp(p)
     expr_bp(p, 0)
 }
 
@@ -139,95 +138,11 @@ fn infix_or_app(p: &mut Parser) {
     }
 }
 
-fn handle_exp(p: &mut Parser) {
-    grammar::precedence_climber_once(
-        p,
-        //        EXP,
-        HANDLE_EXP,
-        orelse_exp,
-        |p| p.eat_through_trivia(HANDLE_KW),
-        grammar::match_exp,
-    );
-}
-
-fn orelse_exp(p: &mut Parser) {
-    grammar::precedence_climber_right(
-        p,
-        // EXP,
-        ORELSE_EXP,
-        andalso_exp,
-        |p| p.eat_through_trivia(ORELSE_KW),
-        orelse_exp,
-    );
-}
-
-fn andalso_exp(p: &mut Parser) {
-    grammar::precedence_climber_right(
-        p,
-        // EXP,
-        ANDALSO_EXP,
-        typed_exp,
-        |p| p.eat_through_trivia(ANDALSO_KW),
-        andalso_exp,
-    );
-}
-
-fn typed_exp(p: &mut Parser) {
-    grammar::precedence_climber_once(
-        p,
-        //        EXP,
-        TY_EXP,
-        keyword_or_infexp,
-        |p| p.eat_through_trivia(COLON),
-        grammar::ty,
-    );
-}
-
-fn keyword_or_infexp(p: &mut Parser) {
-    match p.peek() {
-        FN_KW => fn_match(p),
-        CASE_KW => case_match(p),
-        WHILE_KW => while_exp(p),
-        IF_KW => if_exp(p),
-        RAISE_KW => raise_exp(p),
-        _ => infexp(p),
-    }
-}
-
-/// SML allows user-defined infix operations.
-/// Thus, without additional context (keeping
-/// track of infix declarations), we do not know
-/// which identifiers are infix operators.
-/// In a series of expressions, e.g., "a b c d",
-/// we also don't know which are (prefix) function applications
-/// and which are infix applications.
-///
-/// Therefore, for now we just parse this as a flat sequence
-/// of atomic expressions. In a subsequent pass, we will try to
-/// resolve operator associativity and fixity. After doing that,
-/// we can infer which expressions are prefix function applications
-/// and we can group them left-associatively.
-fn infexp(p: &mut Parser) {
-    grammar::precedence_climber_flat(
-        p,
-        // EXP,
-        INFIX_OR_APP_EXP,
-        appexp,
-        |p| p.peek_next_nontrivia(0).is_atomic_exp_start(),
-        |p| {
-            p.eat_trivia();
-            appexp(p);
-        },
-    )
-}
-
 fn appexp(p: &mut Parser) {
-    // let _ng = p.start_node(EXP);
     atomic_inner(p);
 }
 
 pub(crate) fn fn_match(p: &mut Parser) {
-    // let _ng_exp = p.start_node(EXP);
     let _ng = p.start_node(FN_EXP);
 
     assert!(p.eat(FN_KW));
@@ -237,7 +152,6 @@ pub(crate) fn fn_match(p: &mut Parser) {
 }
 
 fn case_match(p: &mut Parser) {
-    // let _ng_exp = p.start_node(EXP);
     let _ng = p.start_node(CASE_MATCH_EXP);
 
     assert!(p.eat(CASE_KW));
@@ -253,7 +167,6 @@ fn case_match(p: &mut Parser) {
 }
 
 fn while_exp(p: &mut Parser) {
-    // let _ng_exp = p.start_node(EXP);
     let _ng = p.start_node(WHILE_EXP);
 
     assert!(p.eat(WHILE_KW));
@@ -269,7 +182,6 @@ fn while_exp(p: &mut Parser) {
 }
 
 fn if_exp(p: &mut Parser) {
-    // let _ng_exp = p.start_node(EXP);
     let _ng = p.start_node(IF_EXP);
 
     assert!(p.eat(IF_KW));
@@ -291,7 +203,6 @@ fn if_exp(p: &mut Parser) {
 }
 
 fn raise_exp(p: &mut Parser) {
-    // let _ng_exp = p.start_node(EXP);
     let _ng = p.start_node(RAISE_EXP);
 
     assert!(p.eat(RAISE_KW));
@@ -301,8 +212,6 @@ fn raise_exp(p: &mut Parser) {
 }
 
 fn atomic_inner(p: &mut Parser) {
-    // let _ng = p.start_node(AT_EXP);
-
     if p.is_vid() {
         vid_exp(p);
         return;
