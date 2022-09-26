@@ -104,7 +104,7 @@ pub struct Parser<'a> {
     /// Tokens are stored in reverse order
     tokens: Vec<Token<'a>>,
     errors: Vec<Error>,
-    builder: Rc<RefCell<GreenNodeBuilder<'static>>>,
+    builder: NodeBuilder, 
 }
 
 impl<'a> Parser<'a> {
@@ -129,7 +129,7 @@ impl<'a> Parser<'a> {
         }
         tokens.reverse(); // Do this so we can pop tokens off the back of the vector efficiently
 
-        let builder = Rc::new(RefCell::new(GreenNodeBuilder::default()));
+        let builder = NodeBuilder::new(); 
 
         Self {
             current_pos: 0,
@@ -317,31 +317,21 @@ impl<'a> Parser<'a> {
 
     #[must_use]
     pub fn start_node(&mut self, kind: SyntaxKind) -> NodeGuard {
-        self.builder.borrow_mut().start_node(kind.into());
-        NodeGuard {
-            builder: self.builder.clone(),
-        }
+        self.builder.start_node(kind)
     }
 
     #[must_use]
     pub fn checkpoint(&self) -> Checkpoint {
-        Checkpoint(self.builder.borrow().checkpoint())
+        self.builder.checkpoint()
     }
 
     #[must_use]
     pub fn start_node_at(&mut self, checkpoint: Checkpoint, kind: SyntaxKind) -> NodeGuard {
-        self.builder
-            .borrow_mut()
-            .start_node_at(checkpoint.0, kind.into());
-        NodeGuard {
-            builder: self.builder.clone(),
-        }
+        self.builder.start_node_at(checkpoint, kind)
     }
 
     pub fn push_token(&mut self, token: Token) {
-        self.builder
-            .borrow_mut()
-            .token(token.kind().into(), token.text())
+        self.builder.push_token(token)
     }
 
     pub fn parse(self) -> SyntaxTree {
@@ -356,9 +346,51 @@ impl<'a> Parser<'a> {
         f(&mut self);
 
         SyntaxTree {
-            node: self.builder.take().finish(),
+            node: self.builder.finish(),
             errors: self.errors,
         }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct NodeBuilder(Rc<RefCell<GreenNodeBuilder<'static>>>);
+
+impl NodeBuilder {
+    pub(crate) fn new() -> Self {
+        Self(Rc::new(RefCell::new(GreenNodeBuilder::default())))
+    }
+
+    #[must_use]
+    pub(crate) fn start_node(&mut self, kind: SyntaxKind) -> NodeGuard {
+        self.0.borrow_mut().start_node(kind.into());
+        NodeGuard {
+            builder: self.0.clone(),
+        }
+    }
+
+    #[must_use]
+    pub(crate) fn checkpoint(&self) -> Checkpoint {
+        Checkpoint(self.0.borrow().checkpoint())
+    }
+
+    #[must_use]
+    pub(crate) fn start_node_at(&mut self, checkpoint: Checkpoint, kind: SyntaxKind) -> NodeGuard {
+        self.0
+            .borrow_mut()
+            .start_node_at(checkpoint.0, kind.into());
+        NodeGuard {
+            builder: self.0.clone(),
+        }
+    }
+
+    pub(crate) fn push_token(&mut self, token: Token) {
+        self.0
+            .borrow_mut()
+            .token(token.kind().into(), token.text())
+    }
+
+    pub(crate) fn finish(self) -> GreenNode {
+        self.0.take().finish()
     }
 }
 
