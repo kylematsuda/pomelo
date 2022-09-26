@@ -25,25 +25,23 @@ fn tuple_ty(p: &mut Parser) {
         TUPLE_TY_EXP,
         tycon_seq,
         |p| {
-            // This is a little convoluted.
-            // At the lexing stage, we don't know
-            // how to determine the function of '*':
-            // as an operator/identifier, or as part of
-            // a tuple type expression. As a result,
-            // '*' does not have it's own LexKind.
-            let t = p.peek_token_next_nontrivia(0);
-            match t.map(Token::kind).unwrap_or(EOF) {
-                // Only take the IDENT if it holds a "*"
-                IDENT if Some("*") == t.map(Token::text) => {
-                    p.eat_trivia();
-                    assert_eq!(p.eat_mapped(STAR), IDENT);
-                    true
-                }
-                _ => false,
+            if star_ident(p) {
+                p.eat_trivia();
+                assert_eq!(p.eat_mapped(STAR), IDENT);
+                true
+            } else {
+                false 
             }
         },
         tycon_seq,
     )
+}
+
+fn star_ident(p: &Parser) -> bool {
+    match p.peek_token_next_nontrivia(0).map(Token::text) {
+        Some("*") => true, 
+        _ => false
+    }
 }
 
 fn tycon_seq(p: &mut Parser) {
@@ -52,24 +50,24 @@ fn tycon_seq(p: &mut Parser) {
         //      TY,
         TY_CON,
         ty_atom_or_longtycon,
-        |p| {
-            // We can't accept '*' as an identifier here!
-            let t = p.peek_token_next_nontrivia(0);
-            match t.map(Token::kind) {
-                Some(k) if k.is_ty_atom() => true,
-                Some(IDENT) => {
-                    if let Some("*") = t.map(Token::text) {
-                        false
-                    } else {
-                        true
-                    }
-                }
-                _ => false,
-            }
-        },
+        |p| non_star_ident(p),
         ty_atom_or_longtycon,
     )
 }
+
+fn non_star_ident(p: &Parser) -> bool {
+    let t = p.peek_token_next_nontrivia(0);
+    let k = t.map(Token::kind).unwrap_or(EOF);
+
+    if k.is_ty_atom() {
+        true 
+    } else if k == IDENT {
+        t.map(Token::text) != Some("*")
+    } else {
+        false 
+    }
+}
+
 
 fn ty_atom_or_longtycon(p: &mut Parser) {
     if p.peek().is_ty_atom() {
