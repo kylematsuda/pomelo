@@ -1477,4 +1477,95 @@ mod tests {
             "#]],
         )
     }
+
+    #[test]
+    fn precedence_if_handle() {
+        check_with_f(
+            false,
+            super::expression,
+            "if a then b else c handle x => d",
+            expect![[r#"
+                IF_EXP@0..32
+                  IF_KW@0..2 "if"
+                  WHITESPACE@2..3
+                  VID_EXP@3..4
+                    LONG_VID@3..4
+                      VID@3..4 "a"
+                  WHITESPACE@4..5
+                  THEN_KW@5..9 "then"
+                  WHITESPACE@9..10
+                  VID_EXP@10..11
+                    LONG_VID@10..11
+                      VID@10..11 "b"
+                  WHITESPACE@11..12
+                  ELSE_KW@12..16 "else"
+                  WHITESPACE@16..17
+                  HANDLE_EXP@17..32
+                    VID_EXP@17..18
+                      LONG_VID@17..18
+                        VID@17..18 "c"
+                    WHITESPACE@18..19
+                    HANDLE_KW@19..25 "handle"
+                    WHITESPACE@25..26
+                    MATCH@26..32
+                      MRULE@26..32
+                        VID_PAT@26..27
+                          LONG_VID@26..27
+                            VID@26..27 "x"
+                        WHITESPACE@27..28
+                        THICK_ARROW@28..30 "=>"
+                        WHITESPACE@30..31
+                        VID_EXP@31..32
+                          LONG_VID@31..32
+                            VID@31..32 "d"
+            "#]],
+        )
+    }
+
+    #[test]
+    fn precedence_if_while() {
+        check_with_f(
+            false,
+            super::expression,
+            "if a then while b do c else while d do e",
+            expect![[r#"
+                IF_EXP@0..40
+                  IF_KW@0..2 "if"
+                  WHITESPACE@2..3
+                  VID_EXP@3..4
+                    LONG_VID@3..4
+                      VID@3..4 "a"
+                  WHITESPACE@4..5
+                  THEN_KW@5..9 "then"
+                  WHITESPACE@9..10
+                  WHILE_EXP@10..22
+                    WHILE_KW@10..15 "while"
+                    WHITESPACE@15..16
+                    VID_EXP@16..17
+                      LONG_VID@16..17
+                        VID@16..17 "b"
+                    WHITESPACE@17..18
+                    DO_KW@18..20 "do"
+                    WHITESPACE@20..21
+                    VID_EXP@21..22
+                      LONG_VID@21..22
+                        VID@21..22 "c"
+                  WHITESPACE@22..23
+                  ELSE_KW@23..27 "else"
+                  WHITESPACE@27..28
+                  WHILE_EXP@28..40
+                    WHILE_KW@28..33 "while"
+                    WHITESPACE@33..34
+                    VID_EXP@34..35
+                      LONG_VID@34..35
+                        VID@34..35 "d"
+                    WHITESPACE@35..36
+                    DO_KW@36..38 "do"
+                    WHITESPACE@38..39
+                    VID_EXP@39..40
+                      LONG_VID@39..40
+                        VID@39..40 "e"
+            "#]],
+        )
+    }
 }
