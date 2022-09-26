@@ -22,7 +22,7 @@ fn expr_bp(p: &mut Parser, min_bp: u8) {
         WHILE_KW => while_exp(p),
         CASE_KW => case_match(p),
         FN_KW => fn_match(p),
-        _ => infix_or_app(p),
+        _ => infix_or_app_expr(p),
     };
 
     loop {
@@ -40,8 +40,8 @@ fn expr_bp(p: &mut Parser, min_bp: u8) {
 
             // Postfix expr keyword
             match kw {
-                COLON => ty_bp(p, checkpoint.clone()),
-                HANDLE_KW => handle_bp(p, checkpoint.clone()),
+                COLON => ty_expr(p, checkpoint.clone()),
+                HANDLE_KW => handle_expr(p, checkpoint.clone()),
                 _ => panic!("fix me later"),
             }
             continue;
@@ -54,8 +54,8 @@ fn expr_bp(p: &mut Parser, min_bp: u8) {
 
         // Infix expr keyword
         match kw {
-            ANDALSO_KW => andalso_bp(p, checkpoint.clone(), r_bp),
-            ORELSE_KW => orelse_bp(p, checkpoint.clone(), r_bp),
+            ANDALSO_KW => andalso_expr(p, checkpoint.clone(), r_bp),
+            ORELSE_KW => orelse_expr(p, checkpoint.clone(), r_bp),
             _ => panic!("fix me later"),
         }
     }
@@ -79,7 +79,7 @@ fn postfix_bp(s: SyntaxKind) -> Option<(u8, ())> {
     }
 }
 
-fn handle_bp(p: &mut Parser, checkpoint: Checkpoint) {
+fn handle_expr(p: &mut Parser, checkpoint: Checkpoint) {
     let _ng = p.start_node_at(checkpoint, HANDLE_EXP);
     p.eat_trivia();
     assert!(p.eat(HANDLE_KW));
@@ -87,7 +87,7 @@ fn handle_bp(p: &mut Parser, checkpoint: Checkpoint) {
     grammar::match_exp(p);
 }
 
-fn ty_bp(p: &mut Parser, checkpoint: Checkpoint) {
+fn ty_expr(p: &mut Parser, checkpoint: Checkpoint) {
     let _ng = p.start_node_at(checkpoint, TY_EXP);
     p.eat_trivia();
     assert!(p.eat(COLON));
@@ -95,7 +95,7 @@ fn ty_bp(p: &mut Parser, checkpoint: Checkpoint) {
     grammar::ty(p);
 }
 
-fn andalso_bp(p: &mut Parser, checkpoint: Checkpoint, r_bp: u8) {
+fn andalso_expr(p: &mut Parser, checkpoint: Checkpoint, r_bp: u8) {
     let _ng = p.start_node_at(checkpoint, ANDALSO_EXP);
     p.eat_trivia();
     assert!(p.eat(ANDALSO_KW));
@@ -103,7 +103,7 @@ fn andalso_bp(p: &mut Parser, checkpoint: Checkpoint, r_bp: u8) {
     expr_bp(p, r_bp);
 }
 
-fn orelse_bp(p: &mut Parser, checkpoint: Checkpoint, r_bp: u8) {
+fn orelse_expr(p: &mut Parser, checkpoint: Checkpoint, r_bp: u8) {
     let _ng = p.start_node_at(checkpoint, ORELSE_EXP);
     p.eat_trivia();
     assert!(p.eat(ORELSE_KW));
@@ -121,7 +121,7 @@ fn orelse_bp(p: &mut Parser, checkpoint: Checkpoint, r_bp: u8) {
 // In a subsequent pass, we will try to resolve operator associativity and fixity.
 // After doing that, we can infer which expressions are prefix function applications
 // and we can group them left-associatively.
-fn infix_or_app(p: &mut Parser) {
+fn infix_or_app_expr(p: &mut Parser) {
     let checkpoint = p.checkpoint();
 
     appexp(p);
