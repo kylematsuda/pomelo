@@ -1,6 +1,7 @@
 use crate::{ast, AstNode, SyntaxNode, SyntaxTree};
 
 use std::collections::HashMap;
+use std::ops::{Deref, DerefMut};
 
 #[rustfmt::skip]
 const BUILTINS: [(&'static str, Fixity); 18] = [
@@ -24,8 +25,34 @@ const BUILTINS: [(&'static str, Fixity); 18] = [
     ("before",	Fixity { val: 0, assoc: Associativity::Left }),
 ];
 
-type Context = HashMap<String, Fixity>;
+struct Context(HashMap<String, Fixity>);
 
+impl Context {
+    fn new_with_builtins() -> Self {
+        Self(
+            BUILTINS
+                .into_iter()
+                .map(|(s, f)| (String::from(s), f))
+                .collect(),
+        )
+    }
+}
+
+impl Deref for Context {
+    type Target = HashMap<String, Fixity>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for Context {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 struct Fixity {
     val: u8,
     assoc: Associativity,
@@ -41,18 +68,16 @@ impl Fixity {
     }
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 enum Associativity {
     Left,
     Right,
 }
 
 pub fn resolve_infixed(tree: SyntaxTree) -> SyntaxTree {
-    let mut ctx = BUILTINS.into_iter()
-        .map(|(s, f)| (String::from(s), f))
-        .collect::<Context>();
+    let mut ctx = Context::new_with_builtins();
 
     let node = tree.syntax();
-
     fix_infix(node.clone(), &mut ctx);
 
     todo!()
@@ -71,20 +96,41 @@ fn find_infix_or_app_expr_parent(node: SyntaxNode) -> Option<SyntaxNode> {
     }
 }
 
-fn fix_infix(infix_or_app_expr: SyntaxNode, ctx: &mut Context) {
-}
+fn fix_infix(infix_or_app_expr: SyntaxNode, ctx: &mut Context) {}
 
 #[cfg(test)]
 mod tests {
-    use crate::{passes::infix::find_infix_or_app_expr_parent, Parser};
+    use crate::{
+        ast::AtomicExpr, ast::Expr, ast::InfixOrAppExpr,
+        passes::infix::find_infix_or_app_expr_parent, passes::infix::Context, AstNode, Parser,
+    };
 
     #[test]
-    fn basic() {
+    fn scratch_infix() {
+        let ctx = Context::new_with_builtins();
+
         let input = "val a = 1 + 2";
         let tree = Parser::new(input).parse();
 
         let node = tree.syntax();
 
-        eprintln!("{:?}", find_infix_or_app_expr_parent(node).unwrap());
+        // DFS to find unresolved node
+        let infix = find_infix_or_app_expr_parent(node.clone()).unwrap();
+        // Cast to ast node
+        let infix = InfixOrAppExpr::cast(infix).unwrap();
+
+        eprintln!("{:?}", infix);
+
+        // Iter on contained exprs
+        // Todo: replace this with Pratt parsing
+        for e in infix.exprs() {
+            if let Expr::Atomic(AtomicExpr::VId(e)) = e {
+                let op = e.syntax().text().to_string();
+
+                if let Some(fixity) = ctx.get(&op) {
+                    eprintln!("op: {:?}, {:?}", op, fixity);
+                }
+            }
+        }
     }
 }
