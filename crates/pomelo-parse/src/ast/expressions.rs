@@ -360,8 +360,8 @@ impl VIdExpr {
         self.token(OP_KW).is_some()
     }
 
-    pub fn vid(&self) -> Option<ast::VId> {
-        self.get_token()
+    pub fn longvid(&self) -> Option<ast::LongVId> {
+        self.get_node()
     }
 }
 

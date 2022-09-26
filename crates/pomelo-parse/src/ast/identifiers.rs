@@ -1,4 +1,4 @@
-use crate::{impl_ast_node, impl_ast_token, SyntaxNode, SyntaxToken};
+use crate::{impl_ast_node, impl_ast_token, SyntaxNode, SyntaxToken, AstNode};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct LongVId {
@@ -6,6 +6,12 @@ pub struct LongVId {
 }
 
 impl_ast_node!(LongVId, LONG_VID);
+
+impl LongVId {
+    pub fn vid(&self) -> Option<VId> {
+        self.get_token()
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct VId {
