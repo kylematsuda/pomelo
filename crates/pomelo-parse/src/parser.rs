@@ -51,6 +51,10 @@ pub struct SyntaxTree {
 }
 
 impl SyntaxTree {
+    pub fn new(node: GreenNode, errors: Vec<Error>) -> Self {
+        Self { node, errors }
+    }
+
     pub fn syntax(&self) -> SyntaxNode {
         SyntaxNode::new_root(self.node.clone())
     }
