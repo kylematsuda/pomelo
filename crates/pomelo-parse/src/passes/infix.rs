@@ -93,19 +93,6 @@ enum Associativity {
     Right,
 }
 
-fn find_infix_or_app_expr_parent(node: SyntaxNode) -> Option<SyntaxNode> {
-    if ast::InfixOrAppExpr::cast(node.clone()).is_some() {
-        Some(node)
-    } else {
-        for c in node.children() {
-            if let Some(n) = find_infix_or_app_expr_parent(c) {
-                return Some(n);
-            }
-        }
-        None
-    }
-}
-
 pub fn pass_rearrange_infix(tree: SyntaxTree) -> SyntaxTree {
     let root = tree.syntax();
     let ctx = Context::new_with_builtins();
@@ -117,26 +104,31 @@ fn rearrange_infix(tree: SyntaxTree, node: SyntaxNode, ctx: &Context) -> SyntaxT
     let mut node = node;
 
     if ast::InfixOrAppExpr::cast(node.clone()).is_some() {
-        let parent_ptr = SyntaxNodePtr::new(
-            &node
-                .parent()
-                .expect("an expression cannot be the root of the tree"),
-        );
-        let index = node.index();
-
         tree = fix_infix(&tree, node.clone(), ctx);
-
-        let parent_node = parent_ptr.to_node(&tree.syntax());
-        node = match parent_node.children_with_tokens().nth(index) {
-            Some(NodeOrToken::Node(node)) => node,
-            _ => panic!("number of children hasn't changed"),
-        };
+        node = switch_tree(&node, &tree);
     }
 
     for c in node.children() {
+        let c = switch_tree(&c, &tree);
         tree = rearrange_infix(tree, c, ctx);
     }
     tree
+}
+
+// Panics if called on the root node.
+fn switch_tree(node: &SyntaxNode, new_tree: &SyntaxTree) -> SyntaxNode {
+    let parent_ptr = SyntaxNodePtr::new(
+        &node
+            .parent()
+            .expect("an expression cannot be the root of the tree"),
+    );
+    let index = node.index();
+    let parent_node = parent_ptr.to_node(&new_tree.syntax());
+
+    match parent_node.children_with_tokens().nth(index) {
+        Some(NodeOrToken::Node(node)) => node,
+        _ => panic!("number of children hasn't changed"),
+    }
 }
 
 fn update_context(ctx: Context, dec: &SyntaxNode) -> Context {
@@ -184,7 +176,7 @@ fn update_context(ctx: Context, dec: &SyntaxNode) -> Context {
 
 fn fix_infix(tree: &SyntaxTree, expr: SyntaxNode, ctx: &Context) -> SyntaxTree {
     let mut peek = expr.children_with_tokens().peekable();
-    let new_green = fix_infix_bp_ii(&mut peek, ctx, 0).unwrap();
+    let new_green = fix_infix_bp(&mut peek, ctx, 0).unwrap();
 
     let old_parent = expr.parent().unwrap();
     let new_parent = old_parent
@@ -215,19 +207,22 @@ fn intersperse_trivia(
     out
 }
 
-fn next_nontrivia(children: &mut Peekable<SyntaxElementChildren>) -> Option<SyntaxNode> {
-    let mut first = children.peek()?.clone();
-    while let NodeOrToken::Token(_) = first {
-        first = first.next_sibling_or_token()?;
-    }
-
-    match first {
-        NodeOrToken::Node(n) => Some(n),
-        _ => unreachable!(),
-    }
+fn next_nontrivia(children: &Peekable<SyntaxElementChildren>) -> Option<SyntaxNode> {
+    children
+        .clone()
+        .skip_while(|c| match c {
+            NodeOrToken::Token(_) => true,
+            _ => false,
+        })
+        .next()
+        .map(|c| match c {
+            NodeOrToken::Node(n) => n,
+            _ => panic!(),
+        })
 }
 
-fn fix_infix_bp_ii(
+// Pratt parsing
+fn fix_infix_bp(
     children: &mut Peekable<SyntaxElementChildren>,
     ctx: &Context,
     min_bp: u8,
@@ -244,8 +239,6 @@ fn fix_infix_bp_ii(
             None => break,
         };
         let next_text = next.text().to_string();
-
-        eprintln!("{}, {}", lhs, next);
 
         if let Some((l_bp, r_bp)) = ctx.get_bp(&next_text) {
             if l_bp < min_bp {
@@ -272,7 +265,7 @@ fn fix_infix_bp_ii(
 
             let trivia_2 = collect_trivia(children);
 
-            let rhs = fix_infix_bp_ii(children, ctx, r_bp).unwrap();
+            let rhs = fix_infix_bp(children, ctx, r_bp).unwrap();
 
             let mut outer = GreenNode::new(
                 crate::SyntaxKind::INFIX_EXP.into(),
@@ -336,79 +329,130 @@ fn collect_trivia(
     out
 }
 
-fn fix_infix_bp<I>(exprs: &mut Peekable<I>, ctx: &Context, min_bp: u8) -> Option<GreenNode>
-where
-    I: Iterator<Item = ast::Expr>,
-{
-    let mut lhs = exprs.next()?.syntax().green().into_owned();
-
-    loop {
-        let op = if let Some(op) = exprs.peek() {
-            op
-        } else {
-            break;
-        };
-        let op_text = op.syntax().text().to_string();
-
-        // Infix
-        if let Some((l_bp, r_bp)) = ctx.get_bp(&op_text) {
-            if l_bp < min_bp {
-                break;
-            }
-
-            let op = exprs.next().unwrap();
-            let vid = ast::VIdExpr::cast(op.syntax().clone())
-                .unwrap()
-                .longvid()
-                .unwrap()
-                .vid()
-                .unwrap()
-                .syntax()
-                .green()
-                .to_owned();
-            let rhs = fix_infix_bp(exprs, ctx, r_bp)?;
-
-            let mut outer = GreenNode::new(
-                crate::SyntaxKind::INFIX_EXP.into(),
-                [
-                    NodeOrToken::Node(lhs.clone()),
-                    NodeOrToken::Token(vid),
-                    NodeOrToken::Node(rhs),
-                ],
-            );
-
-            std::mem::swap(&mut lhs, &mut outer);
-        } else {
-            // fn application
-            let (l_bp, _) = FN_APPL.bp();
-
-            if l_bp < min_bp {
-                break;
-            }
-
-            let receiver = exprs.next().unwrap().syntax().green().into_owned();
-            let mut outer = GreenNode::new(
-                crate::SyntaxKind::APP_EXP.into(),
-                [NodeOrToken::Node(lhs.clone()), NodeOrToken::Node(receiver)],
-            );
-
-            std::mem::swap(&mut lhs, &mut outer);
-        }
-    }
-    Some(lhs)
-}
-
 #[cfg(test)]
 mod tests {
-    use crate::{passes::infix::pass_rearrange_infix, Parser};
+    use crate::{passes::infix::pass_rearrange_infix, passes::tests::check, Parser, SyntaxTree};
+    use expect_test::expect;
 
     #[test]
     fn scratch_infix() {
-        let input = "val a = 1 + f 2 * 3 + 4 ";
-        let tree = Parser::new(input).parse();
-        eprintln!("{}", tree);
+        check(
+            pass_rearrange_infix,
+            false,
+            "val a = 1 + f 2 * 3 + 4 ",
+            expect![[r#"
+             FILE@0..24
+               VAL_DEC@0..23
+                 VAL_KW@0..3 "val"
+                 WHITESPACE@3..4
+                 VAL_BIND@4..23
+                   VID_PAT@4..5
+                     LONG_VID@4..5
+                       VID@4..5 "a"
+                   WHITESPACE@5..6
+                   EQ@6..7 "="
+                   WHITESPACE@7..8
+                   INFIX_EXP@8..23
+                     INFIX_EXP@8..19
+                       SCON_EXP@8..9
+                         INT@8..9 "1"
+                       WHITESPACE@9..10
+                       VID@10..11 "+"
+                       WHITESPACE@11..12
+                       INFIX_EXP@12..19
+                         APP_EXP@12..15
+                           VID_EXP@12..13
+                             LONG_VID@12..13
+                               VID@12..13 "f"
+                           WHITESPACE@13..14
+                           SCON_EXP@14..15
+                             INT@14..15 "2"
+                         WHITESPACE@15..16
+                         VID@16..17 "*"
+                         WHITESPACE@17..18
+                         SCON_EXP@18..19
+                           INT@18..19 "3"
+                     WHITESPACE@19..20
+                     VID@20..21 "+"
+                     WHITESPACE@21..22
+                     SCON_EXP@22..23
+                       INT@22..23 "4"
+               WHITESPACE@23..24
+        "#]],
+        )
+    }
 
-        let new_tree = pass_rearrange_infix(tree);
-        eprintln!("{}", new_tree);
+    #[test]
+    fn two_infix_decs() {
+        check(
+            pass_rearrange_infix,
+            false,
+            "val a = 1 + f 2 * 3 + 4
+            val b = 3 div 4 + 5",
+            expect![[r#"
+                FILE@0..55
+                  SEQ_DEC@0..55
+                    VAL_DEC@0..23
+                      VAL_KW@0..3 "val"
+                      WHITESPACE@3..4
+                      VAL_BIND@4..23
+                        VID_PAT@4..5
+                          LONG_VID@4..5
+                            VID@4..5 "a"
+                        WHITESPACE@5..6
+                        EQ@6..7 "="
+                        WHITESPACE@7..8
+                        INFIX_EXP@8..23
+                          INFIX_EXP@8..19
+                            SCON_EXP@8..9
+                              INT@8..9 "1"
+                            WHITESPACE@9..10
+                            VID@10..11 "+"
+                            WHITESPACE@11..12
+                            INFIX_EXP@12..19
+                              APP_EXP@12..15
+                                VID_EXP@12..13
+                                  LONG_VID@12..13
+                                    VID@12..13 "f"
+                                WHITESPACE@13..14
+                                SCON_EXP@14..15
+                                  INT@14..15 "2"
+                              WHITESPACE@15..16
+                              VID@16..17 "*"
+                              WHITESPACE@17..18
+                              SCON_EXP@18..19
+                                INT@18..19 "3"
+                          WHITESPACE@19..20
+                          VID@20..21 "+"
+                          WHITESPACE@21..22
+                          SCON_EXP@22..23
+                            INT@22..23 "4"
+                    WHITESPACE@23..36
+                    VAL_DEC@36..55
+                      VAL_KW@36..39 "val"
+                      WHITESPACE@39..40
+                      VAL_BIND@40..55
+                        VID_PAT@40..41
+                          LONG_VID@40..41
+                            VID@40..41 "b"
+                        WHITESPACE@41..42
+                        EQ@42..43 "="
+                        WHITESPACE@43..44
+                        INFIX_EXP@44..55
+                          INFIX_EXP@44..51
+                            SCON_EXP@44..45
+                              INT@44..45 "3"
+                            WHITESPACE@45..46
+                            VID@46..49 "div"
+                            WHITESPACE@49..50
+                            SCON_EXP@50..51
+                              INT@50..51 "4"
+                          WHITESPACE@51..52
+                          VID@52..53 "+"
+                          WHITESPACE@53..54
+                          SCON_EXP@54..55
+                            INT@54..55 "5"
+            "#]],
+        )
     }
 }
