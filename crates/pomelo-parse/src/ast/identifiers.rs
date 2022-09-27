@@ -1,4 +1,4 @@
-use crate::{impl_ast_node, impl_ast_token, SyntaxNode, SyntaxToken, AstNode};
+use crate::{impl_ast_node, impl_ast_token, AstNode, SyntaxNode, SyntaxToken};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct LongVId {

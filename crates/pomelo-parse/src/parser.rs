@@ -70,6 +70,10 @@ impl SyntaxTree {
     pub fn node(&self) -> GreenNode {
         self.node.clone()
     }
+
+    pub fn replace_node(&self, new_node: GreenNode) -> Self {
+        Self::new(new_node, self.errors.clone())
+    }
 }
 
 impl fmt::Display for SyntaxTree {
@@ -108,7 +112,7 @@ pub struct Parser<'a> {
     /// Tokens are stored in reverse order
     tokens: Vec<Token<'a>>,
     errors: Vec<Error>,
-    builder: NodeBuilder, 
+    builder: NodeBuilder,
 }
 
 impl<'a> Parser<'a> {
@@ -133,7 +137,7 @@ impl<'a> Parser<'a> {
         }
         tokens.reverse(); // Do this so we can pop tokens off the back of the vector efficiently
 
-        let builder = NodeBuilder::new(); 
+        let builder = NodeBuilder::new();
 
         Self {
             current_pos: 0,
@@ -379,18 +383,14 @@ impl NodeBuilder {
 
     #[must_use]
     pub(crate) fn start_node_at(&mut self, checkpoint: Checkpoint, kind: SyntaxKind) -> NodeGuard {
-        self.0
-            .borrow_mut()
-            .start_node_at(checkpoint.0, kind.into());
+        self.0.borrow_mut().start_node_at(checkpoint.0, kind.into());
         NodeGuard {
             builder: self.0.clone(),
         }
     }
 
     pub(crate) fn push_token(&mut self, token: Token) {
-        self.0
-            .borrow_mut()
-            .token(token.kind().into(), token.text())
+        self.0.borrow_mut().token(token.kind().into(), token.text())
     }
 
     pub(crate) fn finish(self) -> GreenNode {

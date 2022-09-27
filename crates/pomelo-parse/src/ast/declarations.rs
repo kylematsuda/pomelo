@@ -228,3 +228,9 @@ pub struct NonfixDec {
 }
 
 impl_ast_node!(NonfixDec, NONFIX_DEC);
+
+impl NonfixDec {
+    pub fn vids(&self) -> AstChildrenTokens<ast::VId> {
+        self.get_tokens()
+    }
+}

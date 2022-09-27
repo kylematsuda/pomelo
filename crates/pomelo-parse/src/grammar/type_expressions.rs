@@ -28,7 +28,7 @@ fn tuple_ty(p: &mut Parser) {
                 assert_eq!(p.eat_mapped(STAR), IDENT);
                 true
             } else {
-                false 
+                false
             }
         },
         tycon_seq,
@@ -37,8 +37,8 @@ fn tuple_ty(p: &mut Parser) {
 
 fn star_ident(p: &Parser) -> bool {
     match p.peek_token_next_nontrivia(0).map(Token::text) {
-        Some("*") => true, 
-        _ => false
+        Some("*") => true,
+        _ => false,
     }
 }
 
@@ -57,14 +57,13 @@ fn non_star_ident(p: &Parser) -> bool {
     let k = t.map(Token::kind).unwrap_or(EOF);
 
     if k.is_ty_atom() {
-        true 
+        true
     } else if k == IDENT {
         t.map(Token::text) != Some("*")
     } else {
-        false 
+        false
     }
 }
-
 
 fn ty_atom_or_longtycon(p: &mut Parser) {
     if p.peek().is_ty_atom() {

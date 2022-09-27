@@ -1,4 +1,5 @@
-use crate::{impl_ast_token, SyntaxToken};
+use crate::{impl_ast_token, AstToken, SyntaxToken};
+use std::str::FromStr;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Int {
@@ -6,6 +7,17 @@ pub struct Int {
 }
 
 impl_ast_token!(Int, INT);
+
+impl Int {
+    // Sketchy for now
+    // Obviously will fail if the number is negated ("~")
+    pub fn parse<F: FromStr>(&self) -> F
+    where
+        <F as FromStr>::Err: std::fmt::Debug,
+    {
+        self.syntax().text().parse::<F>().unwrap()
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Real {

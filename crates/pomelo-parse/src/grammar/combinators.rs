@@ -76,11 +76,5 @@ pub(crate) fn descend_right(
     continue_if: impl Fn(&mut Parser) -> bool,
     caller: impl Fn(&mut Parser),
 ) {
-    descend_flat(
-        p,
-        inner_node_kind,
-        before,
-        continue_if,
-        caller,
-    )
+    descend_flat(p, inner_node_kind, before, continue_if, caller)
 }
