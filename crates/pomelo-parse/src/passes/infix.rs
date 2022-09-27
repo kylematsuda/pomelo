@@ -1,10 +1,15 @@
-use crate::{ast, AstNode, AstToken, SyntaxNode, SyntaxTree, ast::InfixOrAppExpr, parser::Token};
 use crate::parser::NodeBuilder;
-use rowan::{GreenNode, NodeOrToken};
+use crate::{
+    ast, ast::InfixOrAppExpr, grammar, parser::Token, AstNode, AstToken, Parser,
+    SyntaxElementChildren, SyntaxNode, SyntaxTree,
+};
+use rowan::ast::SyntaxNodePtr;
+use rowan::{GreenNode, GreenToken, NodeOrToken};
 
 use std::collections::HashMap;
-use std::ops::{Deref, DerefMut};
 use std::iter::Peekable;
+use std::ops::{Deref, DerefMut};
+use std::rc::Rc;
 
 #[rustfmt::skip]
 const BUILTINS: [(&'static str, Fixity); 18] = [
@@ -28,18 +33,22 @@ const BUILTINS: [(&'static str, Fixity); 18] = [
     ("before",	Fixity { val: 0, assoc: Associativity::Left }),
 ];
 
-const FN_APPL: Fixity = Fixity { val: 11, assoc: Associativity::Left };
+const FN_APPL: Fixity = Fixity {
+    val: 11,
+    assoc: Associativity::Left,
+};
 
-struct Context(HashMap<String, Fixity>);
+#[derive(Clone, Debug)]
+struct Context(Rc<HashMap<String, Fixity>>);
 
 impl Context {
     fn new_with_builtins() -> Self {
-        Self(
+        Self(Rc::new(
             BUILTINS
                 .into_iter()
                 .map(|(s, f)| (String::from(s), f))
                 .collect(),
-        )
+        ))
     }
 
     // If the op is in the map, return its binding power.
@@ -49,7 +58,7 @@ impl Context {
 }
 
 impl Deref for Context {
-    type Target = HashMap<String, Fixity>;
+    type Target = Rc<HashMap<String, Fixity>>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -97,19 +106,248 @@ fn find_infix_or_app_expr_parent(node: SyntaxNode) -> Option<SyntaxNode> {
     }
 }
 
-fn fix_infix(expr: InfixOrAppExpr, ctx: &Context) -> GreenNode {
-    let mut peek = expr.exprs().peekable();
-    fix_infix_bp(&mut peek, ctx, 0)
+pub fn pass_rearrange_infix(tree: SyntaxTree) -> SyntaxTree {
+    let root = tree.syntax();
+    let ctx = Context::new_with_builtins();
+    rearrange_infix(tree, root, &ctx)
 }
 
-fn fix_infix_bp<I>(exprs: &mut Peekable<I>, ctx: &Context, min_bp: u8) -> GreenNode
-where
-    I: Iterator<Item = ast::Expr>
-{
-    let mut lhs = exprs.next().unwrap().syntax().green().into_owned(); 
+fn rearrange_infix(tree: SyntaxTree, node: SyntaxNode, ctx: &Context) -> SyntaxTree {
+    let mut tree = tree;
+    let mut node = node;
+
+    if ast::InfixOrAppExpr::cast(node.clone()).is_some() {
+        let parent_ptr = SyntaxNodePtr::new(
+            &node
+                .parent()
+                .expect("an expression cannot be the root of the tree"),
+        );
+        let index = node.index();
+
+        tree = fix_infix(&tree, node.clone(), ctx);
+
+        let parent_node = parent_ptr.to_node(&tree.syntax());
+        node = match parent_node.children_with_tokens().nth(index) {
+            Some(NodeOrToken::Node(node)) => node,
+            _ => panic!("number of children hasn't changed"),
+        };
+    }
+
+    for c in node.children() {
+        tree = rearrange_infix(tree, c, ctx);
+    }
+    tree
+}
+
+fn update_context(ctx: Context, dec: &SyntaxNode) -> Context {
+    let mut ctx: Context = ctx.clone();
+    if let Some(infix) = ast::InfixDec::cast(dec.clone()) {
+        let fixity = infix
+            .fixity()
+            .and_then(|f| f.value())
+            .map(|i| i.parse())
+            .unwrap_or(0u8);
+        for name in infix.vids() {
+            let vid = name.syntax().text();
+            Rc::get_mut(&mut ctx).unwrap().insert(
+                vid.to_owned(),
+                Fixity {
+                    val: fixity,
+                    assoc: Associativity::Left,
+                },
+            );
+        }
+    } else if let Some(infixr) = ast::InfixrDec::cast(dec.clone()) {
+        let fixity = infixr
+            .fixity()
+            .and_then(|f| f.value())
+            .map(|i| i.parse())
+            .unwrap_or(0u8);
+        for name in infixr.vids() {
+            let vid = name.syntax().text();
+            Rc::get_mut(&mut ctx).unwrap().insert(
+                vid.to_owned(),
+                Fixity {
+                    val: fixity,
+                    assoc: Associativity::Right,
+                },
+            );
+        }
+    } else if let Some(nonfix) = ast::NonfixDec::cast(dec.clone()) {
+        for name in nonfix.vids() {
+            let vid = name.syntax().text();
+            Rc::get_mut(&mut ctx).unwrap().remove(vid);
+        }
+    }
+    ctx
+}
+
+fn fix_infix(tree: &SyntaxTree, expr: SyntaxNode, ctx: &Context) -> SyntaxTree {
+    let mut peek = expr.children_with_tokens().peekable();
+    let new_green = fix_infix_bp_ii(&mut peek, ctx, 0).unwrap();
+
+    let old_parent = expr.parent().unwrap();
+    let new_parent = old_parent
+        .green()
+        .into_owned()
+        .replace_child(expr.index(), new_green.into());
+
+    let new_tree = old_parent.replace_with(new_parent);
+    tree.replace_node(new_tree)
+}
+
+fn intersperse_trivia(
+    first: NodeOrToken<GreenNode, GreenToken>,
+    mut trivia: Vec<NodeOrToken<GreenNode, GreenToken>>,
+    second: NodeOrToken<GreenNode, GreenToken>,
+    last: Option<(
+        Vec<NodeOrToken<GreenNode, GreenToken>>,
+        NodeOrToken<GreenNode, GreenToken>,
+    )>,
+) -> Vec<NodeOrToken<GreenNode, GreenToken>> {
+    let mut out = vec![first];
+    out.append(&mut trivia);
+    out.push(second);
+    if let Some((mut triv, last)) = last {
+        out.append(&mut triv);
+        out.push(last);
+    }
+    out
+}
+
+fn next_nontrivia(children: &mut Peekable<SyntaxElementChildren>) -> Option<SyntaxNode> {
+    let mut first = children.peek()?.clone();
+    while let NodeOrToken::Token(_) = first {
+        first = first.next_sibling_or_token()?;
+    }
+
+    match first {
+        NodeOrToken::Node(n) => Some(n),
+        _ => unreachable!(),
+    }
+}
+
+fn fix_infix_bp_ii(
+    children: &mut Peekable<SyntaxElementChildren>,
+    ctx: &Context,
+    min_bp: u8,
+) -> Option<GreenNode> {
+    let lhs_syntax = match children.next() {
+        Some(NodeOrToken::Node(expr)) => expr,
+        _ => panic!("FIXME later"),
+    };
+    let mut lhs = lhs_syntax.green().into_owned();
 
     loop {
-        let op = if let Some(op) = exprs.peek() { op } else { break; };
+        let next = match next_nontrivia(children) {
+            Some(expr) => expr,
+            None => break,
+        };
+        let next_text = next.text().to_string();
+
+        eprintln!("{}, {}", lhs, next);
+
+        if let Some((l_bp, r_bp)) = ctx.get_bp(&next_text) {
+            if l_bp < min_bp {
+                break;
+            }
+
+            let trivia = collect_trivia(children);
+
+            let vid = match children.next() {
+                Some(NodeOrToken::Node(expr)) => expr,
+                _ => panic!("FIXME"),
+            };
+            assert_eq!(vid, next);
+
+            let vid = ast::VIdExpr::cast(vid)
+                .unwrap()
+                .longvid()
+                .unwrap()
+                .vid()
+                .unwrap()
+                .syntax()
+                .green()
+                .to_owned();
+
+            let trivia_2 = collect_trivia(children);
+
+            let rhs = fix_infix_bp_ii(children, ctx, r_bp).unwrap();
+
+            let mut outer = GreenNode::new(
+                crate::SyntaxKind::INFIX_EXP.into(),
+                intersperse_trivia(
+                    NodeOrToken::Node(lhs.clone()),
+                    trivia,
+                    NodeOrToken::Token(vid),
+                    Some((trivia_2, NodeOrToken::Node(rhs))),
+                ),
+            );
+
+            std::mem::swap(&mut lhs, &mut outer);
+        } else {
+            // fn application
+            let (l_bp, _) = FN_APPL.bp();
+
+            if l_bp < min_bp {
+                break;
+            }
+
+            let trivia = collect_trivia(children);
+
+            let receiver = match children.next() {
+                Some(NodeOrToken::Node(expr)) => expr,
+                _ => panic!("FIXME"),
+            };
+            assert_eq!(receiver, next);
+            let receiver = receiver.green().into_owned();
+
+            let mut outer = GreenNode::new(
+                crate::SyntaxKind::APP_EXP.into(),
+                intersperse_trivia(
+                    NodeOrToken::Node(lhs.clone()),
+                    trivia,
+                    NodeOrToken::Node(receiver),
+                    None,
+                ),
+            );
+
+            std::mem::swap(&mut lhs, &mut outer);
+        }
+    }
+
+    Some(lhs)
+}
+
+fn collect_trivia(
+    children: &mut Peekable<SyntaxElementChildren>,
+) -> Vec<NodeOrToken<GreenNode, GreenToken>> {
+    let mut out = vec![];
+
+    loop {
+        match children.peek() {
+            Some(NodeOrToken::Token(t)) if t.kind().is_trivia() => {
+                out.push(NodeOrToken::Token(t.green().to_owned()));
+                children.next();
+            }
+            _ => break,
+        }
+    }
+    out
+}
+
+fn fix_infix_bp<I>(exprs: &mut Peekable<I>, ctx: &Context, min_bp: u8) -> Option<GreenNode>
+where
+    I: Iterator<Item = ast::Expr>,
+{
+    let mut lhs = exprs.next()?.syntax().green().into_owned();
+
+    loop {
+        let op = if let Some(op) = exprs.peek() {
+            op
+        } else {
+            break;
+        };
         let op_text = op.syntax().text().to_string();
 
         // Infix
@@ -119,18 +357,29 @@ where
             }
 
             let op = exprs.next().unwrap();
-            let vid = ast::VIdExpr::cast(op.syntax().clone()).unwrap().longvid().unwrap().vid().unwrap().syntax().green().to_owned();
-            let rhs = fix_infix_bp(exprs, ctx, r_bp);
+            let vid = ast::VIdExpr::cast(op.syntax().clone())
+                .unwrap()
+                .longvid()
+                .unwrap()
+                .vid()
+                .unwrap()
+                .syntax()
+                .green()
+                .to_owned();
+            let rhs = fix_infix_bp(exprs, ctx, r_bp)?;
 
-            let mut outer = GreenNode::new(crate::SyntaxKind::INFIX_EXP.into(), [
-                NodeOrToken::Node(lhs.clone()),
-                NodeOrToken::Token(vid),
-                NodeOrToken::Node(rhs),
-            ]);
+            let mut outer = GreenNode::new(
+                crate::SyntaxKind::INFIX_EXP.into(),
+                [
+                    NodeOrToken::Node(lhs.clone()),
+                    NodeOrToken::Token(vid),
+                    NodeOrToken::Node(rhs),
+                ],
+            );
 
             std::mem::swap(&mut lhs, &mut outer);
-
-        } else { // fn application 
+        } else {
+            // fn application
             let (l_bp, _) = FN_APPL.bp();
 
             if l_bp < min_bp {
@@ -138,44 +387,28 @@ where
             }
 
             let receiver = exprs.next().unwrap().syntax().green().into_owned();
-            let mut outer = GreenNode::new(crate::SyntaxKind::APP_EXP.into(), [
-                NodeOrToken::Node(lhs.clone()),
-                NodeOrToken::Node(receiver),
-            ]);
+            let mut outer = GreenNode::new(
+                crate::SyntaxKind::APP_EXP.into(),
+                [NodeOrToken::Node(lhs.clone()), NodeOrToken::Node(receiver)],
+            );
 
             std::mem::swap(&mut lhs, &mut outer);
         }
     }
-    lhs
+    Some(lhs)
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        ast::AtomicExpr, ast::Expr, ast::InfixOrAppExpr,
-        passes::infix::find_infix_or_app_expr_parent, passes::infix::Context, AstNode, Parser,
-        passes::infix::fix_infix,
-        SyntaxTree, 
-    };
+    use crate::{passes::infix::pass_rearrange_infix, Parser};
 
     #[test]
     fn scratch_infix() {
-        let ctx = Context::new_with_builtins();
-
-        let input = "val a = 1 + f 2 * 3 + 4";
+        let input = "val a = 1 + f 2 * 3 + 4 ";
         let tree = Parser::new(input).parse();
-
-        let node = tree.syntax();
-
         eprintln!("{}", tree);
 
-        // DFS to find unresolved node
-        let infix = find_infix_or_app_expr_parent(node.clone()).unwrap();
-        // Cast to ast node
-        let infix = InfixOrAppExpr::cast(infix).unwrap();
-
-        let green = fix_infix(infix.clone(), &ctx);
-
-        eprintln!("{}", SyntaxTree::new(green, vec![]));
+        let new_tree = pass_rearrange_infix(tree);
+        eprintln!("{}", new_tree);
     }
 }
