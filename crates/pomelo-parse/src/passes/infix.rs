@@ -1,4 +1,4 @@
-use crate::{ast, AstNode, AstToken, SyntaxElementChildren, SyntaxNode, SyntaxTree};
+use crate::{ast, AstNode, AstToken, SyntaxElement, SyntaxElementChildren, SyntaxNode, SyntaxTree, SyntaxKind};
 use rowan::ast::SyntaxNodePtr;
 use rowan::{GreenNode, GreenToken, NodeOrToken};
 
@@ -186,23 +186,11 @@ fn fix_infix(tree: &SyntaxTree, expr: SyntaxNode, ctx: &Context) -> SyntaxTree {
     tree.replace_node(new_tree)
 }
 
-fn intersperse_trivia(
-    first: GreenElement,
-    mut trivia: Vec<GreenElement>,
-    second: GreenElement,
-    last: Option<(
-        Vec<GreenElement>,
-        GreenElement,
-    )>,
-) -> Vec<GreenElement> {
-    let mut out = vec![first];
-    out.append(&mut trivia);
-    out.push(second);
-    if let Some((mut triv, last)) = last {
-        out.append(&mut triv);
-        out.push(last);
+fn unwrap_syntax_node(elt: SyntaxElement) -> SyntaxNode {
+    match elt {
+        NodeOrToken::Node(n) => n,
+        _ => panic!(),
     }
-    out
 }
 
 fn next_nontrivia(children: &Peekable<SyntaxElementChildren>) -> Option<SyntaxNode> {
@@ -213,10 +201,7 @@ fn next_nontrivia(children: &Peekable<SyntaxElementChildren>) -> Option<SyntaxNo
             _ => false,
         })
         .next()
-        .map(|c| match c {
-            NodeOrToken::Node(n) => n,
-            _ => panic!(),
-        })
+        .map(unwrap_syntax_node)
 }
 
 // Pratt parsing
@@ -243,12 +228,12 @@ fn fix_infix_bp(
                 break;
             }
 
-            let trivia = collect_trivia(children);
+            let mut trivia = collect_trivia(children);
 
-            let vid = match children.next() {
-                Some(NodeOrToken::Node(expr)) => expr,
-                _ => panic!("FIXME"),
-            };
+            let vid = children
+                .next()
+                .map(unwrap_syntax_node)
+                .expect("this is the same node as next");
             assert_eq!(vid, next);
 
             let vid = ast::VIdExpr::cast(vid)
@@ -261,18 +246,20 @@ fn fix_infix_bp(
                 .green()
                 .to_owned();
 
-            let trivia_2 = collect_trivia(children);
+            let mut trivia_2 = collect_trivia(children);
 
             let rhs = fix_infix_bp(children, ctx, r_bp).unwrap();
 
             let mut outer = GreenNode::new(
-                crate::SyntaxKind::INFIX_EXP.into(),
-                intersperse_trivia(
-                    NodeOrToken::Node(lhs.clone()),
-                    trivia,
-                    NodeOrToken::Token(vid),
-                    Some((trivia_2, NodeOrToken::Node(rhs))),
-                ),
+                SyntaxKind::INFIX_EXP.into(),
+                {
+                    let mut elts = vec![lhs.clone().into()];
+                    elts.append(&mut trivia);
+                    elts.push(vid.into());
+                    elts.append(&mut trivia_2);
+                    elts.push(rhs.into());
+                    elts
+                }
             );
 
             std::mem::swap(&mut lhs, &mut outer);
@@ -284,23 +271,23 @@ fn fix_infix_bp(
                 break;
             }
 
-            let trivia = collect_trivia(children);
+            let mut trivia = collect_trivia(children);
 
-            let receiver = match children.next() {
-                Some(NodeOrToken::Node(expr)) => expr,
-                _ => panic!("FIXME"),
-            };
-            assert_eq!(receiver, next);
-            let receiver = receiver.green().into_owned();
+            let rhs = children
+                .next()
+                .map(unwrap_syntax_node)
+                .expect("this is the same node as next");
+            assert_eq!(rhs, next);
+            let rhs = rhs.green().into_owned();
 
             let mut outer = GreenNode::new(
-                crate::SyntaxKind::APP_EXP.into(),
-                intersperse_trivia(
-                    NodeOrToken::Node(lhs.clone()),
-                    trivia,
-                    NodeOrToken::Node(receiver),
-                    None,
-                ),
+                SyntaxKind::APP_EXP.into(),
+                {
+                    let mut elts = vec![lhs.clone().into()];
+                    elts.append(&mut trivia);
+                    elts.push(rhs.into());
+                    elts
+                }
             );
 
             std::mem::swap(&mut lhs, &mut outer);
@@ -310,9 +297,7 @@ fn fix_infix_bp(
     Some(lhs)
 }
 
-fn collect_trivia(
-    children: &mut Peekable<SyntaxElementChildren>,
-) -> Vec<GreenElement> {
+fn collect_trivia(children: &mut Peekable<SyntaxElementChildren>) -> Vec<GreenElement> {
     let mut out = vec![];
 
     loop {
