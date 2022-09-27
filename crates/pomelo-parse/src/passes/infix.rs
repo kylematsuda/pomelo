@@ -1,8 +1,4 @@
-use crate::parser::NodeBuilder;
-use crate::{
-    ast, ast::InfixOrAppExpr, grammar, parser::Token, AstNode, AstToken, Parser,
-    SyntaxElementChildren, SyntaxNode, SyntaxTree,
-};
+use crate::{ast, AstNode, AstToken, SyntaxElementChildren, SyntaxNode, SyntaxTree};
 use rowan::ast::SyntaxNodePtr;
 use rowan::{GreenNode, GreenToken, NodeOrToken};
 
@@ -10,6 +6,8 @@ use std::collections::HashMap;
 use std::iter::Peekable;
 use std::ops::{Deref, DerefMut};
 use std::rc::Rc;
+
+type GreenElement = NodeOrToken<GreenNode, GreenToken>;
 
 #[rustfmt::skip]
 const BUILTINS: [(&'static str, Fixity); 18] = [
@@ -189,14 +187,14 @@ fn fix_infix(tree: &SyntaxTree, expr: SyntaxNode, ctx: &Context) -> SyntaxTree {
 }
 
 fn intersperse_trivia(
-    first: NodeOrToken<GreenNode, GreenToken>,
-    mut trivia: Vec<NodeOrToken<GreenNode, GreenToken>>,
-    second: NodeOrToken<GreenNode, GreenToken>,
+    first: GreenElement,
+    mut trivia: Vec<GreenElement>,
+    second: GreenElement,
     last: Option<(
-        Vec<NodeOrToken<GreenNode, GreenToken>>,
-        NodeOrToken<GreenNode, GreenToken>,
+        Vec<GreenElement>,
+        GreenElement,
     )>,
-) -> Vec<NodeOrToken<GreenNode, GreenToken>> {
+) -> Vec<GreenElement> {
     let mut out = vec![first];
     out.append(&mut trivia);
     out.push(second);
@@ -314,7 +312,7 @@ fn fix_infix_bp(
 
 fn collect_trivia(
     children: &mut Peekable<SyntaxElementChildren>,
-) -> Vec<NodeOrToken<GreenNode, GreenToken>> {
+) -> Vec<GreenElement> {
     let mut out = vec![];
 
     loop {
@@ -331,7 +329,7 @@ fn collect_trivia(
 
 #[cfg(test)]
 mod tests {
-    use crate::{passes::infix::pass_rearrange_infix, passes::tests::check, Parser, SyntaxTree};
+    use crate::{passes::infix::pass_rearrange_infix, passes::tests::check};
     use expect_test::expect;
 
     #[test]
