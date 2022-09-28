@@ -17,6 +17,9 @@
     - [ ] Look for other places where we can do this...
 - [x] Fix infix operators vs function applications 
     - [ ] Write more tests!!!
+        - [ ] Precedence
+        - [ ] L vs R association
+        - [ ] Error logging
     - [x] Single pass? Simultaneously:
         - [x] Rearrange the syntax tree
         - [x] Keep track of which infix operators are in scope
