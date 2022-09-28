@@ -641,7 +641,7 @@ val b = x f y + 1",
         check(
             pass_rearrange_infix,
             false,
-"val a =
+            "val a =
   let 
     infix 9 f
   in 
