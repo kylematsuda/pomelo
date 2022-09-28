@@ -385,6 +385,50 @@ mod tests {
     }
 
     #[test]
+    fn op_infix() {
+        check(
+            pass_rearrange_infix,
+            false,
+            "val a = op +(1, 2) + 3",
+            expect![[r#"
+                FILE@0..22
+                  VAL_DEC@0..22
+                    VAL_KW@0..3 "val"
+                    WHITESPACE@3..4
+                    VAL_BIND@4..22
+                      VID_PAT@4..5
+                        LONG_VID@4..5
+                          VID@4..5 "a"
+                      WHITESPACE@5..6
+                      EQ@6..7 "="
+                      WHITESPACE@7..8
+                      INFIX_EXP@8..22
+                        APP_EXP@8..18
+                          VID_EXP@8..12
+                            OP_KW@8..10 "op"
+                            WHITESPACE@10..11
+                            LONG_VID@11..12
+                              VID@11..12 "+"
+                          TUPLE_EXP@12..18
+                            L_PAREN@12..13 "("
+                            SCON_EXP@13..14
+                              INT@13..14 "1"
+                            COMMA@14..15 ","
+                            WHITESPACE@15..16
+                            SCON_EXP@16..17
+                              INT@16..17 "2"
+                            R_PAREN@17..18 ")"
+                        WHITESPACE@18..19
+                        VID@19..20 "+"
+                        WHITESPACE@20..21
+                        SCON_EXP@21..22
+                          INT@21..22 "3"
+            "#]],
+        )
+    }
+
+
+    #[test]
     fn two_infix_decs() {
         check(
             pass_rearrange_infix,
