@@ -1,13 +1,12 @@
 use crate::{
-    ast, AstNode, AstToken, Error, SyntaxElement, SyntaxElementChildren, SyntaxKind, SyntaxNode,
-    SyntaxTree,
+    ast, AstChildrenTokens, AstNode, AstToken, Error, SyntaxElement, SyntaxElementChildren,
+    SyntaxKind, SyntaxNode, SyntaxTree,
 };
-use rowan::ast::SyntaxNodePtr;
-use rowan::{GreenNode, GreenToken, NodeOrToken};
+
+use rowan::{GreenNode, GreenToken, NodeOrToken, ast::SyntaxNodePtr};
 
 use std::collections::HashMap;
 use std::iter::Peekable;
-use std::ops::{Deref, DerefMut};
 
 type GreenElement = NodeOrToken<GreenNode, GreenToken>;
 
@@ -33,16 +32,17 @@ const BUILTINS: [(&'static str, Fixity); 18] = [
     ("before",	Fixity { val: 0, assoc: Associativity::Left }),
 ];
 
+// Maximum user-defined fixity is 9 
 const FN_APPL: Fixity = Fixity {
-    val: 11,
+    val: 10,
     assoc: Associativity::Left,
 };
 
 #[derive(Clone, Debug)]
-struct Context(HashMap<String, Fixity>);
+pub(crate) struct Context(HashMap<String, Fixity>);
 
 impl Context {
-    fn new_with_builtins() -> Self {
+    pub(crate) fn new_with_builtins() -> Self {
         Self(
             BUILTINS
                 .into_iter()
@@ -52,22 +52,37 @@ impl Context {
     }
 
     // If the op is in the map, return its binding power.
-    fn get_bp(&self, op: &SyntaxNode) -> Option<(u8, u8)> {
+    pub(crate) fn get_bp(&self, op: &SyntaxNode) -> Option<(u8, u8)> {
         self.0.get(&op.text().to_string()).map(Fixity::bp)
     }
-}
 
-impl Deref for Context {
-    type Target = HashMap<String, Fixity>;
+    pub(crate) fn update(&mut self, dec: &SyntaxNode) {
+        let fixity_to_int =
+            |f: Option<ast::Fixity>| f.and_then(|f| f.value()).map(|i| i.parse()).unwrap_or(0);
 
-    fn deref(&self) -> &Self::Target {
-        &self.0
+        if let Some(infix) = ast::InfixDec::cast(dec.clone()) {
+            let fixity = fixity_to_int(infix.fixity());
+            self.update_vids(infix.vids(), fixity, Associativity::Left);
+        } else if let Some(infixr) = ast::InfixrDec::cast(dec.clone()) {
+            let fixity = fixity_to_int(infixr.fixity());
+            self.update_vids(infixr.vids(), fixity, Associativity::Right);
+        } else if let Some(nonfix) = ast::NonfixDec::cast(dec.clone()) {
+            self.remove_vids(nonfix.vids());
+        }
     }
-}
 
-impl DerefMut for Context {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
+    fn update_vids(&mut self, vids: AstChildrenTokens<ast::VId>, fixity: u8, assoc: Associativity) {
+        for name in vids {
+            let vid = name.syntax().text();
+            self.0.insert(vid.to_owned(), Fixity { val: fixity, assoc });
+        }
+    }
+
+    fn remove_vids(&mut self, vids: AstChildrenTokens<ast::VId>) {
+        for name in vids {
+            let vid = name.syntax().text();
+            self.0.remove(vid);
+        }
     }
 }
 
@@ -103,13 +118,18 @@ fn rearrange_infix(tree: SyntaxTree, node: SyntaxNode, ctx: &mut Context) -> Syn
     let mut tree = tree;
     let mut node = node;
 
-    update_context(ctx, &node);
+    ctx.update(&node);
 
     if ast::InfixOrAppExpr::cast(node.clone()).is_some() {
         tree = fix_infix(tree, node.clone(), &ctx);
         node = switch_tree(&node, &tree);
     }
 
+    // We have to be careful where we share context.
+    // All children at the same level should use the same context,
+    // which is updated as statements are iterated through.
+    // However, the context should not leak upwards, so we need to clone 
+    // into a new context every time we descend a level in the tree.
     let mut child_context = ctx.clone();
     for c in node.children() {
         let c = switch_tree(&c, &tree);
@@ -131,47 +151,6 @@ fn switch_tree(node: &SyntaxNode, new_tree: &SyntaxTree) -> SyntaxNode {
     match parent_node.children_with_tokens().nth(index) {
         Some(NodeOrToken::Node(node)) => node,
         _ => panic!("number of children hasn't changed"),
-    }
-}
-
-fn update_context(ctx: &mut Context, dec: &SyntaxNode) {
-    if let Some(infix) = ast::InfixDec::cast(dec.clone()) {
-        let fixity = infix
-            .fixity()
-            .and_then(|f| f.value())
-            .map(|i| i.parse())
-            .unwrap_or(0u8);
-        for name in infix.vids() {
-            let vid = name.syntax().text();
-            ctx.insert(
-                vid.to_owned(),
-                Fixity {
-                    val: fixity,
-                    assoc: Associativity::Left,
-                },
-            );
-        }
-    } else if let Some(infixr) = ast::InfixrDec::cast(dec.clone()) {
-        let fixity = infixr
-            .fixity()
-            .and_then(|f| f.value())
-            .map(|i| i.parse())
-            .unwrap_or(0u8);
-        for name in infixr.vids() {
-            let vid = name.syntax().text();
-            ctx.insert(
-                vid.to_owned(),
-                Fixity {
-                    val: fixity,
-                    assoc: Associativity::Right,
-                },
-            );
-        }
-    } else if let Some(nonfix) = ast::NonfixDec::cast(dec.clone()) {
-        for name in nonfix.vids() {
-            let vid = name.syntax().text();
-            ctx.remove(vid);
-        }
     }
 }
 
