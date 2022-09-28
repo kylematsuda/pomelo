@@ -17,9 +17,8 @@
     - [ ] Look for other places where we can do this...
 - [ ] Fix infix operators vs function applications 
     - [ ] Single pass? Simultaneously:
+        - [x] Rearrange the syntax tree
         - [ ] Keep track of which infix operators are in scope
-        - [ ] Rearrange the syntax tree
-    - [ ] Question: do this on the AST instead of CST? It's probably easier...
 - [ ] AST
     - [x] Stub out types
     - [x] Define getters for subparts
