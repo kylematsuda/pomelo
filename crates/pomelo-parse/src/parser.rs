@@ -71,8 +71,8 @@ impl SyntaxTree {
         self.node.clone()
     }
 
-    pub fn replace_node(&self, new_node: GreenNode) -> Self {
-        Self::new(new_node, self.errors.clone())
+    pub fn into_parts(self) -> (GreenNode, Vec<Error>) {
+        (self.node, self.errors)
     }
 }
 
