@@ -8,7 +8,6 @@ use rowan::{GreenNode, GreenToken, NodeOrToken};
 use std::collections::HashMap;
 use std::iter::Peekable;
 use std::ops::{Deref, DerefMut};
-use std::rc::Rc;
 
 type GreenElement = NodeOrToken<GreenNode, GreenToken>;
 
@@ -633,6 +632,97 @@ val b = x f y + 1",
                           WHITESPACE@55..56
                           SCON_EXP@56..57
                             INT@56..57 "1"
+            "#]],
+        )
+    }
+
+    #[test]
+    fn scoped_infix() {
+        check(
+            pass_rearrange_infix,
+            false,
+"val a =
+  let 
+    infix 9 f
+  in 
+    x f y + 1 
+  end
+
+val b = x f y + 1",
+            expect![[r#"
+                FILE@0..74
+                  SEQ_DEC@0..74
+                    VAL_DEC@0..55
+                      VAL_KW@0..3 "val"
+                      WHITESPACE@3..4
+                      VAL_BIND@4..55
+                        VID_PAT@4..5
+                          LONG_VID@4..5
+                            VID@4..5 "a"
+                        WHITESPACE@5..6
+                        EQ@6..7 "="
+                        WHITESPACE@7..10
+                        LET_EXP@10..55
+                          LET_KW@10..13 "let"
+                          WHITESPACE@13..19
+                          INFIX_DEC@19..28
+                            INFIX_KW@19..24 "infix"
+                            WHITESPACE@24..25
+                            FIXITY@25..26
+                              INT@25..26 "9"
+                            WHITESPACE@26..27
+                            VID@27..28 "f"
+                          WHITESPACE@28..31
+                          IN_KW@31..33 "in"
+                          WHITESPACE@33..39
+                          INFIX_EXP@39..48
+                            INFIX_EXP@39..44
+                              VID_EXP@39..40
+                                LONG_VID@39..40
+                                  VID@39..40 "x"
+                              WHITESPACE@40..41
+                              VID@41..42 "f"
+                              WHITESPACE@42..43
+                              VID_EXP@43..44
+                                LONG_VID@43..44
+                                  VID@43..44 "y"
+                            WHITESPACE@44..45
+                            VID@45..46 "+"
+                            WHITESPACE@46..47
+                            SCON_EXP@47..48
+                              INT@47..48 "1"
+                          WHITESPACE@48..52
+                          END_KW@52..55 "end"
+                    WHITESPACE@55..57
+                    VAL_DEC@57..74
+                      VAL_KW@57..60 "val"
+                      WHITESPACE@60..61
+                      VAL_BIND@61..74
+                        VID_PAT@61..62
+                          LONG_VID@61..62
+                            VID@61..62 "b"
+                        WHITESPACE@62..63
+                        EQ@63..64 "="
+                        WHITESPACE@64..65
+                        INFIX_EXP@65..74
+                          APP_EXP@65..70
+                            APP_EXP@65..68
+                              VID_EXP@65..66
+                                LONG_VID@65..66
+                                  VID@65..66 "x"
+                              WHITESPACE@66..67
+                              VID_EXP@67..68
+                                LONG_VID@67..68
+                                  VID@67..68 "f"
+                            WHITESPACE@68..69
+                            VID_EXP@69..70
+                              LONG_VID@69..70
+                                VID@69..70 "y"
+                          WHITESPACE@70..71
+                          VID@71..72 "+"
+                          WHITESPACE@72..73
+                          SCON_EXP@73..74
+                            INT@73..74 "1"
             "#]],
         )
     }
