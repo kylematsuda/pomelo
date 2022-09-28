@@ -15,10 +15,20 @@
     - [x] Remove nesting on EXP, TY, PAT, DEC etc.?
     -     - [x] Can hold the inner variants in an enum when going to AST
     - [ ] Look for other places where we can do this...
-- [ ] Fix infix operators vs function applications 
-    - [ ] Single pass? Simultaneously:
+- [x] Fix infix operators vs function applications 
+    - [ ] Write more tests!!!
+    - [x] Single pass? Simultaneously:
         - [x] Rearrange the syntax tree
-        - [ ] Keep track of which infix operators are in scope
+        - [x] Keep track of which infix operators are in scope
 - [ ] AST
     - [x] Stub out types
     - [x] Define getters for subparts
+    - [ ] Switch to Rowan-defined AstNode trait
+- [ ] Validation passes
+    - [ ] Infix binding strength must be a single digit
+    - [ ] Malformed numbers (may need to be more permissive/resilient at lexing stage)
+    - [ ] ?? Read Standard to find other constraints
+- [ ] Refactor lexer and parser to be more error resilient 
+    - [ ] Smarter strategy for lexing numbers?
+    - [ ] Don't glue compound special symbols at lexing stage?
+    - [ ] ???
