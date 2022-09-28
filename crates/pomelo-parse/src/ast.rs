@@ -108,7 +108,7 @@ impl<N: AstToken> Iterator for AstChildrenTokens<N> {
     fn next(&mut self) -> Option<Self::Item> {
         self.inner.find_map(|elt| match elt {
             SyntaxElement::Token(token) => N::cast(token),
-            _ => unreachable!(),
+            _ => None,
         })
     }
 }

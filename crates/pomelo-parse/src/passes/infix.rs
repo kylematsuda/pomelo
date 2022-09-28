@@ -40,16 +40,16 @@ const FN_APPL: Fixity = Fixity {
 };
 
 #[derive(Clone, Debug)]
-struct Context(Rc<HashMap<String, Fixity>>);
+struct Context(HashMap<String, Fixity>);
 
 impl Context {
     fn new_with_builtins() -> Self {
-        Self(Rc::new(
+        Self(
             BUILTINS
                 .into_iter()
                 .map(|(s, f)| (String::from(s), f))
                 .collect(),
-        ))
+        )
     }
 
     // If the op is in the map, return its binding power.
@@ -59,7 +59,7 @@ impl Context {
 }
 
 impl Deref for Context {
-    type Target = Rc<HashMap<String, Fixity>>;
+    type Target = HashMap<String, Fixity>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -96,22 +96,25 @@ enum Associativity {
 
 pub fn pass_rearrange_infix(tree: SyntaxTree) -> SyntaxTree {
     let root = tree.syntax();
-    let ctx = Context::new_with_builtins();
-    rearrange_infix(tree, root, &ctx)
+    let mut ctx = Context::new_with_builtins();
+    rearrange_infix(tree, root, &mut ctx)
 }
 
-fn rearrange_infix(tree: SyntaxTree, node: SyntaxNode, ctx: &Context) -> SyntaxTree {
+fn rearrange_infix(tree: SyntaxTree, node: SyntaxNode, ctx: &mut Context) -> SyntaxTree {
     let mut tree = tree;
     let mut node = node;
 
+    update_context(ctx, &node);
+
     if ast::InfixOrAppExpr::cast(node.clone()).is_some() {
-        tree = fix_infix(tree, node.clone(), ctx);
+        tree = fix_infix(tree, node.clone(), &ctx);
         node = switch_tree(&node, &tree);
     }
 
+    let mut child_context = ctx.clone();
     for c in node.children() {
         let c = switch_tree(&c, &tree);
-        tree = rearrange_infix(tree, c, ctx);
+        tree = rearrange_infix(tree, c, &mut child_context);
     }
     tree
 }
@@ -132,8 +135,7 @@ fn switch_tree(node: &SyntaxNode, new_tree: &SyntaxTree) -> SyntaxNode {
     }
 }
 
-fn update_context(ctx: Context, dec: &SyntaxNode) -> Context {
-    let mut ctx: Context = ctx.clone();
+fn update_context(ctx: &mut Context, dec: &SyntaxNode) {
     if let Some(infix) = ast::InfixDec::cast(dec.clone()) {
         let fixity = infix
             .fixity()
@@ -142,7 +144,7 @@ fn update_context(ctx: Context, dec: &SyntaxNode) -> Context {
             .unwrap_or(0u8);
         for name in infix.vids() {
             let vid = name.syntax().text();
-            Rc::get_mut(&mut ctx).unwrap().insert(
+            ctx.insert(
                 vid.to_owned(),
                 Fixity {
                     val: fixity,
@@ -158,7 +160,7 @@ fn update_context(ctx: Context, dec: &SyntaxNode) -> Context {
             .unwrap_or(0u8);
         for name in infixr.vids() {
             let vid = name.syntax().text();
-            Rc::get_mut(&mut ctx).unwrap().insert(
+            ctx.insert(
                 vid.to_owned(),
                 Fixity {
                     val: fixity,
@@ -169,10 +171,9 @@ fn update_context(ctx: Context, dec: &SyntaxNode) -> Context {
     } else if let Some(nonfix) = ast::NonfixDec::cast(dec.clone()) {
         for name in nonfix.vids() {
             let vid = name.syntax().text();
-            Rc::get_mut(&mut ctx).unwrap().remove(vid);
+            ctx.remove(vid);
         }
     }
-    ctx
 }
 
 fn fix_infix(tree: SyntaxTree, expr: SyntaxNode, ctx: &Context) -> SyntaxTree {
@@ -545,6 +546,93 @@ mod tests {
                           WHITESPACE@26..27
                           SCON_EXP@27..28
                             INT@27..28 "1"
+            "#]],
+        )
+    }
+
+    #[test]
+    fn user_defined_and_removed() {
+        check(
+            pass_rearrange_infix,
+            false,
+            "
+infix 9 f 
+val a = x f y + 1
+nonfix f 
+val b = x f y + 1",
+            expect![[r#"
+                FILE@0..57
+                  WHITESPACE@0..1
+                  SEQ_DEC@1..57
+                    INFIX_DEC@1..10
+                      INFIX_KW@1..6 "infix"
+                      WHITESPACE@6..7
+                      FIXITY@7..8
+                        INT@7..8 "9"
+                      WHITESPACE@8..9
+                      VID@9..10 "f"
+                    WHITESPACE@10..12
+                    VAL_DEC@12..29
+                      VAL_KW@12..15 "val"
+                      WHITESPACE@15..16
+                      VAL_BIND@16..29
+                        VID_PAT@16..17
+                          LONG_VID@16..17
+                            VID@16..17 "a"
+                        WHITESPACE@17..18
+                        EQ@18..19 "="
+                        WHITESPACE@19..20
+                        INFIX_EXP@20..29
+                          INFIX_EXP@20..25
+                            VID_EXP@20..21
+                              LONG_VID@20..21
+                                VID@20..21 "x"
+                            WHITESPACE@21..22
+                            VID@22..23 "f"
+                            WHITESPACE@23..24
+                            VID_EXP@24..25
+                              LONG_VID@24..25
+                                VID@24..25 "y"
+                          WHITESPACE@25..26
+                          VID@26..27 "+"
+                          WHITESPACE@27..28
+                          SCON_EXP@28..29
+                            INT@28..29 "1"
+                    WHITESPACE@29..30
+                    NONFIX_DEC@30..38
+                      NONFIX_KW@30..36 "nonfix"
+                      WHITESPACE@36..37
+                      VID@37..38 "f"
+                    WHITESPACE@38..40
+                    VAL_DEC@40..57
+                      VAL_KW@40..43 "val"
+                      WHITESPACE@43..44
+                      VAL_BIND@44..57
+                        VID_PAT@44..45
+                          LONG_VID@44..45
+                            VID@44..45 "b"
+                        WHITESPACE@45..46
+                        EQ@46..47 "="
+                        WHITESPACE@47..48
+                        INFIX_EXP@48..57
+                          APP_EXP@48..53
+                            APP_EXP@48..51
+                              VID_EXP@48..49
+                                LONG_VID@48..49
+                                  VID@48..49 "x"
+                              WHITESPACE@49..50
+                              VID_EXP@50..51
+                                LONG_VID@50..51
+                                  VID@50..51 "f"
+                            WHITESPACE@51..52
+                            VID_EXP@52..53
+                              LONG_VID@52..53
+                                VID@52..53 "y"
+                          WHITESPACE@53..54
+                          VID@54..55 "+"
+                          WHITESPACE@55..56
+                          SCON_EXP@56..57
+                            INT@56..57 "1"
             "#]],
         )
     }
