@@ -427,7 +427,6 @@ mod tests {
         )
     }
 
-
     #[test]
     fn two_infix_decs() {
         check(
@@ -498,6 +497,54 @@ mod tests {
                           WHITESPACE@53..54
                           SCON_EXP@54..55
                             INT@54..55 "5"
+            "#]],
+        )
+    }
+
+    #[test]
+    fn user_defined() {
+        check(
+            pass_rearrange_infix,
+            false,
+            "infix 9 f; val a = b f c + 1",
+            expect![[r#"
+                FILE@0..28
+                  SEQ_DEC@0..28
+                    INFIX_DEC@0..9
+                      INFIX_KW@0..5 "infix"
+                      WHITESPACE@5..6
+                      FIXITY@6..7
+                        INT@6..7 "9"
+                      WHITESPACE@7..8
+                      VID@8..9 "f"
+                    SEMICOLON@9..10 ";"
+                    WHITESPACE@10..11
+                    VAL_DEC@11..28
+                      VAL_KW@11..14 "val"
+                      WHITESPACE@14..15
+                      VAL_BIND@15..28
+                        VID_PAT@15..16
+                          LONG_VID@15..16
+                            VID@15..16 "a"
+                        WHITESPACE@16..17
+                        EQ@17..18 "="
+                        WHITESPACE@18..19
+                        INFIX_EXP@19..28
+                          INFIX_EXP@19..24
+                            VID_EXP@19..20
+                              LONG_VID@19..20
+                                VID@19..20 "b"
+                            WHITESPACE@20..21
+                            VID@21..22 "f"
+                            WHITESPACE@22..23
+                            VID_EXP@23..24
+                              LONG_VID@23..24
+                                VID@23..24 "c"
+                          WHITESPACE@24..25
+                          VID@25..26 "+"
+                          WHITESPACE@26..27
+                          SCON_EXP@27..28
+                            INT@27..28 "1"
             "#]],
         )
     }
