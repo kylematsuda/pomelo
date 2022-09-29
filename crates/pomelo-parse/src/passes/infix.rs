@@ -1,6 +1,6 @@
 use crate::{
-    ast, AstNode, AstToken, Error, SyntaxElement, SyntaxElementChildren,
-    SyntaxKind, SyntaxNode, SyntaxTree,
+    ast, AstNode, AstToken, Error, SyntaxElement, SyntaxElementChildren, SyntaxKind, SyntaxNode,
+    SyntaxTree,
 };
 
 use rowan::{ast::SyntaxNodePtr, GreenNode, GreenToken, NodeOrToken};
@@ -71,7 +71,12 @@ impl Context {
         }
     }
 
-    fn update_vids(&mut self, vids: impl Iterator<Item = ast::VId>, fixity: u8, assoc: Associativity) {
+    fn update_vids(
+        &mut self,
+        vids: impl Iterator<Item = ast::VId>,
+        fixity: u8,
+        assoc: Associativity,
+    ) {
         for name in vids {
             let vid = name.syntax().text();
             self.0.insert(vid.to_owned(), Fixity { val: fixity, assoc });

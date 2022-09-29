@@ -163,7 +163,10 @@ impl AstNode for AtomicPat {
     type Language = crate::language::SML;
 
     fn can_cast(kind: SyntaxKind) -> bool {
-        matches!(kind, WILDCARD_PAT | SCON_PAT | VID_PAT | RECORD_PAT | UNIT_PAT | TUPLE_PAT | LIST_PAT)
+        matches!(
+            kind,
+            WILDCARD_PAT | SCON_PAT | VID_PAT | RECORD_PAT | UNIT_PAT | TUPLE_PAT | LIST_PAT
+        )
     }
 
     fn cast(node: SyntaxNode) -> Option<Self>

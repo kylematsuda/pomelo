@@ -18,7 +18,7 @@ impl AstNode for Ty {
     fn can_cast(kind: SyntaxKind) -> bool {
         matches!(kind, FUN_TY | TUPLE_TY_EXP | TY_CON | RECORD_TY | TYVAR_TY)
     }
-    
+
     fn cast(node: SyntaxNode) -> Option<Self>
     where
         Self: Sized,

@@ -155,39 +155,19 @@ macro_rules! impl_ast_token {
 }
 
 pub mod support {
-    pub use rowan::ast::support::*;
+    use crate::{language::SML, AstNode, AstToken, SyntaxElement, SyntaxNode};
 
-    use crate::{AstToken, SyntaxElement, SyntaxElementChildren, SyntaxNode};
-    use std::marker::PhantomData;
+    pub use rowan::ast::support::{child, token};
 
-    pub fn tokens<N: AstToken>(parent: &SyntaxNode) -> AstChildrenTokens<N> {
-        AstChildrenTokens::new(parent)
+    pub fn tokens<N: AstToken>(parent: &SyntaxNode) -> impl Iterator<Item = N> {
+        parent.children_with_tokens().filter_map(|c| match c {
+            SyntaxElement::Token(token) => N::cast(token),
+            _ => None,
+        })
     }
 
-    /// c.f. rust-analyzer/crates/syntax/src/ast.rs
-    #[derive(Debug, Clone)]
-    pub struct AstChildrenTokens<N> {
-        inner: SyntaxElementChildren,
-        ph: PhantomData<N>,
-    }
-
-    impl<N> AstChildrenTokens<N> {
-        pub fn new(parent: &SyntaxNode) -> Self {
-            AstChildrenTokens {
-                inner: parent.children_with_tokens(),
-                ph: PhantomData,
-            }
-        }
-    }
-
-    impl<N: AstToken> Iterator for AstChildrenTokens<N> {
-        type Item = N;
-        fn next(&mut self) -> Option<Self::Item> {
-            self.inner.find_map(|elt| match elt {
-                SyntaxElement::Token(token) => N::cast(token),
-                _ => None,
-            })
-        }
+    pub fn children<N: AstNode<Language = SML>>(parent: &SyntaxNode) -> impl Iterator<Item = N> {
+        rowan::ast::support::children(parent)
     }
 }
 
