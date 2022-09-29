@@ -15,7 +15,7 @@
     - [x] Remove nesting on EXP, TY, PAT, DEC etc.?
     -     - [x] Can hold the inner variants in an enum when going to AST
     - [ ] Look for other places where we can do this...
-- [x] Fix infix operators vs function applications 
+- [ ] Fix infix operators vs function applications 
     - [ ] Write more tests!!!
         - [ ] Precedence
         - [ ] L vs R association
@@ -23,6 +23,7 @@
     - [x] Single pass? Simultaneously:
         - [x] Rearrange the syntax tree
         - [x] Keep track of which infix operators are in scope
+    - [ ] Add for patterns too: CONS_PAT vs INFIX_CONS_PAT 
 - [ ] AST
     - [x] Stub out types
     - [x] Define getters for subparts
@@ -35,3 +36,7 @@
     - [ ] Smarter strategy for lexing numbers?
     - [ ] Don't glue compound special symbols at lexing stage?
     - [ ] ???
+- [ ] BIG: add support for modules 
+    - [ ] Parsing 
+    - [ ] AST 
+    - [ ] Validation
