@@ -25,37 +25,6 @@ pub use type_expressions::*;
 use crate::{SyntaxNode, SyntaxToken};
 pub use rowan::ast::AstNode;
 
-// pub trait AstNode {
-//     fn cast(node: SyntaxNode) -> Option<Self>
-//     where
-//         Self: Sized;
-//
-//     fn syntax(&self) -> &SyntaxNode;
-//
-//     fn token(&self, kind: crate::SyntaxKind) -> Option<SyntaxToken> {
-//         self.syntax()
-//             .children_with_tokens()
-//             .filter_map(|it| it.into_token())
-//             .find(|it| it.kind() == kind)
-//     }
-//
-//     fn get_nodes<N: AstNode>(&self) -> AstChildren<N> {
-//         AstChildren::new(&self.syntax())
-//     }
-//
-//     fn get_node<N: AstNode>(&self) -> Option<N> {
-//         self.get_nodes().next()
-//     }
-//
-//     fn get_tokens<T: AstToken>(&self) -> AstChildrenTokens<T> {
-//         AstChildrenTokens::new(&self.syntax())
-//     }
-//
-//     fn get_token<T: AstToken>(&self) -> Option<T> {
-//         self.get_tokens().next()
-//     }
-// }
-
 pub trait AstToken {
     fn cast(token: SyntaxToken) -> Option<Self>
     where
@@ -64,29 +33,18 @@ pub trait AstToken {
     fn syntax(&self) -> &SyntaxToken;
 }
 
-// /// c.f. rust-analyzer/crates/syntax/src/ast.rs
-// #[derive(Debug, Clone)]
-// pub struct AstChildren<N> {
-//     inner: SyntaxNodeChildren,
-//     ph: PhantomData<N>,
-// }
-//
-// impl<N: AstNode> AstChildren<N> {
-//     fn new(parent: &SyntaxNode) -> Self {
-//         AstChildren {
-//             inner: parent.children(),
-//             ph: PhantomData,
-//         }
-//     }
-// }
-//
-// impl<N: AstNode> Iterator for AstChildren<N> {
-//     type Item = N;
-//     fn next(&mut self) -> Option<Self::Item> {
-//         self.inner.find_map(N::cast)
-//     }
-// }
-//
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct File {
+    syntax: SyntaxNode,
+}
+
+crate::impl_ast_node!(File, FILE);
+
+impl File {
+    pub fn declarations(&self) -> impl Iterator<Item = crate::ast::Dec> {
+        rowan::ast::support::children(self.syntax())
+    }
+}
 
 #[macro_export]
 macro_rules! impl_ast_node {
@@ -168,19 +126,6 @@ pub mod support {
 
     pub fn children<N: AstNode<Language = SML>>(parent: &SyntaxNode) -> impl Iterator<Item = N> {
         rowan::ast::support::children(parent)
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct File {
-    syntax: SyntaxNode,
-}
-
-crate::impl_ast_node!(File, FILE);
-
-impl File {
-    pub fn declarations(&self) -> impl Iterator<Item = crate::ast::Dec> {
-        rowan::ast::support::children(self.syntax())
     }
 }
 
