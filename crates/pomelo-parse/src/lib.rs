@@ -5,7 +5,8 @@ pub use syntax::SyntaxKind;
 
 pub mod language;
 pub use language::{
-    SyntaxElement, SyntaxElementChildren, SyntaxNode, SyntaxNodeChildren, SyntaxToken,
+    SyntaxElement, SyntaxElementChildren, SyntaxNode, SyntaxNodeChildren, SyntaxNodePtr,
+    SyntaxToken,
 };
 
 pub mod parser;

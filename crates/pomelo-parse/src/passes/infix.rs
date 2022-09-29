@@ -1,9 +1,9 @@
 use crate::{
     ast, AstNode, AstToken, Error, SyntaxElement, SyntaxElementChildren, SyntaxKind, SyntaxNode,
-    SyntaxTree,
+    SyntaxNodePtr, SyntaxTree,
 };
 
-use rowan::{ast::SyntaxNodePtr, GreenNode, GreenToken, NodeOrToken};
+use rowan::{GreenNode, GreenToken, NodeOrToken};
 
 use std::collections::HashMap;
 use std::iter::Peekable;
