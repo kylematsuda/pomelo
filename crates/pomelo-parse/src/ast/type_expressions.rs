@@ -1,4 +1,4 @@
-use crate::{ast, impl_ast_node, AstChildren, AstNode, SyntaxKind, SyntaxNode};
+use crate::{ast, ast::support, impl_ast_node, AstNode, SyntaxKind, SyntaxNode};
 use SyntaxKind::*;
 
 use std::fmt;
@@ -13,6 +13,12 @@ pub enum Ty {
 }
 
 impl AstNode for Ty {
+    type Language = crate::language::SML;
+
+    fn can_cast(kind: SyntaxKind) -> bool {
+        matches!(kind, FUN_TY | TUPLE_TY_EXP | TY_CON | RECORD_TY | TYVAR_TY)
+    }
+    
     fn cast(node: SyntaxNode) -> Option<Self>
     where
         Self: Sized,
@@ -54,11 +60,11 @@ impl_ast_node!(FunTy, FUN_TY);
 
 impl FunTy {
     pub fn ty_1(&self) -> Option<ast::Ty> {
-        self.get_node()
+        support::child(self.syntax())
     }
 
     pub fn ty_2(&self) -> Option<ast::Ty> {
-        self.get_nodes().skip(1).next()
+        support::children(self.syntax()).skip(1).next()
     }
 }
 
@@ -70,8 +76,8 @@ pub struct TupleTy {
 impl_ast_node!(TupleTy, TUPLE_TY_EXP);
 
 impl TupleTy {
-    pub fn tys(&self) -> AstChildren<ast::Ty> {
-        self.get_nodes()
+    pub fn tys(&self) -> impl Iterator<Item = ast::Ty> {
+        support::children(self.syntax())
     }
 }
 
@@ -83,12 +89,12 @@ pub struct ConsTy {
 impl_ast_node!(ConsTy, TY_CON);
 
 impl ConsTy {
-    pub fn tys(&self) -> AstChildren<ast::Ty> {
-        self.get_nodes()
+    pub fn tys(&self) -> impl Iterator<Item = ast::Ty> {
+        support::children(self.syntax())
     }
 
     pub fn longtycon(&self) -> Option<ast::LongTyCon> {
-        self.get_node()
+        support::child(self.syntax())
     }
 }
 
@@ -100,8 +106,8 @@ pub struct RecordTy {
 impl_ast_node!(RecordTy, RECORD_TY);
 
 impl RecordTy {
-    pub fn tyrows(&self) -> AstChildren<ast::TyRow> {
-        self.get_nodes()
+    pub fn tyrows(&self) -> impl Iterator<Item = ast::TyRow> {
+        support::children(self.syntax())
     }
 }
 
@@ -121,6 +127,6 @@ impl_ast_node!(TyVarTy, TYVAR_TY);
 
 impl TyVarTy {
     pub fn tyvar(&self) -> Option<ast::TyVar> {
-        self.get_token()
+        support::tokens(self.syntax()).next()
     }
 }

@@ -1,4 +1,4 @@
-use crate::{ast, impl_ast_node, AstChildren, AstNode, SyntaxKind, SyntaxNode};
+use crate::{ast, ast::support, impl_ast_node, AstNode, SyntaxKind, SyntaxNode};
 use SyntaxKind::*;
 
 use std::fmt;
@@ -11,8 +11,8 @@ pub struct InfixOrAppExpr {
 impl_ast_node!(InfixOrAppExpr, INFIX_OR_APP_EXP);
 
 impl InfixOrAppExpr {
-    pub fn exprs(&self) -> AstChildren<ast::Expr> {
-        self.get_nodes()
+    pub fn exprs(&self) -> impl Iterator<Item = ast::Expr> {
+        support::children(self.syntax())
     }
 }
 
@@ -33,6 +33,25 @@ pub enum Expr {
 }
 
 impl AstNode for Expr {
+    type Language = crate::language::SML;
+
+    fn can_cast(kind: SyntaxKind) -> bool {
+        matches!(
+            kind,
+            FN_EXP
+                | CASE_MATCH_EXP
+                | WHILE_EXP
+                | IF_EXP
+                | RAISE_EXP
+                | HANDLE_EXP
+                | ORELSE_EXP
+                | ANDALSO_EXP
+                | TY_EXP
+                | INFIX_EXP
+                | APP_EXP
+        ) || AtomicExpr::can_cast(kind)
+    }
+
     fn cast(node: SyntaxNode) -> Option<Self>
     where
         Self: Sized,
@@ -87,7 +106,7 @@ impl_ast_node!(FnExpr, FN_EXP);
 
 impl FnExpr {
     pub fn match_expr(&self) -> Option<ast::Match> {
-        self.get_node()
+        support::child(self.syntax())
     }
 }
 
@@ -100,11 +119,11 @@ impl_ast_node!(CaseExpr, CASE_MATCH_EXP);
 
 impl CaseExpr {
     pub fn expr(&self) -> Option<ast::Expr> {
-        self.get_node()
+        support::child(self.syntax())
     }
 
     pub fn match_expr(&self) -> Option<ast::Match> {
-        self.get_node()
+        support::child(self.syntax())
     }
 }
 
@@ -117,11 +136,11 @@ impl_ast_node!(WhileExpr, WHILE_EXP);
 
 impl WhileExpr {
     pub fn expr_1(&self) -> Option<ast::Expr> {
-        self.get_node()
+        support::child(self.syntax())
     }
 
     pub fn expr_2(&self) -> Option<ast::Expr> {
-        self.get_nodes().skip(1).next()
+        support::children(self.syntax()).skip(1).next()
     }
 }
 
@@ -134,15 +153,15 @@ impl_ast_node!(IfExpr, IF_EXP);
 
 impl IfExpr {
     pub fn expr_1(&self) -> Option<ast::Expr> {
-        self.get_node()
+        support::child(self.syntax())
     }
 
     pub fn expr_2(&self) -> Option<ast::Expr> {
-        self.get_nodes().skip(1).next()
+        support::children(self.syntax()).skip(1).next()
     }
 
     pub fn expr_3(&self) -> Option<ast::Expr> {
-        self.get_nodes().skip(2).next()
+        support::children(self.syntax()).skip(2).next()
     }
 }
 
@@ -155,7 +174,7 @@ impl_ast_node!(RaiseExpr, RAISE_EXP);
 
 impl RaiseExpr {
     pub fn expr(&self) -> Option<ast::Expr> {
-        self.get_node()
+        support::child(self.syntax())
     }
 }
 
@@ -168,11 +187,11 @@ impl_ast_node!(HandleExpr, HANDLE_EXP);
 
 impl HandleExpr {
     pub fn expr(&self) -> Option<ast::Expr> {
-        self.get_node()
+        support::child(self.syntax())
     }
 
     pub fn match_expr(&self) -> Option<ast::Match> {
-        self.get_node()
+        support::child(self.syntax())
     }
 }
 
@@ -185,11 +204,11 @@ impl_ast_node!(OrElseExpr, ORELSE_EXP);
 
 impl OrElseExpr {
     pub fn expr_1(&self) -> Option<ast::Expr> {
-        self.get_node()
+        support::child(self.syntax())
     }
 
     pub fn expr_2(&self) -> Option<ast::Expr> {
-        self.get_nodes().skip(1).next()
+        support::children(self.syntax()).skip(1).next()
     }
 }
 
@@ -202,11 +221,11 @@ impl_ast_node!(AndAlsoExpr, ANDALSO_EXP);
 
 impl AndAlsoExpr {
     pub fn expr_1(&self) -> Option<ast::Expr> {
-        self.get_node()
+        support::child(self.syntax())
     }
 
     pub fn expr_2(&self) -> Option<ast::Expr> {
-        self.get_nodes().skip(1).next()
+        support::children(self.syntax()).skip(1).next()
     }
 }
 
@@ -219,11 +238,11 @@ impl_ast_node!(TypedExpr, TY_EXP);
 
 impl TypedExpr {
     pub fn expr(&self) -> Option<ast::Expr> {
-        self.get_node()
+        support::child(self.syntax())
     }
 
     pub fn ty(&self) -> Option<ast::Ty> {
-        self.get_node()
+        support::child(self.syntax())
     }
 }
 
@@ -236,15 +255,15 @@ impl_ast_node!(InfixExpr, INFIX_EXP);
 
 impl InfixExpr {
     pub fn expr_1(&self) -> Option<ast::Expr> {
-        self.get_node()
+        support::child(self.syntax())
     }
 
     pub fn vid(&self) -> Option<ast::VId> {
-        self.get_token()
+        support::tokens(self.syntax()).next()
     }
 
     pub fn expr_2(&self) -> Option<ast::Expr> {
-        self.get_nodes().skip(1).next()
+        support::children(self.syntax()).skip(1).next()
     }
 }
 
@@ -257,11 +276,11 @@ impl_ast_node!(ApplicationExpr, APP_EXP);
 
 impl ApplicationExpr {
     pub fn application(&self) -> Option<ast::ApplicationExpr> {
-        self.get_node()
+        support::child(self.syntax())
     }
 
     pub fn atomic(&self) -> Option<ast::AtomicExpr> {
-        self.get_node()
+        support::child(self.syntax())
     }
 }
 
@@ -279,6 +298,23 @@ pub enum AtomicExpr {
 }
 
 impl AstNode for AtomicExpr {
+    type Language = crate::language::SML;
+
+    fn can_cast(kind: SyntaxKind) -> bool {
+        matches!(
+            kind,
+            SCON_EXP
+                | VID_EXP
+                | RECORD_EXP
+                | RECORD_SEL_EXP
+                | UNIT_EXP
+                | TUPLE_EXP
+                | LIST_EXP
+                | SEQ_EXP
+                | LET_EXP
+        )
+    }
+
     fn cast(node: SyntaxNode) -> Option<Self>
     where
         Self: Sized,
@@ -328,23 +364,23 @@ impl_ast_node!(SConExpr, SCON_EXP);
 
 impl SConExpr {
     pub fn int(&self) -> Option<ast::Int> {
-        self.get_token()
+        support::tokens(self.syntax()).next()
     }
 
     pub fn real(&self) -> Option<ast::Real> {
-        self.get_token()
+        support::tokens(self.syntax()).next()
     }
 
     pub fn word(&self) -> Option<ast::Word> {
-        self.get_token()
+        support::tokens(self.syntax()).next()
     }
 
     pub fn char(&self) -> Option<ast::Char> {
-        self.get_token()
+        support::tokens(self.syntax()).next()
     }
 
     pub fn string(&self) -> Option<ast::String> {
-        self.get_token()
+        support::tokens(self.syntax()).next()
     }
 }
 
@@ -357,11 +393,11 @@ impl_ast_node!(VIdExpr, VID_EXP);
 
 impl VIdExpr {
     pub fn op(&self) -> bool {
-        self.token(OP_KW).is_some()
+        support::token(self.syntax(), OP_KW).is_some()
     }
 
     pub fn longvid(&self) -> Option<ast::LongVId> {
-        self.get_node()
+        support::child(self.syntax())
     }
 }
 
@@ -373,8 +409,8 @@ pub struct RecordExpr {
 impl_ast_node!(RecordExpr, RECORD_EXP);
 
 impl RecordExpr {
-    pub fn exprows(&self) -> AstChildren<ast::ExprRow> {
-        self.get_nodes()
+    pub fn exprows(&self) -> impl Iterator<Item = ast::ExprRow> {
+        support::children(self.syntax())
     }
 }
 
@@ -394,7 +430,7 @@ impl_ast_node!(RecSelExpr, RECORD_SEL_EXP);
 
 impl RecSelExpr {
     pub fn label(&self) -> Option<ast::Label> {
-        self.get_node()
+        support::child(self.syntax())
     }
 }
 
@@ -413,8 +449,8 @@ pub struct TupleExpr {
 impl_ast_node!(TupleExpr, TUPLE_EXP);
 
 impl TupleExpr {
-    pub fn exprs(&self) -> AstChildren<ast::Expr> {
-        self.get_nodes()
+    pub fn exprs(&self) -> impl Iterator<Item = ast::Expr> {
+        support::children(self.syntax())
     }
 }
 
@@ -426,8 +462,8 @@ pub struct ListExpr {
 impl_ast_node!(ListExpr, LIST_EXP);
 
 impl ListExpr {
-    pub fn exprs(&self) -> AstChildren<ast::Expr> {
-        self.get_nodes()
+    pub fn exprs(&self) -> impl Iterator<Item = ast::Expr> {
+        support::children(self.syntax())
     }
 }
 
@@ -439,8 +475,8 @@ pub struct SeqExpr {
 impl_ast_node!(SeqExpr, SEQ_EXP);
 
 impl SeqExpr {
-    pub fn exprs(&self) -> AstChildren<ast::Expr> {
-        self.get_nodes()
+    pub fn exprs(&self) -> impl Iterator<Item = ast::Expr> {
+        support::children(self.syntax())
     }
 }
 
@@ -453,10 +489,10 @@ impl_ast_node!(LetExpr, LET_EXP);
 
 impl LetExpr {
     pub fn dec(&self) -> Option<ast::Dec> {
-        self.get_node()
+        support::child(self.syntax())
     }
 
-    pub fn exprs(&self) -> AstChildren<ast::Expr> {
-        self.get_nodes()
+    pub fn exprs(&self) -> impl Iterator<Item = ast::Expr> {
+        support::children(self.syntax())
     }
 }

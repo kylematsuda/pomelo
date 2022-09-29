@@ -22,39 +22,39 @@ pub use patterns::*;
 pub mod type_expressions;
 pub use type_expressions::*;
 
-use crate::{SyntaxElement, SyntaxElementChildren, SyntaxNode, SyntaxNodeChildren, SyntaxToken};
-use std::marker::PhantomData;
+use crate::{SyntaxNode, SyntaxToken};
+pub use rowan::ast::AstNode;
 
-pub trait AstNode {
-    fn cast(node: SyntaxNode) -> Option<Self>
-    where
-        Self: Sized;
-
-    fn syntax(&self) -> &SyntaxNode;
-
-    fn token(&self, kind: crate::SyntaxKind) -> Option<SyntaxToken> {
-        self.syntax()
-            .children_with_tokens()
-            .filter_map(|it| it.into_token())
-            .find(|it| it.kind() == kind)
-    }
-
-    fn get_nodes<N: AstNode>(&self) -> AstChildren<N> {
-        AstChildren::new(&self.syntax())
-    }
-
-    fn get_node<N: AstNode>(&self) -> Option<N> {
-        self.get_nodes().next()
-    }
-
-    fn get_tokens<T: AstToken>(&self) -> AstChildrenTokens<T> {
-        AstChildrenTokens::new(&self.syntax())
-    }
-
-    fn get_token<T: AstToken>(&self) -> Option<T> {
-        self.get_tokens().next()
-    }
-}
+// pub trait AstNode {
+//     fn cast(node: SyntaxNode) -> Option<Self>
+//     where
+//         Self: Sized;
+//
+//     fn syntax(&self) -> &SyntaxNode;
+//
+//     fn token(&self, kind: crate::SyntaxKind) -> Option<SyntaxToken> {
+//         self.syntax()
+//             .children_with_tokens()
+//             .filter_map(|it| it.into_token())
+//             .find(|it| it.kind() == kind)
+//     }
+//
+//     fn get_nodes<N: AstNode>(&self) -> AstChildren<N> {
+//         AstChildren::new(&self.syntax())
+//     }
+//
+//     fn get_node<N: AstNode>(&self) -> Option<N> {
+//         self.get_nodes().next()
+//     }
+//
+//     fn get_tokens<T: AstToken>(&self) -> AstChildrenTokens<T> {
+//         AstChildrenTokens::new(&self.syntax())
+//     }
+//
+//     fn get_token<T: AstToken>(&self) -> Option<T> {
+//         self.get_tokens().next()
+//     }
+// }
 
 pub trait AstToken {
     fn cast(token: SyntaxToken) -> Option<Self>
@@ -64,72 +64,44 @@ pub trait AstToken {
     fn syntax(&self) -> &SyntaxToken;
 }
 
-/// c.f. rust-analyzer/crates/syntax/src/ast.rs
-#[derive(Debug, Clone)]
-pub struct AstChildren<N> {
-    inner: SyntaxNodeChildren,
-    ph: PhantomData<N>,
-}
-
-impl<N: AstNode> AstChildren<N> {
-    fn new(parent: &SyntaxNode) -> Self {
-        AstChildren {
-            inner: parent.children(),
-            ph: PhantomData,
-        }
-    }
-}
-
-impl<N: AstNode> Iterator for AstChildren<N> {
-    type Item = N;
-    fn next(&mut self) -> Option<Self::Item> {
-        self.inner.find_map(N::cast)
-    }
-}
-
-/// c.f. rust-analyzer/crates/syntax/src/ast.rs
-#[derive(Debug, Clone)]
-pub struct AstChildrenTokens<N> {
-    inner: SyntaxElementChildren,
-    ph: PhantomData<N>,
-}
-
-impl<N> AstChildrenTokens<N> {
-    pub fn new(parent: &SyntaxNode) -> Self {
-        AstChildrenTokens {
-            inner: parent.children_with_tokens(),
-            ph: PhantomData,
-        }
-    }
-}
-
-impl<N: AstToken> Iterator for AstChildrenTokens<N> {
-    type Item = N;
-    fn next(&mut self) -> Option<Self::Item> {
-        self.inner.find_map(|elt| match elt {
-            SyntaxElement::Token(token) => N::cast(token),
-            _ => None,
-        })
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct File {
-    syntax: SyntaxNode,
-}
-
-crate::impl_ast_node!(File, FILE);
-
-impl File {
-    pub fn declarations(&self) -> AstChildren<crate::ast::Dec> {
-        AstChildren::new(&self.syntax)
-    }
-}
+// /// c.f. rust-analyzer/crates/syntax/src/ast.rs
+// #[derive(Debug, Clone)]
+// pub struct AstChildren<N> {
+//     inner: SyntaxNodeChildren,
+//     ph: PhantomData<N>,
+// }
+//
+// impl<N: AstNode> AstChildren<N> {
+//     fn new(parent: &SyntaxNode) -> Self {
+//         AstChildren {
+//             inner: parent.children(),
+//             ph: PhantomData,
+//         }
+//     }
+// }
+//
+// impl<N: AstNode> Iterator for AstChildren<N> {
+//     type Item = N;
+//     fn next(&mut self) -> Option<Self::Item> {
+//         self.inner.find_map(N::cast)
+//     }
+// }
+//
 
 #[macro_export]
 macro_rules! impl_ast_node {
     ($target:ty, $kind:ident) => {
         impl $crate::AstNode for $target {
+            type Language = $crate::language::SML;
+
+            fn can_cast(kind: <Self::Language as rowan::Language>::Kind) -> bool
+            where
+                Self: Sized,
+            {
+                use $crate::SyntaxKind::*;
+                kind == $kind
+            }
+
             fn cast(node: $crate::SyntaxNode) -> Option<Self>
             where
                 Self: Sized,
@@ -180,6 +152,56 @@ macro_rules! impl_ast_token {
             }
         }
     };
+}
+
+pub mod support {
+    pub use rowan::ast::support::*;
+
+    use crate::{AstToken, SyntaxElement, SyntaxElementChildren, SyntaxNode};
+    use std::marker::PhantomData;
+
+    pub fn tokens<N: AstToken>(parent: &SyntaxNode) -> AstChildrenTokens<N> {
+        AstChildrenTokens::new(parent)
+    }
+
+    /// c.f. rust-analyzer/crates/syntax/src/ast.rs
+    #[derive(Debug, Clone)]
+    pub struct AstChildrenTokens<N> {
+        inner: SyntaxElementChildren,
+        ph: PhantomData<N>,
+    }
+
+    impl<N> AstChildrenTokens<N> {
+        pub fn new(parent: &SyntaxNode) -> Self {
+            AstChildrenTokens {
+                inner: parent.children_with_tokens(),
+                ph: PhantomData,
+            }
+        }
+    }
+
+    impl<N: AstToken> Iterator for AstChildrenTokens<N> {
+        type Item = N;
+        fn next(&mut self) -> Option<Self::Item> {
+            self.inner.find_map(|elt| match elt {
+                SyntaxElement::Token(token) => N::cast(token),
+                _ => None,
+            })
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct File {
+    syntax: SyntaxNode,
+}
+
+crate::impl_ast_node!(File, FILE);
+
+impl File {
+    pub fn declarations(&self) -> impl Iterator<Item = crate::ast::Dec> {
+        rowan::ast::support::children(self.syntax())
+    }
 }
 
 #[cfg(test)]

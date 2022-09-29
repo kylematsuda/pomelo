@@ -1,4 +1,4 @@
-use crate::{ast, impl_ast_node, AstChildren, AstNode, SyntaxKind, SyntaxNode};
+use crate::{ast, ast::support, impl_ast_node, AstNode, SyntaxKind, SyntaxNode};
 use SyntaxKind::*;
 
 use std::fmt;
@@ -11,8 +11,8 @@ pub struct InfixOrAppPat {
 impl_ast_node!(InfixOrAppPat, INFIX_OR_APP_PAT);
 
 impl InfixOrAppPat {
-    pub fn pats(&self) -> AstChildren<ast::Pat> {
-        self.get_nodes()
+    pub fn pats(&self) -> impl Iterator<Item = ast::Pat> {
+        support::children(self.syntax())
     }
 }
 
@@ -26,6 +26,13 @@ pub enum Pat {
 }
 
 impl AstNode for Pat {
+    type Language = crate::language::SML;
+
+    fn can_cast(kind: SyntaxKind) -> bool {
+        matches!(kind, LAYERED_PAT | TY_PAT | INFIX_CONS_PAT | CONS_PAT)
+            || AtomicPat::can_cast(kind)
+    }
+
     fn cast(node: SyntaxNode) -> Option<Self>
     where
         Self: Sized,
@@ -66,19 +73,19 @@ impl_ast_node!(LayeredPat, LAYERED_PAT);
 
 impl LayeredPat {
     pub fn op(&self) -> bool {
-        self.token(OP_KW).is_some()
+        support::token(self.syntax(), OP_KW).is_some()
     }
 
     pub fn vid(&self) -> Option<ast::VId> {
-        self.get_token()
+        support::tokens(self.syntax()).next()
     }
 
     pub fn ty(&self) -> Option<ast::Ty> {
-        self.get_node()
+        support::child(self.syntax())
     }
 
     pub fn pat(&self) -> Option<ast::Pat> {
-        self.get_node()
+        support::child(self.syntax())
     }
 }
 
@@ -91,11 +98,11 @@ impl_ast_node!(TypedPat, TY_PAT);
 
 impl TypedPat {
     pub fn pat(&self) -> Option<ast::Pat> {
-        self.get_node()
+        support::child(self.syntax())
     }
 
     pub fn ty(&self) -> Option<ast::Ty> {
-        self.get_node()
+        support::child(self.syntax())
     }
 }
 
@@ -108,15 +115,15 @@ impl_ast_node!(ConsInfixPat, INFIX_CONS_PAT);
 
 impl ConsInfixPat {
     pub fn pat_1(&self) -> Option<ast::Pat> {
-        self.get_node()
+        support::child(self.syntax())
     }
 
     pub fn vid(&self) -> Option<ast::VId> {
-        self.get_token()
+        support::tokens(self.syntax()).next()
     }
 
     pub fn pat_2(&self) -> Option<ast::Pat> {
-        self.get_nodes().skip(1).next()
+        support::children(self.syntax()).skip(1).next()
     }
 }
 
@@ -129,15 +136,15 @@ impl_ast_node!(ConsPat, CONS_PAT);
 
 impl ConsPat {
     pub fn op(&self) -> bool {
-        self.token(OP_KW).is_some()
+        support::token(self.syntax(), OP_KW).is_some()
     }
 
     pub fn longvid(&self) -> Option<ast::LongVId> {
-        self.get_node()
+        support::child(self.syntax())
     }
 
     pub fn atpat(&self) -> Option<ast::AtomicPat> {
-        self.get_node()
+        support::child(self.syntax())
     }
 }
 
@@ -153,6 +160,12 @@ pub enum AtomicPat {
 }
 
 impl AstNode for AtomicPat {
+    type Language = crate::language::SML;
+
+    fn can_cast(kind: SyntaxKind) -> bool {
+        matches!(kind, WILDCARD_PAT | SCON_PAT | VID_PAT | RECORD_PAT | UNIT_PAT | TUPLE_PAT | LIST_PAT)
+    }
+
     fn cast(node: SyntaxNode) -> Option<Self>
     where
         Self: Sized,
@@ -205,23 +218,23 @@ impl_ast_node!(SConPat, SCON_PAT);
 
 impl SConPat {
     pub fn int(&self) -> Option<ast::Int> {
-        self.get_token()
+        support::tokens(self.syntax()).next()
     }
 
     pub fn real(&self) -> Option<ast::Real> {
-        self.get_token()
+        support::tokens(self.syntax()).next()
     }
 
     pub fn word(&self) -> Option<ast::Word> {
-        self.get_token()
+        support::tokens(self.syntax()).next()
     }
 
     pub fn char(&self) -> Option<ast::Char> {
-        self.get_token()
+        support::tokens(self.syntax()).next()
     }
 
     pub fn string(&self) -> Option<ast::String> {
-        self.get_token()
+        support::tokens(self.syntax()).next()
     }
 }
 
@@ -234,11 +247,11 @@ impl_ast_node!(VIdPat, VID_PAT);
 
 impl VIdPat {
     pub fn op(&self) -> bool {
-        self.token(OP_KW).is_some()
+        support::token(self.syntax(), OP_KW).is_some()
     }
 
     pub fn vid(&self) -> Option<ast::VId> {
-        self.get_token()
+        support::tokens(self.syntax()).next()
     }
 }
 
@@ -252,8 +265,8 @@ impl_ast_node!(RecordPat, RECORD_PAT);
 impl RecordPat {
     // Need to figure out what's actually happening with the various
     // patrow forms
-    pub fn patrows(&self) -> AstChildren<ast::PatRow> {
-        self.get_nodes()
+    pub fn patrows(&self) -> impl Iterator<Item = ast::PatRow> {
+        support::children(self.syntax())
     }
 }
 
@@ -279,8 +292,8 @@ pub struct TuplePat {
 impl_ast_node!(TuplePat, TUPLE_PAT);
 
 impl TuplePat {
-    pub fn pats(&self) -> AstChildren<ast::Pat> {
-        self.get_nodes()
+    pub fn pats(&self) -> impl Iterator<Item = ast::Pat> {
+        support::children(self.syntax())
     }
 }
 
@@ -292,7 +305,7 @@ pub struct ListPat {
 impl_ast_node!(ListPat, LIST_PAT);
 
 impl ListPat {
-    pub fn pats(&self) -> AstChildren<ast::Pat> {
-        self.get_nodes()
+    pub fn pats(&self) -> impl Iterator<Item = ast::Pat> {
+        support::children(self.syntax())
     }
 }

@@ -1,9 +1,9 @@
 use crate::{
-    ast, AstChildrenTokens, AstNode, AstToken, Error, SyntaxElement, SyntaxElementChildren,
+    ast, AstNode, AstToken, Error, SyntaxElement, SyntaxElementChildren,
     SyntaxKind, SyntaxNode, SyntaxTree,
 };
 
-use rowan::{GreenNode, GreenToken, NodeOrToken, ast::SyntaxNodePtr};
+use rowan::{ast::SyntaxNodePtr, GreenNode, GreenToken, NodeOrToken};
 
 use std::collections::HashMap;
 use std::iter::Peekable;
@@ -32,7 +32,7 @@ const BUILTINS: [(&'static str, Fixity); 18] = [
     ("before",	Fixity { val: 0, assoc: Associativity::Left }),
 ];
 
-// Maximum user-defined fixity is 9 
+// Maximum user-defined fixity is 9
 const FN_APPL: Fixity = Fixity {
     val: 10,
     assoc: Associativity::Left,
@@ -71,14 +71,14 @@ impl Context {
         }
     }
 
-    fn update_vids(&mut self, vids: AstChildrenTokens<ast::VId>, fixity: u8, assoc: Associativity) {
+    fn update_vids(&mut self, vids: impl Iterator<Item = ast::VId>, fixity: u8, assoc: Associativity) {
         for name in vids {
             let vid = name.syntax().text();
             self.0.insert(vid.to_owned(), Fixity { val: fixity, assoc });
         }
     }
 
-    fn remove_vids(&mut self, vids: AstChildrenTokens<ast::VId>) {
+    fn remove_vids(&mut self, vids: impl Iterator<Item = ast::VId>) {
         for name in vids {
             let vid = name.syntax().text();
             self.0.remove(vid);
@@ -128,7 +128,7 @@ fn rearrange_infix(tree: SyntaxTree, node: SyntaxNode, ctx: &mut Context) -> Syn
     // We have to be careful where we share context.
     // All children at the same level should use the same context,
     // which is updated as statements are iterated through.
-    // However, the context should not leak upwards, so we need to clone 
+    // However, the context should not leak upwards, so we need to clone
     // into a new context every time we descend a level in the tree.
     let mut child_context = ctx.clone();
     for c in node.children() {

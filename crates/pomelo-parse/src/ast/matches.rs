@@ -1,4 +1,4 @@
-use crate::{ast, impl_ast_node, AstChildren, AstNode, SyntaxNode};
+use crate::{ast, ast::support, impl_ast_node, AstNode, SyntaxNode};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Match {
@@ -8,8 +8,8 @@ pub struct Match {
 impl_ast_node!(Match, MATCH);
 
 impl Match {
-    pub fn mrules(&self) -> AstChildren<ast::Mrule> {
-        self.get_nodes()
+    pub fn mrules(&self) -> impl Iterator<Item = ast::Mrule> {
+        support::children(self.syntax())
     }
 }
 
@@ -22,10 +22,10 @@ impl_ast_node!(Mrule, MRULE);
 
 impl Mrule {
     pub fn pat(&self) -> Option<ast::Pat> {
-        self.get_node()
+        support::child(self.syntax())
     }
 
     pub fn expr(&self) -> Option<ast::Expr> {
-        self.get_node()
+        support::child(self.syntax())
     }
 }

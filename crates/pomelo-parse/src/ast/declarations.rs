@@ -1,4 +1,4 @@
-use crate::{ast, impl_ast_node, AstChildren, AstChildrenTokens, AstNode, SyntaxKind, SyntaxNode};
+use crate::{ast, ast::support, impl_ast_node, AstNode, SyntaxKind, SyntaxNode};
 use SyntaxKind::*;
 
 use std::fmt;
@@ -21,6 +21,27 @@ pub enum Dec {
 }
 
 impl AstNode for Dec {
+    type Language = crate::language::SML;
+
+    fn can_cast(kind: SyntaxKind) -> bool {
+        matches!(
+            kind,
+            VAL_DEC
+                | FUN_DEC
+                | TY_DEC
+                | DATATYPE_DEC
+                | DATATYPE_REP
+                | ABSTYPE_DEC
+                | EXCEPT_DEC
+                | LOCAL_DEC
+                | OPEN_DEC
+                | SEQ_DEC
+                | INFIX_DEC
+                | INFIXR_DEC
+                | NONFIX_DEC
+        )
+    }
+
     fn cast(node: SyntaxNode) -> Option<Self>
     where
         Self: Sized,
@@ -77,16 +98,16 @@ pub struct ValDec {
 impl_ast_node!(ValDec, VAL_DEC);
 
 impl ValDec {
-    pub fn tyvarseq(&self) -> AstChildrenTokens<ast::TyVar> {
-        self.get_tokens()
+    pub fn tyvarseq(&self) -> impl Iterator<Item = ast::TyVar> {
+        support::tokens(self.syntax())
     }
 
-    pub fn bindings(&self) -> AstChildren<ast::ValBind> {
-        self.get_nodes()
+    pub fn bindings(&self) -> impl Iterator<Item = ast::ValBind> {
+        support::children(self.syntax())
     }
 
     pub fn rec(&self) -> bool {
-        self.token(REC_KW).is_some()
+        support::token(self.syntax(), REC_KW).is_some()
     }
 }
 
@@ -98,12 +119,12 @@ pub struct FunDec {
 impl_ast_node!(FunDec, FUN_DEC);
 
 impl FunDec {
-    pub fn tyvarseq(&self) -> AstChildrenTokens<ast::TyVar> {
-        self.get_tokens()
+    pub fn tyvarseq(&self) -> impl Iterator<Item = ast::TyVar> {
+        support::tokens(self.syntax())
     }
 
-    pub fn bindings(&self) -> AstChildren<ast::FvalBind> {
-        self.get_nodes()
+    pub fn bindings(&self) -> impl Iterator<Item = ast::FvalBind> {
+        support::children(self.syntax())
     }
 }
 
@@ -115,8 +136,8 @@ pub struct TypeDec {
 impl_ast_node!(TypeDec, TY_DEC);
 
 impl TypeDec {
-    pub fn bindings(&self) -> AstChildren<ast::TyBind> {
-        self.get_nodes()
+    pub fn bindings(&self) -> impl Iterator<Item = ast::TyBind> {
+        support::children(self.syntax())
     }
 }
 
@@ -170,8 +191,8 @@ pub struct SeqDec {
 impl_ast_node!(SeqDec, SEQ_DEC);
 
 impl SeqDec {
-    pub fn declarations(&self) -> AstChildren<ast::Dec> {
-        self.get_nodes()
+    pub fn declarations(&self) -> impl Iterator<Item = ast::Dec> {
+        support::children(self.syntax())
     }
 }
 
@@ -184,11 +205,11 @@ impl_ast_node!(InfixDec, INFIX_DEC);
 
 impl InfixDec {
     pub fn fixity(&self) -> Option<ast::Fixity> {
-        self.get_node()
+        support::child(self.syntax())
     }
 
-    pub fn vids(&self) -> AstChildrenTokens<ast::VId> {
-        self.get_tokens()
+    pub fn vids(&self) -> impl Iterator<Item = ast::VId> {
+        support::tokens(self.syntax())
     }
 }
 
@@ -201,11 +222,11 @@ impl_ast_node!(InfixrDec, INFIXR_DEC);
 
 impl InfixrDec {
     pub fn fixity(&self) -> Option<ast::Fixity> {
-        self.get_node()
+        support::child(self.syntax())
     }
 
-    pub fn vids(&self) -> AstChildrenTokens<ast::VId> {
-        self.get_tokens()
+    pub fn vids(&self) -> impl Iterator<Item = ast::VId> {
+        support::tokens(self.syntax())
     }
 }
 
@@ -218,7 +239,7 @@ impl_ast_node!(Fixity, FIXITY);
 
 impl Fixity {
     pub fn value(&self) -> Option<ast::Int> {
-        self.get_token()
+        support::tokens(self.syntax()).next()
     }
 }
 
@@ -230,7 +251,7 @@ pub struct NonfixDec {
 impl_ast_node!(NonfixDec, NONFIX_DEC);
 
 impl NonfixDec {
-    pub fn vids(&self) -> AstChildrenTokens<ast::VId> {
-        self.get_tokens()
+    pub fn vids(&self) -> impl Iterator<Item = ast::VId> {
+        support::tokens(self.syntax())
     }
 }
