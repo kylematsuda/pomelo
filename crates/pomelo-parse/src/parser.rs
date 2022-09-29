@@ -44,7 +44,7 @@ impl<'a> Token<'a> {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SyntaxTree {
     node: GreenNode,
     errors: Vec<Error>,

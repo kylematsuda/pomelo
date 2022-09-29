@@ -22,7 +22,7 @@ pub(crate) mod tests;
 
 use thiserror::Error;
 
-#[derive(Debug, Clone, Error)]
+#[derive(Debug, Clone, Error, PartialEq, Eq)]
 #[error("Error@{pos}: {msg}")]
 pub struct Error {
     msg: String,
