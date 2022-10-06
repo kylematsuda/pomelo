@@ -33,6 +33,8 @@ pub trait AstToken {
     fn syntax(&self) -> &SyntaxToken;
 }
 
+pub type AstPtr<N> = rowan::ast::AstPtr<N>;
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct File {
     syntax: SyntaxNode,

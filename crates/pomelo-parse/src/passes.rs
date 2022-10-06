@@ -1,5 +1,11 @@
 pub mod infix;
 
+use crate::SyntaxTree;
+
+pub fn apply_passes(tree: SyntaxTree) -> SyntaxTree {
+    infix::pass_rearrange_infix(tree)
+}
+
 #[cfg(test)]
 pub(crate) mod tests {
     use crate::{Parser, SyntaxTree};

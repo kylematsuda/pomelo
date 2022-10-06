@@ -13,7 +13,7 @@ pub mod parser;
 pub use parser::{Checkpoint, NodeGuard, Parser, SyntaxTree};
 
 pub mod ast;
-pub use ast::{AstNode, AstToken};
+pub use ast::{AstNode, AstPtr, AstToken};
 
 pub mod passes;
 
@@ -38,4 +38,8 @@ impl Error {
             pos,
         }
     }
+}
+
+pub fn parse<'a>(input: &'a str) -> SyntaxTree {
+    passes::apply_passes(Parser::new(input).parse())
 }
