@@ -2,11 +2,12 @@
 //!
 //! Is this even necessary...?
 use crate::arena::{Arena, Idx};
-use crate::core::{Dec, Expr, ExprIdx, Pat, TyRef};
-use crate::identifiers::{NameData, Label, LongStrId, LongVId, TyCon, TyVar, VId};
-use pomelo_parse::{ast, AstNode, SyntaxNodePtr};
-use std::marker::PhantomData;
+use crate::identifiers::{LongStrId, LongVId, StrId, TyCon, VId};
+use pomelo_parse::{ast, language::SML, AstNode, AstPtr, SyntaxNodePtr};
 use std::collections::HashMap;
+use std::marker::PhantomData;
+
+pub mod lower;
 
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct File {
@@ -16,8 +17,10 @@ pub struct File {
 
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct FileData {
-    names: NameData,
-    sources: AstIdMap, 
+    pub vids: Arena<VId>,
+    pub strids: Arena<StrId>,
+    pub tycons: Arena<TyCon>,
+    pub sources: AstIdMap,
 }
 
 // See r-a hir_expand
@@ -25,6 +28,85 @@ pub struct FileData {
 pub struct AstIdMap {
     arena: Arena<SyntaxNodePtr>,
     backmap: HashMap<SyntaxNodePtr, Idx<SyntaxNodePtr>>,
+}
+
+impl AstIdMap {
+    pub fn alloc<N: AstNode<Language = SML>>(&mut self, ast: &AstPtr<N>) -> FileAstIdx<N> {
+        let syntax = ast.syntax_node_ptr();
+
+        let index = self.arena.alloc(syntax.clone());
+        self.backmap.insert(syntax, index.clone());
+
+        FileAstIdx {
+            index,
+            _ph: PhantomData,
+        }
+    }
+
+    pub fn get<N: AstNode<Language = SML>>(&self, index: FileAstIdx<N>) -> Option<AstPtr<N>> {
+        self.arena
+            .get(index.index)
+            .map(Clone::clone)
+            .and_then(SyntaxNodePtr::cast)
+    }
+}
+
+pub trait FileArena {
+    fn alloc_vid(&mut self, vid: VId) -> Idx<VId>;
+    fn get_vid(&self, index: Idx<VId>) -> Option<&VId>;
+
+    fn alloc_strid(&mut self, strid: StrId) -> Idx<StrId>;
+    fn get_strid(&self, index: Idx<StrId>) -> Option<&StrId>;
+
+    fn alloc_tycon(&mut self, tycon: TyCon) -> Idx<TyCon>;
+    fn get_tycon(&self, index: Idx<TyCon>) -> Option<&TyCon>;
+
+    fn alloc_ast_id<N>(&mut self, ast: &AstPtr<N>) -> FileAstIdx<N>
+    where
+        N: AstNode<Language = SML>;
+    fn get_ast_id<N>(&mut self, index: FileAstIdx<N>) -> Option<AstPtr<N>>
+    where
+        N: AstNode<Language = SML>;
+}
+
+impl FileArena for FileData {
+    fn alloc_vid(&mut self, vid: VId) -> Idx<VId> {
+        self.vids.alloc(vid)
+    }
+
+    fn get_vid(&self, index: Idx<VId>) -> Option<&VId> {
+        self.vids.get(index)
+    }
+
+    fn alloc_strid(&mut self, strid: StrId) -> Idx<StrId> {
+        self.strids.alloc(strid)
+    }
+
+    fn get_strid(&self, index: Idx<StrId>) -> Option<&StrId> {
+        self.strids.get(index)
+    }
+
+    fn alloc_tycon(&mut self, tycon: TyCon) -> Idx<TyCon> {
+        self.tycons.alloc(tycon)
+    }
+
+    fn get_tycon(&self, index: Idx<TyCon>) -> Option<&TyCon> {
+        self.tycons.get(index)
+    }
+
+    fn alloc_ast_id<N>(&mut self, ast: &AstPtr<N>) -> FileAstIdx<N>
+    where
+        N: AstNode<Language = SML>,
+    {
+        self.sources.alloc(ast)
+    }
+
+    fn get_ast_id<N>(&mut self, index: FileAstIdx<N>) -> Option<AstPtr<N>>
+    where
+        N: AstNode<Language = SML>,
+    {
+        self.sources.get(index)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -114,26 +196,4 @@ pub enum ModuleDec {
     Structure {},
     Signature {},
     Functor {},
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TopDecBody {
-    pats: Arena<Pat>,
-    exprs: Arena<Expr>,
-    // Inner decs, as in a "let ... in ... end" expr
-    decs: Arena<Dec>,
-    tys: Arena<TyRef>,
-
-    ids: NameData,
-    labels: Arena<Label>,
-    tyvars: Arena<TyVar>,
-
-    // Visible results of the dec
-    output: DecOutput,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum DecOutput {
-    Val { expr: ExprIdx },
-    Abstype { decs: Box<[Idx<Dec>]> }, // TODO
 }

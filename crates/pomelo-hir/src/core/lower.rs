@@ -1,0 +1,417 @@
+use crate::arena::Idx;
+use crate::core::{
+    BodyArena, Dec, DecKind, Expr, ExprKind, FloatWrapper, Pat, PatKind, PatRow, Scon, Type,
+};
+use crate::identifiers::{Label, LongVId, VId};
+use pomelo_parse::{ast, AstNode, AstPtr};
+
+impl Dec {
+    pub fn missing<A: BodyArena>(arena: &mut A) -> Idx<Self> {
+        let d = Self {
+            kind: DecKind::Missing,
+            ast_id: None,
+        };
+        arena.alloc_dec(d)
+    }
+
+    pub fn mapped_at_node<A: BodyArena>(dec: ast::Dec, kind: DecKind, arena: &mut A) -> Idx<Self> {
+        let ast_id = Some(arena.alloc_ast_id(&AstPtr::new(&dec)));
+        let d = Self { kind, ast_id };
+        arena.alloc_dec(d)
+    }
+
+    pub fn lower_opt<A: BodyArena>(opt_dec: Option<ast::Dec>, arena: &mut A) -> Idx<Self> {
+        match opt_dec {
+            Some(dec) => Self::lower(dec, arena),
+            None => Self::missing(arena),
+        }
+    }
+
+    pub fn lower<A: BodyArena>(dec: ast::Dec, arena: &mut A) -> Idx<Self> {
+        match dec {
+            ast::Dec::Val(v) => Self::lower_val(v, arena),
+            ast::Dec::Fun(f) => Self::lower_fun(f, arena),
+            ast::Dec::Type(t) => Self::lower_type(t, arena),
+            ast::Dec::Datatype(d) => Self::lower_datatype(d, arena),
+            ast::Dec::DatatypeRep(r) => Self::lower_replication(r, arena),
+            ast::Dec::Abstype(a) => Self::lower_abstype(a, arena),
+            ast::Dec::Exception(e) => Self::lower_exception(e, arena),
+            ast::Dec::Local(l) => Self::lower_local(l, arena),
+            ast::Dec::Open(o) => Self::lower_open(o, arena),
+            ast::Dec::Infix(i) => Self::lower_infix(i, arena),
+            ast::Dec::Infixr(i) => Self::lower_infixr(i, arena),
+            ast::Dec::Nonfix(n) => Self::lower_nonfix(n, arena),
+            ast::Dec::Seq(s) => Self::lower_seq(s, arena),
+        }
+    }
+
+    fn lower_val<A: BodyArena>(_dec: ast::ValDec, _arena: &mut A) -> Idx<Self> {
+        todo!()
+    }
+
+    fn lower_fun<A: BodyArena>(_dec: ast::FunDec, _arena: &mut A) -> Idx<Self> {
+        todo!()
+    }
+
+    fn lower_type<A: BodyArena>(_dec: ast::TypeDec, _arena: &mut A) -> Idx<Self> {
+        todo!()
+    }
+
+    fn lower_datatype<A: BodyArena>(_dec: ast::DatatypeDec, _arena: &mut A) -> Idx<Self> {
+        todo!()
+    }
+
+    fn lower_replication<A: BodyArena>(_dec: ast::DatatypeRepDec, _arena: &mut A) -> Idx<Self> {
+        todo!()
+    }
+
+    fn lower_abstype<A: BodyArena>(_dec: ast::AbstypeDec, _arena: &mut A) -> Idx<Self> {
+        todo!()
+    }
+
+    fn lower_exception<A: BodyArena>(_dec: ast::ExceptionDec, _arena: &mut A) -> Idx<Self> {
+        todo!()
+    }
+
+    fn lower_local<A: BodyArena>(_dec: ast::LocalDec, _arena: &mut A) -> Idx<Self> {
+        todo!()
+    }
+
+    fn lower_open<A: BodyArena>(_dec: ast::OpenDec, _arena: &mut A) -> Idx<Self> {
+        todo!()
+    }
+
+    fn lower_infix<A: BodyArena>(_dec: ast::InfixDec, _arena: &mut A) -> Idx<Self> {
+        todo!()
+    }
+
+    fn lower_infixr<A: BodyArena>(_dec: ast::InfixrDec, _arena: &mut A) -> Idx<Self> {
+        todo!()
+    }
+
+    fn lower_nonfix<A: BodyArena>(_dec: ast::NonfixDec, _arena: &mut A) -> Idx<Self> {
+        todo!()
+    }
+
+    fn lower_seq<A: BodyArena>(_dec: ast::SeqDec, _arena: &mut A) -> Idx<Self> {
+        todo!()
+    }
+}
+
+impl Expr {
+    pub fn missing<A: BodyArena>(arena: &mut A) -> Idx<Self> {
+        let e = Self {
+            kind: ExprKind::Missing,
+            ast_id: None,
+        };
+        arena.alloc_expr(e)
+    }
+
+    pub fn mapped_at_node<A: BodyArena>(
+        expr: ast::Expr,
+        kind: ExprKind,
+        arena: &mut A,
+    ) -> Idx<Self> {
+        let ast_id = Some(arena.alloc_ast_id(&AstPtr::new(&expr)));
+        let e = Self { kind, ast_id };
+        arena.alloc_expr(e)
+    }
+
+    pub fn lower_opt<A: BodyArena>(opt_expr: Option<ast::Expr>, arena: &mut A) -> Idx<Self> {
+        match opt_expr {
+            Some(expr) => Self::lower(expr, arena),
+            None => Self::missing(arena),
+        }
+    }
+
+    pub fn lower<A: BodyArena>(expr: ast::Expr, arena: &mut A) -> Idx<Self> {
+        match expr {
+            ast::Expr::Atomic(e) => Self::lower_atomic(e, arena),
+            ast::Expr::Application(e) => Self::lower_application(e, arena),
+            ast::Expr::Infix(e) => Self::lower_infix(e, arena),
+            ast::Expr::Typed(e) => Self::lower_typed(e, arena),
+            ast::Expr::AndAlso(e) => Self::lower_andalso(e, arena),
+            ast::Expr::OrElse(e) => Self::lower_orelse(e, arena),
+            ast::Expr::Handle(e) => Self::lower_handle(e, arena),
+            ast::Expr::Raise(e) => Self::lower_raise(e, arena),
+            ast::Expr::If(e) => Self::lower_if(e, arena),
+            ast::Expr::While(e) => Self::lower_while(e, arena),
+            ast::Expr::Case(e) => Self::lower_case(e, arena),
+            ast::Expr::Fn(e) => Self::lower_fn(e, arena),
+        }
+    }
+
+    fn lower_atomic<A: BodyArena>(_expr: ast::AtomicExpr, _arena: &mut A) -> Idx<Self> {
+        todo!()
+    }
+
+    fn lower_application<A: BodyArena>(_expr: ast::ApplicationExpr, _arena: &mut A) -> Idx<Self> {
+        todo!()
+    }
+
+    fn lower_infix<A: BodyArena>(_expr: ast::InfixExpr, _arena: &mut A) -> Idx<Self> {
+        todo!()
+    }
+
+    fn lower_typed<A: BodyArena>(_expr: ast::TypedExpr, _arena: &mut A) -> Idx<Self> {
+        todo!()
+    }
+
+    fn lower_andalso<A: BodyArena>(_expr: ast::AndAlsoExpr, _arena: &mut A) -> Idx<Self> {
+        todo!()
+    }
+
+    fn lower_orelse<A: BodyArena>(_expr: ast::OrElseExpr, _arena: &mut A) -> Idx<Self> {
+        todo!()
+    }
+
+    fn lower_handle<A: BodyArena>(_expr: ast::HandleExpr, _arena: &mut A) -> Idx<Self> {
+        todo!()
+    }
+
+    fn lower_raise<A: BodyArena>(_expr: ast::RaiseExpr, _arena: &mut A) -> Idx<Self> {
+        todo!()
+    }
+
+    fn lower_if<A: BodyArena>(_expr: ast::IfExpr, _arena: &mut A) -> Idx<Self> {
+        todo!()
+    }
+
+    fn lower_while<A: BodyArena>(_expr: ast::WhileExpr, _arena: &mut A) -> Idx<Self> {
+        todo!()
+    }
+
+    fn lower_case<A: BodyArena>(_expr: ast::CaseExpr, _arena: &mut A) -> Idx<Self> {
+        todo!()
+    }
+
+    fn lower_fn<A: BodyArena>(_expr: ast::FnExpr, _arena: &mut A) -> Idx<Self> {
+        todo!()
+    }
+}
+
+impl Scon {
+    pub fn lower(node: ast::Scon) -> Self {
+        match node {
+            ast::Scon::Int(s) => {
+                let s = s.text();
+
+                let i = if let Some('~') = s.chars().next() {
+                    s[1..].parse::<i128>().map(|i| -i)
+                } else {
+                    s.parse()
+                };
+                i.map(Self::Int).unwrap_or_else(|_| Self::Missing)
+            }
+            ast::Scon::Word(s) => s
+                .text()
+                .parse()
+                .map(Self::Word)
+                .unwrap_or_else(|_| Self::Missing),
+            ast::Scon::Real(s) => s
+                .text()
+                .parse::<f64>()
+                .map(FloatWrapper::new)
+                .map(Self::Real)
+                .unwrap_or_else(|_| Self::Missing),
+            ast::Scon::Char(s) => s
+                .text()
+                .chars()
+                .next()
+                .map(Self::Char)
+                .unwrap_or_else(|| Self::Missing),
+            ast::Scon::String(s) => {
+                // FIXME: intern strings??
+                let s = s.text().to_owned();
+                Self::String(s)
+            }
+        }
+    }
+}
+
+impl Pat {
+    pub fn missing<A: BodyArena>(arena: &mut A) -> Idx<Self> {
+        let p = Self {
+            kind: PatKind::Missing,
+            ast_id: None,
+        };
+        arena.alloc_pat(p)
+    }
+
+    pub fn mapped_at_node<A: BodyArena>(pat: ast::Pat, kind: PatKind, arena: &mut A) -> Idx<Self> {
+        let ast_id = Some(arena.alloc_ast_id(&AstPtr::new(&pat)));
+        let p = Self { kind, ast_id };
+        arena.alloc_pat(p)
+    }
+
+    pub fn lower_opt<A: BodyArena>(opt_pat: Option<ast::Pat>, arena: &mut A) -> Idx<Self> {
+        match opt_pat {
+            Some(pat) => Self::lower(pat, arena),
+            None => Self::missing(arena),
+        }
+    }
+
+    pub fn lower<A: BodyArena>(pat: ast::Pat, arena: &mut A) -> Idx<Self> {
+        let kind = match pat.clone() {
+            ast::Pat::Atomic(p) => Self::lower_atomic(p, arena),
+            ast::Pat::Typed(p) => Self::lower_typed(p, arena),
+            ast::Pat::Cons(p) => Self::lower_cons(p, arena),
+            ast::Pat::ConsInfix(p) => Self::lower_cons_infix(p, arena),
+            ast::Pat::Layered(p) => Self::lower_layered(p, arena),
+        };
+        let ast_id = Some(arena.alloc_ast_id(&AstPtr::new(&pat)));
+        let p = Self { kind, ast_id };
+        arena.alloc_pat(p)
+    }
+
+    fn lower_atomic<A: BodyArena>(pat: ast::AtomicPat, arena: &mut A) -> PatKind {
+        match pat {
+            ast::AtomicPat::Wildcard(p) => Self::lower_wildcard(p, arena),
+            ast::AtomicPat::SCon(p) => Self::lower_scon(p, arena),
+            ast::AtomicPat::VId(p) => Self::lower_vid(p, arena),
+            ast::AtomicPat::List(p) => Self::lower_list(p, arena),
+            ast::AtomicPat::Tuple(p) => Self::lower_tuple(p, arena),
+            ast::AtomicPat::Record(p) => Self::lower_record(p, arena),
+            ast::AtomicPat::Unit(_) => PatKind::Record { rows: Box::new([]) },
+        }
+    }
+
+    fn lower_wildcard<A: BodyArena>(_pat: ast::WildcardPat, _arena: &mut A) -> PatKind {
+        PatKind::Wildcard
+    }
+
+    fn lower_scon<A: BodyArena>(pat: ast::SConPat, _arena: &mut A) -> PatKind {
+        let scon = pat.scon().map(Scon::lower).unwrap_or(Scon::Missing);
+        PatKind::Scon(scon)
+    }
+
+    fn lower_vid<A: BodyArena>(pat: ast::VIdPat, arena: &mut A) -> PatKind {
+        let op = pat.op();
+        let longvid = pat
+            .longvid()
+            .map(|node| LongVId::new_from_node(&node, arena))
+            .unwrap_or_else(|| LongVId::missing(arena));
+
+        PatKind::VId { op, longvid }
+    }
+
+    // [pat1, pat2, ..., patn] lowers to pat1 :: pat2 :: ... :: patn :: nil
+    fn lower_list<A: BodyArena>(pat: ast::ListPat, arena: &mut A) -> PatKind {
+        let mut rev_pat_indexes = pat
+            .pats()
+            .map(|p| Pat::lower(p, arena))
+            .enumerate()
+            .collect::<Vec<_>>();
+        rev_pat_indexes.reverse();
+
+        if rev_pat_indexes.len() == 0 {
+            PatKind::Nil
+        } else {
+            // Alloc "::" in arena
+            let cons = arena.alloc_vid(VId::from_string("::".to_owned()));
+
+            // Remember our AST position, since lowering will generate new nodes
+            let node = ast::Pat::cast(pat.syntax().clone()).expect("ListPat is a Pat");
+
+            // The list ends with a nil pat
+            let nil_pat = Pat::mapped_at_node(node.clone(), PatKind::Nil, arena);
+
+            let mut last_idx = nil_pat;
+            let mut last = PatKind::Nil;
+
+            // "::" is right-associative, so we walk the list of pats in reverse.
+            // We allocate each generated infix pat in the arena, except for the
+            // final one ("hd :: ( ... )"), whose `PatKind` we need to return from the function
+            for (i, p_idx) in rev_pat_indexes {
+                last = PatKind::Infix {
+                    lhs: p_idx,
+                    vid: cons,
+                    rhs: last_idx,
+                };
+
+                if i > 0 {
+                    last_idx = Pat::mapped_at_node(node.clone(), last.clone(), arena);
+                }
+            }
+            last
+        }
+    }
+
+    fn lower_tuple<A: BodyArena>(tuple: ast::TuplePat, arena: &mut A) -> PatKind {
+        let mut rows = vec![];
+
+        for (i, p) in tuple.pats().enumerate() {
+            let pat = Pat::lower(p, arena);
+            let label = Label::Numeric(i as u32);
+            rows.push(PatRow::new_from_pat(pat, label, arena));
+        }
+
+        PatKind::Record {
+            rows: rows.into_boxed_slice(),
+        }
+    }
+
+    fn lower_record<A: BodyArena>(pat: ast::RecordPat, arena: &mut A) -> PatKind {
+        let rows = pat.patrows().map(|p| PatRow::lower(p, arena)).collect();
+        PatKind::Record { rows }
+    }
+
+    fn lower_typed<A: BodyArena>(pat: ast::TypedPat, arena: &mut A) -> PatKind {
+        let p = Self::lower_opt(pat.pat(), arena);
+        let ty = Type::lower_opt(pat.ty(), arena);
+        PatKind::Typed { pat: p, ty }
+    }
+
+    fn lower_cons<A: BodyArena>(pat: ast::ConsPat, arena: &mut A) -> PatKind {
+        let op = pat.op();
+        let longvid = LongVId::new_from_opt_node(pat.longvid().as_ref(), arena);
+        let pat_node = pat.atpat().and_then(|p| ast::Pat::cast(p.syntax().clone()));
+        let pat = Pat::lower_opt(pat_node, arena);
+        PatKind::Constructed { op, longvid, pat }
+    }
+
+    fn lower_cons_infix<A: BodyArena>(pat: ast::ConsInfixPat, arena: &mut A) -> PatKind {
+        let lhs = Pat::lower_opt(pat.pat_1(), arena);
+        let vid = arena.alloc_vid(VId::from_token(pat.vid()));
+        let rhs = Pat::lower_opt(pat.pat_2(), arena);
+        PatKind::Infix { lhs, vid, rhs }
+    }
+
+    fn lower_layered<A: BodyArena>(pat: ast::LayeredPat, arena: &mut A) -> PatKind {
+        let op = pat.op();
+        let vid = arena.alloc_vid(VId::from_token(pat.vid()));
+        let ty = pat.ty().map(|t| Type::lower(t, arena));
+        let pat = Pat::lower_opt(pat.pat(), arena);
+        PatKind::Layered { op, vid, ty, pat }
+    }
+}
+
+impl PatRow {
+    pub fn lower<A: BodyArena>(patrow: ast::PatRow, arena: &mut A) -> Self {
+        let pat = patrow
+            .pat()
+            .map(|node| Pat::lower(node, arena))
+            .unwrap_or_else(|| Pat::missing(arena));
+        let label = Label::from_token(patrow.label());
+        Self::new_from_pat(pat, label, arena)
+    }
+
+    pub fn new_from_pat<A: BodyArena>(pat: Idx<Pat>, label: Label, arena: &mut A) -> Self {
+        if let PatKind::Wildcard = arena.get_pat(pat).expect("pat index is valid").kind {
+            Self::Wildcard
+        } else {
+            let label = arena.alloc_label(label);
+            Self::Pattern { label, pat }
+        }
+    }
+}
+
+impl Type {
+    pub fn lower_opt<A: BodyArena>(_opt_ty: Option<ast::Ty>, _arena: &mut A) -> Idx<Self> {
+        todo!()
+    }
+
+    pub fn lower<A: BodyArena>(_ty: ast::Ty, _arena: &mut A) -> Idx<Self> {
+        todo!()
+    }
+}

@@ -1,11 +1,22 @@
 use std::marker::PhantomData;
 
 /// Index into [`Arena`]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Idx<T> {
     inner: usize,
     _ph: PhantomData<fn() -> T>,
 }
+
+impl<T> Clone for Idx<T> {
+    fn clone(&self) -> Self {
+        Self {
+            inner: self.inner,
+            _ph: PhantomData,
+        }
+    }
+}
+
+impl<T> Copy for Idx<T> {}
 
 impl<T> Idx<T> {
     pub fn as_inner(&self) -> usize {
