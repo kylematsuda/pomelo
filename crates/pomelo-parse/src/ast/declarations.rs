@@ -1,4 +1,4 @@
-use crate::{ast, ast::support, impl_ast_node, AstNode, SyntaxKind, SyntaxNode};
+use crate::{ast, ast::support, impl_ast_node, AstNode, SyntaxKind, SyntaxNode, SyntaxToken};
 use SyntaxKind::*;
 
 use std::fmt;
@@ -238,8 +238,10 @@ pub struct Fixity {
 impl_ast_node!(Fixity, FIXITY);
 
 impl Fixity {
-    pub fn value(&self) -> Option<ast::Int> {
-        support::tokens(self.syntax()).next()
+    pub fn value(&self) -> u8 {
+        support::token(self.syntax(), SyntaxKind::INT)
+            .and_then(|s| s.text().parse().ok())
+            .unwrap_or(0)
     }
 }
 

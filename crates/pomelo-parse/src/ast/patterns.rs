@@ -220,25 +220,29 @@ pub struct SConPat {
 impl_ast_node!(SConPat, SCON_PAT);
 
 impl SConPat {
-    pub fn int(&self) -> Option<ast::Int> {
+    pub fn scon(&self) -> Option<ast::Scon> {
         support::tokens(self.syntax()).next()
     }
 
-    pub fn real(&self) -> Option<ast::Real> {
-        support::tokens(self.syntax()).next()
-    }
+    // pub fn int(&self) -> Option<ast::Int> {
+    //     support::tokens(self.syntax()).next()
+    // }
 
-    pub fn word(&self) -> Option<ast::Word> {
-        support::tokens(self.syntax()).next()
-    }
+    // pub fn real(&self) -> Option<ast::Real> {
+    //     support::tokens(self.syntax()).next()
+    // }
 
-    pub fn char(&self) -> Option<ast::Char> {
-        support::tokens(self.syntax()).next()
-    }
+    // pub fn word(&self) -> Option<ast::Word> {
+    //     support::tokens(self.syntax()).next()
+    // }
 
-    pub fn string(&self) -> Option<ast::String> {
-        support::tokens(self.syntax()).next()
-    }
+    // pub fn char(&self) -> Option<ast::Char> {
+    //     support::tokens(self.syntax()).next()
+    // }
+
+    // pub fn string(&self) -> Option<ast::String> {
+    //     support::tokens(self.syntax()).next()
+    // }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -253,8 +257,8 @@ impl VIdPat {
         support::token(self.syntax(), OP_KW).is_some()
     }
 
-    pub fn vid(&self) -> Option<ast::VId> {
-        support::tokens(self.syntax()).next()
+    pub fn longvid(&self) -> Option<ast::LongVId> {
+        support::child(self.syntax())
     }
 }
 
@@ -279,6 +283,16 @@ pub struct PatRow {
 }
 
 impl_ast_node!(PatRow, PAT_ROW);
+
+impl PatRow {
+    pub fn pat(&self) -> Option<ast::Pat> {
+        support::child(self.syntax())
+    }
+
+    pub fn label(&self) -> Option<ast::Label> {
+        support::child(self.syntax())
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct UnitPat {

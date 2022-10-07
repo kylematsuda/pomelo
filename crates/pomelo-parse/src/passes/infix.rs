@@ -57,8 +57,7 @@ impl Context {
     }
 
     pub(crate) fn update(&mut self, dec: &SyntaxNode) {
-        let fixity_to_int =
-            |f: Option<ast::Fixity>| f.and_then(|f| f.value()).map(|i| i.parse()).unwrap_or(0);
+        let fixity_to_int = |f: Option<ast::Fixity>| f.map(|f| f.value()).unwrap_or(0);
 
         if let Some(infix) = ast::InfixDec::cast(dec.clone()) {
             let fixity = fixity_to_int(infix.fixity());

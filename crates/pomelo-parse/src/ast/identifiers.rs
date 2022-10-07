@@ -8,6 +8,10 @@ pub struct LongVId {
 impl_ast_node!(LongVId, LONG_VID);
 
 impl LongVId {
+    pub fn strids(&self) -> impl Iterator<Item = StrId> {
+        support::tokens(self.syntax())
+    }
+
     pub fn vid(&self) -> Option<VId> {
         support::tokens(self.syntax()).next()
     }
@@ -32,6 +36,12 @@ pub struct LongStrId {
     pub syntax: SyntaxNode,
 }
 
+impl LongStrId {
+    pub fn strids(&self) -> impl Iterator<Item = StrId> {
+        support::tokens(self.syntax())
+    }
+}
+
 impl_ast_node!(LongStrId, LONG_STRID);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -43,10 +53,10 @@ impl_ast_token!(StrId, STRID);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Label {
-    pub syntax: SyntaxNode,
+    pub syntax: SyntaxToken,
 }
 
-impl_ast_node!(Label, LAB);
+impl_ast_token!(Label, LAB);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TyVar {

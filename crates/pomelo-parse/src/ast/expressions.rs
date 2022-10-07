@@ -363,25 +363,29 @@ pub struct SConExpr {
 impl_ast_node!(SConExpr, SCON_EXP);
 
 impl SConExpr {
-    pub fn int(&self) -> Option<ast::Int> {
+    pub fn scon(&self) -> Option<ast::Scon> {
         support::tokens(self.syntax()).next()
     }
 
-    pub fn real(&self) -> Option<ast::Real> {
-        support::tokens(self.syntax()).next()
-    }
+    // pub fn int(&self) -> Option<ast::Int> {
+    //     support::tokens(self.syntax()).next()
+    // }
 
-    pub fn word(&self) -> Option<ast::Word> {
-        support::tokens(self.syntax()).next()
-    }
+    // pub fn real(&self) -> Option<ast::Real> {
+    //     support::tokens(self.syntax()).next()
+    // }
 
-    pub fn char(&self) -> Option<ast::Char> {
-        support::tokens(self.syntax()).next()
-    }
+    // pub fn word(&self) -> Option<ast::Word> {
+    //     support::tokens(self.syntax()).next()
+    // }
 
-    pub fn string(&self) -> Option<ast::String> {
-        support::tokens(self.syntax()).next()
-    }
+    // pub fn char(&self) -> Option<ast::Char> {
+    //     support::tokens(self.syntax()).next()
+    // }
+
+    // pub fn string(&self) -> Option<ast::String> {
+    //     support::tokens(self.syntax()).next()
+    // }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

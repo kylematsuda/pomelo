@@ -95,6 +95,7 @@ fn patrow(p: &mut Parser) {
     patrow_inner(p);
 }
 
+// FIXME: handle derived label as variable pat
 fn patrow_inner(p: &mut Parser) {
     match p.peek() {
         ELLIPSIS => {
