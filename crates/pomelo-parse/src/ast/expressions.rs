@@ -434,7 +434,7 @@ impl_ast_node!(RecSelExpr, RECORD_SEL_EXP);
 
 impl RecSelExpr {
     pub fn label(&self) -> Option<ast::Label> {
-        support::child(self.syntax())
+        support::tokens(self.syntax()).next()
     }
 }
 

@@ -290,7 +290,7 @@ impl PatRow {
     }
 
     pub fn label(&self) -> Option<ast::Label> {
-        support::child(self.syntax())
+        support::tokens(self.syntax()).next()
     }
 }
 

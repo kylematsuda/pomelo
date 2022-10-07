@@ -48,6 +48,7 @@ pub(crate) fn fvalbind(p: &mut Parser) {
         p.eat_trivia();
     }
 
+    // FIXME: "and" is likely not handled correctly... looks like these will nest
     match p.peek() {
         AND_KW => {
             p.eat(AND_KW);
