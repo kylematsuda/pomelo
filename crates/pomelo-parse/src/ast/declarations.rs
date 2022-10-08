@@ -1,4 +1,4 @@
-use crate::{ast, ast::support, impl_ast_node, AstNode, SyntaxKind, SyntaxNode, SyntaxToken};
+use crate::{ast, ast::support, impl_ast_node, AstNode, SyntaxKind, SyntaxNode};
 use SyntaxKind::*;
 
 use std::fmt;

@@ -1,5 +1,4 @@
-use crate::{impl_ast_token, AstToken, SyntaxKind, SyntaxToken};
-use std::str::FromStr;
+use crate::{AstToken, SyntaxKind, SyntaxToken};
 
 use SyntaxKind::*;
 
