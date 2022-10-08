@@ -1,7 +1,7 @@
 use crate::arena::Idx;
 use crate::core::{
-    BodyArena, Dec, DecKind, Expr, ExprKind, FloatWrapper, Pat, PatKind, PatRow, Scon, TyKind,
-    TyRow, Type,
+    BodyArena, Dec, DecKind, ExpRow, Expr, ExprKind, FloatWrapper, MRule, Pat, PatKind, PatRow,
+    Scon, TyKind, TyRow, Type,
 };
 use crate::identifiers::{Label, LongTyCon, LongVId, TyVar, VId};
 use pomelo_parse::{ast, AstNode, AstPtr};
@@ -108,16 +108,6 @@ impl Expr {
         arena.alloc_expr(e)
     }
 
-    pub fn mapped_at_node<A: BodyArena>(
-        expr: ast::Expr,
-        kind: ExprKind,
-        arena: &mut A,
-    ) -> Idx<Self> {
-        let ast_id = Some(arena.alloc_ast_id(&AstPtr::new(&expr)));
-        let e = Self { kind, ast_id };
-        arena.alloc_expr(e)
-    }
-
     pub fn lower_opt<A: BodyArena>(opt_expr: Option<ast::Expr>, arena: &mut A) -> Idx<Self> {
         match opt_expr {
             Some(expr) => Self::lower(expr, arena),
@@ -126,7 +116,7 @@ impl Expr {
     }
 
     pub fn lower<A: BodyArena>(expr: ast::Expr, arena: &mut A) -> Idx<Self> {
-        match expr {
+        let kind = match &expr {
             ast::Expr::Atomic(e) => Self::lower_atomic(e, arena),
             ast::Expr::Application(e) => Self::lower_application(e, arena),
             ast::Expr::Infix(e) => Self::lower_infix(e, arena),
@@ -139,55 +129,325 @@ impl Expr {
             ast::Expr::While(e) => Self::lower_while(e, arena),
             ast::Expr::Case(e) => Self::lower_case(e, arena),
             ast::Expr::Fn(e) => Self::lower_fn(e, arena),
+        };
+        Self::lower_with_kind(&expr, kind, arena)
+    }
+
+    pub fn lower_with_kind<A: BodyArena>(
+        expr: &ast::Expr,
+        kind: ExprKind,
+        arena: &mut A,
+    ) -> Idx<Self> {
+        let ast_id = Some(arena.alloc_ast_id(&AstPtr::new(expr)));
+        let e = Self { kind, ast_id };
+        arena.alloc_expr(e)
+    }
+
+    fn lower_atomic<A: BodyArena>(expr: &ast::AtomicExpr, arena: &mut A) -> ExprKind {
+        match expr {
+            ast::AtomicExpr::SCon(e) => Self::lower_scon(e, arena),
+            ast::AtomicExpr::VId(e) => Self::lower_vid(e, arena),
+            ast::AtomicExpr::Let(e) => Self::lower_let(e, arena),
+            ast::AtomicExpr::Seq(e) => Self::lower_seq(e, arena),
+            ast::AtomicExpr::Record(e) => Self::lower_record(e, arena),
+            ast::AtomicExpr::Tuple(e) => Self::lower_tuple(e, arena),
+            ast::AtomicExpr::Unit(e) => Self::lower_unit(e, arena),
+            ast::AtomicExpr::List(e) => Self::lower_list(e, arena),
+            ast::AtomicExpr::RecSel(e) => Self::lower_recsel(e, arena),
         }
     }
 
-    fn lower_atomic<A: BodyArena>(_expr: ast::AtomicExpr, _arena: &mut A) -> Idx<Self> {
+    fn lower_scon<A: BodyArena>(expr: &ast::SConExpr, _arena: &mut A) -> ExprKind {
+        let scon = expr.scon().map(Scon::lower).unwrap_or(Scon::Missing);
+        ExprKind::Scon(scon)
+    }
+
+    fn lower_vid<A: BodyArena>(expr: &ast::VIdExpr, arena: &mut A) -> ExprKind {
+        let op = expr.op();
+        let longvid = LongVId::from_opt_node(expr.longvid().as_ref(), arena);
+        ExprKind::VId { op, longvid }
+    }
+
+    fn lower_let<A: BodyArena>(expr: &ast::LetExpr, arena: &mut A) -> ExprKind {
+        let dec = Dec::lower_opt(expr.dec(), arena);
+
+        let exprs = expr.exprs().map(|e| Self::lower(e, arena)).collect();
+        let seq = ExprKind::Seq { exprs };
+        let expr = Self::lower_with_kind(
+            &ast::Expr::cast(expr.syntax().clone()).expect("this conversion never fails"),
+            seq,
+            arena,
+        );
+
+        ExprKind::Let { dec, expr }
+    }
+
+    fn lower_seq<A: BodyArena>(expr: &ast::SeqExpr, arena: &mut A) -> ExprKind {
+        let exprs = expr.exprs().map(|e| Self::lower(e, arena)).collect();
+        ExprKind::Seq { exprs }
+    }
+
+    fn lower_unit<A: BodyArena>(_expr: &ast::UnitExpr, _arena: &mut A) -> ExprKind {
+        ExprKind::Record { rows: Box::new([]) }
+    }
+
+    fn lower_record<A: BodyArena>(expr: &ast::RecordExpr, arena: &mut A) -> ExprKind {
+        let rows = expr.exprows().map(|e| ExpRow::lower(e, arena)).collect();
+        ExprKind::Record { rows }
+    }
+
+    fn lower_tuple<A: BodyArena>(expr: &ast::TupleExpr, arena: &mut A) -> ExprKind {
+        let mut rows = vec![];
+        for (i, e) in expr.exprs().enumerate() {
+            let exp = Self::lower(e, arena);
+            let exprow = ExpRow::new_from_expr(exp, Label::Numeric(i as u32), arena);
+            rows.push(exprow);
+        }
+        ExprKind::Record {
+            rows: rows.into_boxed_slice(),
+        }
+    }
+
+    fn lower_list<A: BodyArena>(expr: &ast::ListExpr, arena: &mut A) -> ExprKind {
+        let mut rev_expr_indexes = expr 
+            .exprs()
+            .map(|e| Expr::lower(e, arena))
+            .enumerate()
+            .collect::<Vec<_>>();
+        rev_expr_indexes.reverse();
+
+        if rev_expr_indexes.len() == 0 {
+            ExprKind::Nil
+        } else {
+            // Alloc "::" in arena
+            // FIXME: Intern built-in identifiers (just make a big enum with an as_str method?)
+            let cons = VId::from_str("::", arena);
+
+            // Remember our AST position, since lowering will generate new nodes
+            let node = ast::Expr::cast(expr.syntax().clone()).expect("this conversion never fails");
+
+            // The list ends with a nil pat
+            let nil_expr = Expr::lower_with_kind(&node, ExprKind::Nil, arena);
+
+            let mut last_idx = nil_expr;
+            let mut last = ExprKind::Nil;
+
+            // "::" is right-associative, so we walk the list of pats in reverse.
+            // We allocate each generated infix expr in the arena, except for the
+            // final one ("hd :: ( ... )"), whose `ExprKind` we need to return from the function
+            for (i, p_idx) in rev_expr_indexes {
+                last = ExprKind::Infix {
+                    lhs: p_idx,
+                    vid: cons,
+                    rhs: last_idx,
+                };
+
+                if i == 0 {
+                    return last;
+                }
+                last_idx = Expr::lower_with_kind(&node, last.clone(), arena);
+            }
+            last
+        }
+    }
+
+    fn lower_recsel<A: BodyArena>(_expr: &ast::RecSelExpr, _arena: &mut A) -> ExprKind {
         todo!()
     }
 
-    fn lower_application<A: BodyArena>(_expr: ast::ApplicationExpr, _arena: &mut A) -> Idx<Self> {
+    fn lower_application<A: BodyArena>(expr: &ast::ApplicationExpr, arena: &mut A) -> ExprKind {
+        let param = Self::lower_opt(
+            expr.atomic()
+                .and_then(|e| ast::Expr::cast(e.syntax().clone())),
+            arena,
+        );
+        let expr = Self::lower_opt(
+            expr.application()
+                .and_then(|e| ast::Expr::cast(e.syntax().clone())),
+            arena,
+        );
+        ExprKind::Application { expr, param }
+    }
+
+    fn lower_infix<A: BodyArena>(expr: &ast::InfixExpr, arena: &mut A) -> ExprKind {
+        let lhs = Self::lower_opt(expr.expr_1(), arena);
+        let vid = VId::from_token(expr.vid(), arena);
+        let rhs = Self::lower_opt(expr.expr_2(), arena);
+        ExprKind::Infix { lhs, vid, rhs }
+    }
+
+    fn lower_typed<A: BodyArena>(expr: &ast::TypedExpr, arena: &mut A) -> ExprKind {
+        let ty = Type::lower_opt(expr.ty(), arena);
+        let expr = Self::lower_opt(expr.expr(), arena);
+        ExprKind::Typed { expr, ty }
+    }
+
+    // Wait... is parsing of "true" and "false" wrong???
+    // Currently they are parsed as bare (String?) identifiers.
+    // This might be correct.. it also might be wrong...
+    //
+    // "exp1 andalso exp2" desugars to "if exp1 then exp2 else false"
+    fn lower_andalso<A: BodyArena>(expr: &ast::AndAlsoExpr, arena: &mut A) -> ExprKind {
+        let originating =
+            ast::Expr::cast(expr.syntax().clone()).expect("this conversion never fails");
+
+        let vid_false = LongVId::from_vid(VId::from_str("false", arena));
+        let false_expr = Self::lower_with_kind(
+            &originating,
+            ExprKind::VId {
+                op: false,
+                longvid: vid_false,
+            },
+            arena,
+        );
+
+        let expr_1 = Self::lower_opt(expr.expr_1(), arena);
+        let expr_2 = Self::lower_opt(expr.expr_2(), arena);
+
+        Self::_lower_if(&originating, expr_1, expr_2, false_expr, arena)
+    }
+
+    // "exp1 orelse exp2" desugars to "if exp1 then true else exp2"
+    fn lower_orelse<A: BodyArena>(expr: &ast::OrElseExpr, arena: &mut A) -> ExprKind {
+        let originating =
+            ast::Expr::cast(expr.syntax().clone()).expect("this conversion never fails");
+
+        let vid_true = LongVId::from_vid(VId::from_str("true", arena));
+        let true_expr = Self::lower_with_kind(
+            &originating,
+            ExprKind::VId {
+                op: false,
+                longvid: vid_true,
+            },
+            arena,
+        );
+
+        let expr_1 = Self::lower_opt(expr.expr_1(), arena);
+        let expr_2 = Self::lower_opt(expr.expr_2(), arena);
+
+        Self::_lower_if(&originating, expr_1, true_expr, expr_2, arena)
+    }
+
+    fn lower_handle<A: BodyArena>(expr: &ast::HandleExpr, arena: &mut A) -> ExprKind {
+        let match_ = match expr.match_expr() {
+            Some(m) => MRule::lower_from_match(&m, arena),
+            None => Box::new([]),
+        };
+        let expr = Self::lower_opt(expr.expr(), arena);
+        ExprKind::Handle { expr, match_ }
+    }
+
+    fn lower_raise<A: BodyArena>(expr: &ast::RaiseExpr, arena: &mut A) -> ExprKind {
+        let expr = Self::lower_opt(expr.expr(), arena);
+        ExprKind::Raise { expr }
+    }
+
+    fn lower_if<A: BodyArena>(expr: &ast::IfExpr, arena: &mut A) -> ExprKind {
+        let expr1 = Self::lower_opt(expr.expr_1(), arena);
+        let expr2 = Self::lower_opt(expr.expr_2(), arena);
+        let expr3 = Self::lower_opt(expr.expr_3(), arena);
+        Self::_lower_if(
+            &ast::Expr::cast(expr.syntax().clone()).expect("this conversion never fails"),
+            expr1,
+            expr2,
+            expr3,
+            arena,
+        )
+    }
+
+    fn _lower_if<A: BodyArena>(
+        _originating_expr: &ast::Expr,
+        _expr1: Idx<Expr>,
+        _expr2: Idx<Expr>,
+        _expr3: Idx<Expr>,
+        _arena: &mut A,
+    ) -> ExprKind {
+        // FIXME: need to let ast_id be a different kind. like here, we need to generate some Pats
+        // from an Expr. How represent this? Maybe make a new type for ast_id,
+        //
+        // enum Source<T> {
+        //     Original(T),
+        //     Generated(GeneratedFrom)
+        // }
+        //
+        // enum GeneratedFrom {
+        //      Dec(..),
+        //      Expr(..),
+        //      Pat(..),
+        // }
+        todo!();
+    }
+
+    fn lower_while<A: BodyArena>(_expr: &ast::WhileExpr, _arena: &mut A) -> ExprKind {
+        // Similarly, need to create new patterns out of nowhere...
         todo!()
     }
 
-    fn lower_infix<A: BodyArena>(_expr: ast::InfixExpr, _arena: &mut A) -> Idx<Self> {
-        todo!()
+    fn lower_case<A: BodyArena>(expr: &ast::CaseExpr, arena: &mut A) -> ExprKind {
+        let match_ = match expr.match_expr() {
+            None => Box::new([]),
+            Some(m) => MRule::lower_from_match(&m, arena),
+        };
+        let test = Self::lower_opt(expr.expr(), arena);
+        Self::_lower_case(
+            &ast::Expr::cast(expr.syntax().clone()).expect("this conversion never fails"),
+            test,
+            match_,
+            arena,
+        )
     }
 
-    fn lower_typed<A: BodyArena>(_expr: ast::TypedExpr, _arena: &mut A) -> Idx<Self> {
-        todo!()
+    fn _lower_case<A: BodyArena>(
+        originating_expr: &ast::Expr,
+        test: Idx<Expr>,
+        boxed_match: Box<[MRule]>,
+        arena: &mut A,
+    ) -> ExprKind {
+        let lowered_case = ExprKind::Fn {
+            match_: boxed_match,
+        };
+        let lowered_case = Self::lower_with_kind(&originating_expr, lowered_case, arena);
+
+        ExprKind::Application {
+            expr: lowered_case,
+            param: test,
+        }
     }
 
-    fn lower_andalso<A: BodyArena>(_expr: ast::AndAlsoExpr, _arena: &mut A) -> Idx<Self> {
-        todo!()
+    fn lower_fn<A: BodyArena>(expr: &ast::FnExpr, arena: &mut A) -> ExprKind {
+        let match_ = match expr.match_expr() {
+            None => Box::new([]),
+            Some(m) => MRule::lower_from_match(&m, arena),
+        };
+        ExprKind::Fn { match_ }
+    }
+}
+
+impl ExpRow {
+    pub fn lower<A: BodyArena>(exprow: ast::ExprRow, arena: &mut A) -> Self {
+        let expr = Expr::lower_opt(exprow.expr(), arena);
+        let label = Label::from_token(exprow.label());
+        Self::new_from_expr(expr, label, arena)
     }
 
-    fn lower_orelse<A: BodyArena>(_expr: ast::OrElseExpr, _arena: &mut A) -> Idx<Self> {
-        todo!()
+    pub fn new_from_expr<A: BodyArena>(expr: Idx<Expr>, label: Label, arena: &mut A) -> Self {
+        let label = arena.alloc_label(label);
+        Self { label, expr }
+    }
+}
+
+impl MRule {
+    pub fn lower<A: BodyArena>(mrule: &ast::Mrule, arena: &mut A) -> Self {
+        let pat = Pat::lower_opt(mrule.pat(), arena);
+        let expr = Expr::lower_opt(mrule.expr(), arena);
+        Self { pat, expr }
     }
 
-    fn lower_handle<A: BodyArena>(_expr: ast::HandleExpr, _arena: &mut A) -> Idx<Self> {
-        todo!()
-    }
-
-    fn lower_raise<A: BodyArena>(_expr: ast::RaiseExpr, _arena: &mut A) -> Idx<Self> {
-        todo!()
-    }
-
-    fn lower_if<A: BodyArena>(_expr: ast::IfExpr, _arena: &mut A) -> Idx<Self> {
-        todo!()
-    }
-
-    fn lower_while<A: BodyArena>(_expr: ast::WhileExpr, _arena: &mut A) -> Idx<Self> {
-        todo!()
-    }
-
-    fn lower_case<A: BodyArena>(_expr: ast::CaseExpr, _arena: &mut A) -> Idx<Self> {
-        todo!()
-    }
-
-    fn lower_fn<A: BodyArena>(_expr: ast::FnExpr, _arena: &mut A) -> Idx<Self> {
-        todo!()
+    pub fn lower_from_match<A: BodyArena>(match_expr: &ast::Match, arena: &mut A) -> Box<[Self]> {
+        match_expr
+            .mrules()
+            .map(|m| Self::lower(&m, arena))
+            .collect()
     }
 }
 
@@ -309,6 +569,7 @@ impl Pat {
             PatKind::Nil
         } else {
             // Alloc "::" in arena
+            // FIXME: Intern built-in identifiers (just make a big enum with an as_str method?)
             let cons = VId::from_str("::", arena);
 
             // Remember our AST position, since lowering will generate new nodes
@@ -330,9 +591,10 @@ impl Pat {
                     rhs: last_idx,
                 };
 
-                if i > 0 {
-                    last_idx = Pat::mapped_at_node(node.clone(), last.clone(), arena);
+                if i == 0 {
+                    return last;
                 }
+                last_idx = Pat::mapped_at_node(node.clone(), last.clone(), arena);
             }
             last
         }

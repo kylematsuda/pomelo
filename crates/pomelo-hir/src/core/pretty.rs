@@ -31,6 +31,7 @@ impl HirPrettyPrint for Dec {
     fn pretty<A: BodyArena>(&self, arena: &A) -> String {
         match &self.kind {
             DecKind::Missing => MISSING.to_owned(),
+            DecKind::Seq { decs } => boxed_seq(decs, arena, "; "),
             DecKind::Val {
                 rec,
                 tyvarseq,
@@ -290,6 +291,7 @@ impl HirPrettyPrint for Expr {
         match &self.kind {
             ExprKind::Missing => MISSING.to_owned(),
             ExprKind::Nil => "nil".to_owned(),
+            ExprKind::Seq { exprs } => boxed_seq(exprs, arena, "; "),
             ExprKind::Scon(s) => s.pretty(arena),
             ExprKind::VId { op, longvid } => {
                 format!("{}{}", op_str(*op), longvid.pretty(arena))
@@ -305,12 +307,8 @@ impl HirPrettyPrint for Expr {
                 let matches = boxed_seq(match_, arena, " | ");
                 format!("fn {}", matches)
             }
-            ExprKind::Let { decs, expr } => {
-                format!(
-                    "let {} in {} end",
-                    boxed_seq(decs, arena, "; "),
-                    expr.pretty(arena)
-                )
+            ExprKind::Let { dec, expr } => {
+                format!("let {} in {} end", dec.pretty(arena), expr.pretty(arena))
             }
             ExprKind::Infix { lhs, vid, rhs } => {
                 format!(
@@ -326,8 +324,12 @@ impl HirPrettyPrint for Expr {
             ExprKind::Typed { expr, ty } => {
                 format!("{} : {}", expr.pretty(arena), ty.pretty(arena))
             }
-            ExprKind::Handle { expr } => {
-                format!("handle {}", expr.pretty(arena))
+            ExprKind::Handle { expr, match_ } => {
+                format!(
+                    "{} handle {}",
+                    expr.pretty(arena),
+                    boxed_seq(match_, arena, " | ")
+                )
             }
             ExprKind::Raise { expr } => {
                 format!("raise {}", expr.pretty(arena))
@@ -347,7 +349,7 @@ impl HirPrettyPrint for Idx<Expr> {
 
 impl HirPrettyPrint for ExpRow {
     fn pretty<A: BodyArena>(&self, arena: &A) -> String {
-        format!("{}: {}", self.lab.pretty(arena), self.expr.pretty(arena))
+        format!("{}: {}", self.label.pretty(arena), self.expr.pretty(arena))
     }
 }
 

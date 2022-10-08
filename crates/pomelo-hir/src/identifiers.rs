@@ -1,6 +1,6 @@
 use crate::arena::Idx;
-use crate::topdecs::FileArena;
 use crate::core::BodyArena;
+use crate::topdecs::FileArena;
 use pomelo_parse::{ast, AstToken};
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, Hash)]
@@ -40,6 +40,13 @@ impl LongVId {
         Self {
             strids: Box::new([]),
             vid: VId::missing(arena),
+        }
+    }
+
+    pub fn from_vid(vid: Idx<VId>) -> Self {
+        Self {
+            strids: Box::new([]),
+            vid,
         }
     }
 }
@@ -177,7 +184,7 @@ impl TyCon {
     pub fn from_token<A: FileArena>(opt_tycon: Option<ast::TyCon>, arena: &mut A) -> Idx<Self> {
         match opt_tycon {
             None => Self::missing(arena),
-            Some(t) => Self::from_str(t.syntax().text(), arena), 
+            Some(t) => Self::from_str(t.syntax().text(), arena),
         }
     }
 

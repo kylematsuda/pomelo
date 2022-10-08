@@ -160,6 +160,9 @@ pub struct Dec {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DecKind {
     Missing,
+    Seq {
+        decs: Box<[Idx<Dec>]>,
+    },
     Val {
         rec: bool,
         tyvarseq: Box<[Idx<TyVar>]>,
@@ -246,6 +249,9 @@ pub enum ExprKind {
     Missing,
     Scon(Scon),
     Nil,
+    Seq {
+        exprs: Box<[Idx<Expr>]>,
+    },
     VId {
         op: bool,
         longvid: LongVId,
@@ -254,7 +260,7 @@ pub enum ExprKind {
         rows: Box<[ExpRow]>,
     },
     Let {
-        decs: Box<[Idx<Dec>]>,
+        dec: Idx<Dec>,
         expr: ExprIdx,
     },
     Application {
@@ -272,6 +278,7 @@ pub enum ExprKind {
     },
     Handle {
         expr: ExprIdx,
+        match_: Box<[MRule]>,
     },
     Raise {
         expr: ExprIdx,
@@ -311,7 +318,7 @@ impl std::fmt::Display for FloatWrapper {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExpRow {
-    lab: LabelIdx,
+    label: LabelIdx,
     expr: ExprIdx,
 }
 
