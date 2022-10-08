@@ -425,6 +425,16 @@ pub struct ExprRow {
 
 impl_ast_node!(ExprRow, EXP_ROW);
 
+impl ExprRow {
+    pub fn label(&self) -> Option<ast::Label> {
+        support::tokens(self.syntax()).next()
+    }
+
+    pub fn expr(&self) -> Option<ast::Expr> {
+        support::child(self.syntax())
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct RecSelExpr {
     syntax: SyntaxNode,
