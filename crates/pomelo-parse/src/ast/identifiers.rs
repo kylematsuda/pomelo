@@ -31,18 +31,35 @@ pub struct LongTyCon {
 
 impl_ast_node!(LongTyCon, LONG_TY_CON);
 
+impl LongTyCon {
+    pub fn strids(&self) -> impl Iterator<Item = StrId> {
+        support::tokens(self.syntax())
+    }
+
+    pub fn tycon(&self) -> Option<TyCon> {
+        support::tokens(self.syntax()).next()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct TyCon {
+    pub syntax: SyntaxToken,
+}
+
+impl_ast_token!(TyCon, TY_CON);
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct LongStrId {
     pub syntax: SyntaxNode,
 }
+
+impl_ast_node!(LongStrId, LONG_STRID);
 
 impl LongStrId {
     pub fn strids(&self) -> impl Iterator<Item = StrId> {
         support::tokens(self.syntax())
     }
 }
-
-impl_ast_node!(LongStrId, LONG_STRID);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct StrId {

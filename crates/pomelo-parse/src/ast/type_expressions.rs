@@ -118,6 +118,16 @@ pub struct TyRow {
 
 impl_ast_node!(TyRow, TY_ROW);
 
+impl TyRow {
+    pub fn label(&self) -> Option<ast::Label> {
+        support::tokens(self.syntax()).next()
+    }
+
+    pub fn ty(&self) -> Option<ast::Ty> {
+        support::child(self.syntax())
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TyVarTy {
     syntax: SyntaxNode,
