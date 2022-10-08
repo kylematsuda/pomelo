@@ -74,7 +74,7 @@ pub struct LongStrId {
 }
 
 impl LongStrId {
-    pub fn new_from_node<A: FileArena>(node: &ast::LongVId, arena: &mut A) -> Self {
+    pub fn new_from_node<A: FileArena>(node: &ast::LongStrId, arena: &mut A) -> Self {
         let mut strids = node
             .strids()
             .map(|s| StrId::from_token(Some(s)))
@@ -116,16 +116,65 @@ pub enum TyVar {
     Name(Name),
 }
 
+impl TyVar {
+    pub fn from_token(opt_tyvar: Option<ast::TyVar>) -> Self {
+        match opt_tyvar {
+            None => Self::Missing,
+            Some(t) => Self::Name(Name(t.syntax().text().to_owned())),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LongTyCon {
     pub strids: Box<[Idx<StrId>]>,
     pub tycon: Idx<TyCon>,
 }
 
+impl LongTyCon {
+    pub fn new_from_node<A: FileArena>(node: &ast::LongTyCon, arena: &mut A) -> Self {
+        let mut strids = node
+            .strids()
+            .map(|s| StrId::from_token(Some(s)))
+            .map(|s| arena.alloc_strid(s))
+            .collect();
+        let tycon = arena.alloc_tycon(TyCon::from_token(node.tycon()));
+
+        Self { strids, tycon }
+    }
+
+    pub fn new_from_opt_node<A: FileArena>(
+        opt_node: Option<&ast::LongTyCon>,
+        arena: &mut A,
+    ) -> Self {
+        match opt_node {
+            None => Self::missing(arena),
+            Some(t) => Self::new_from_node(t, arena),
+        }
+    }
+
+    pub fn missing<A: FileArena>(arena: &mut A) -> Self {
+        let tycon = arena.alloc_tycon(TyCon::Missing);
+        Self {
+            strids: Box::new([]),
+            tycon,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TyCon {
     Missing,
     Name(Name),
+}
+
+impl TyCon {
+    pub fn from_token(opt_tycon: Option<ast::TyCon>) -> Self {
+        match opt_tycon {
+            None => Self::Missing,
+            Some(t) => Self::Name(Name(t.syntax().text().to_owned())),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -395,7 +395,7 @@ pub type TyRefIdx = Idx<Type>;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TyRow {
-    lab: LabelIdx,
+    label: LabelIdx,
     ty: Idx<Type>,
 }
 

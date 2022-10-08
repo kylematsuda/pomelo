@@ -1,8 +1,9 @@
 use crate::arena::Idx;
 use crate::core::{
-    BodyArena, Dec, DecKind, Expr, ExprKind, FloatWrapper, Pat, PatKind, PatRow, Scon, Type,
+    BodyArena, Dec, DecKind, Expr, ExprKind, FloatWrapper, Pat, PatKind, PatRow, Scon, TyKind,
+    TyRow, Type,
 };
-use crate::identifiers::{Label, LongVId, VId};
+use crate::identifiers::{Label, LongTyCon, LongVId, TyVar, VId};
 use pomelo_parse::{ast, AstNode, AstPtr};
 
 impl Dec {
@@ -407,11 +408,81 @@ impl PatRow {
 }
 
 impl Type {
-    pub fn lower_opt<A: BodyArena>(_opt_ty: Option<ast::Ty>, _arena: &mut A) -> Idx<Self> {
-        todo!()
+    pub fn missing<A: BodyArena>(arena: &mut A) -> Idx<Self> {
+        let t = Self {
+            kind: TyKind::Missing,
+            ast_id: None,
+        };
+        arena.alloc_ty(t)
     }
 
-    pub fn lower<A: BodyArena>(_ty: ast::Ty, _arena: &mut A) -> Idx<Self> {
-        todo!()
+    pub fn lower_opt<A: BodyArena>(opt_ty: Option<ast::Ty>, arena: &mut A) -> Idx<Self> {
+        match opt_ty {
+            Some(ty) => Self::lower(ty, arena),
+            None => Self::missing(arena),
+        }
+    }
+
+    pub fn lower<A: BodyArena>(ty: ast::Ty, arena: &mut A) -> Idx<Self> {
+        let kind = match &ty {
+            ast::Ty::Fun(t) => Self::lower_fun(t, arena),
+            ast::Ty::Cons(t) => Self::lower_cons(t, arena),
+            ast::Ty::Tuple(t) => Self::lower_tuple(t, arena),
+            ast::Ty::TyVar(t) => Self::lower_tyvar(t, arena),
+            ast::Ty::Record(t) => Self::lower_record(t, arena),
+        };
+        Self::lower_with_kind(&ty, kind, arena)
+    }
+
+    fn lower_with_kind<A: BodyArena>(ty: &ast::Ty, kind: TyKind, arena: &mut A) -> Idx<Self> {
+        let ast_id = Some(arena.alloc_ast_id(&AstPtr::new(ty)));
+        let p = Self { kind, ast_id };
+        arena.alloc_ty(p)
+    }
+
+    fn lower_fun<A: BodyArena>(ty: &ast::FunTy, arena: &mut A) -> TyKind {
+        let domain = Self::lower_opt(ty.ty_1(), arena);
+        let range = Self::lower_opt(ty.ty_2(), arena);
+        TyKind::Function { domain, range }
+    }
+
+    fn lower_cons<A: BodyArena>(ty: &ast::ConsTy, arena: &mut A) -> TyKind {
+        let tyseq = ty.tys().map(|t| Self::lower(t, arena)).collect();
+        let longtycon = LongTyCon::new_from_opt_node(ty.longtycon().as_ref(), arena);
+        TyKind::Constructed { tyseq, longtycon }
+    }
+
+    fn lower_tuple<A: BodyArena>(ty: &ast::TupleTy, arena: &mut A) -> TyKind {
+        let mut tyrows = vec![];
+        for (i, t) in ty.tys().enumerate() {
+            let tyrow = TyRow::new_from_ty(Self::lower(t, arena), Label::Numeric(i as u32), arena);
+            tyrows.push(tyrow);
+        }
+        TyKind::Record {
+            tyrows: tyrows.into_boxed_slice(),
+        }
+    }
+
+    fn lower_tyvar<A: BodyArena>(ty: &ast::TyVarTy, arena: &mut A) -> TyKind {
+        let idx = arena.alloc_tyvar(TyVar::from_token(ty.tyvar()));
+        TyKind::Var(idx)
+    }
+
+    fn lower_record<A: BodyArena>(ty: &ast::RecordTy, arena: &mut A) -> TyKind {
+        let tyrows = ty.tyrows().map(|t| TyRow::lower(t, arena)).collect();
+        TyKind::Record { tyrows }
+    }
+}
+
+impl TyRow {
+    pub fn lower<A: BodyArena>(tyrow: ast::TyRow, arena: &mut A) -> Self {
+        let ty = Type::lower_opt(tyrow.ty(), arena);
+        let label = arena.alloc_label(Label::from_token(tyrow.label()));
+        Self { label, ty }
+    }
+
+    pub fn new_from_ty<A: BodyArena>(ty: Idx<Type>, label: Label, arena: &mut A) -> Self {
+        let label = arena.alloc_label(label);
+        Self { label, ty }
     }
 }
