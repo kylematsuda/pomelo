@@ -1,5 +1,6 @@
 use crate::arena::Idx;
 use crate::topdecs::FileArena;
+use crate::core::BodyArena;
 use pomelo_parse::{ast, AstToken};
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, Hash)]
@@ -18,20 +19,19 @@ pub struct LongVId {
 }
 
 impl LongVId {
-    pub fn new_from_node<A: FileArena>(node: &ast::LongVId, arena: &mut A) -> Self {
+    pub fn from_node<A: FileArena>(node: &ast::LongVId, arena: &mut A) -> Self {
         let strids = node
             .strids()
-            .map(|s| StrId::from_token(Some(s)))
-            .map(|s| arena.alloc_strid(s))
+            .map(|s| StrId::from_token(Some(s), arena))
             .collect();
-        let vid = arena.alloc_vid(VId::from_token(node.vid()));
+        let vid = VId::from_token(node.vid(), arena);
 
         Self { strids, vid }
     }
 
-    pub fn new_from_opt_node<A: FileArena>(opt_node: Option<&ast::LongVId>, arena: &mut A) -> Self {
+    pub fn from_opt_node<A: FileArena>(opt_node: Option<&ast::LongVId>, arena: &mut A) -> Self {
         match opt_node {
-            Some(vid) => Self::new_from_node(vid, arena),
+            Some(vid) => Self::from_node(vid, arena),
             None => Self::missing(arena),
         }
     }
@@ -39,7 +39,7 @@ impl LongVId {
     pub fn missing<A: FileArena>(arena: &mut A) -> Self {
         Self {
             strids: Box::new([]),
-            vid: arena.alloc_vid(VId::missing()),
+            vid: VId::missing(arena),
         }
     }
 }
@@ -51,19 +51,19 @@ pub enum VId {
 }
 
 impl VId {
-    pub fn from_token(opt_vid: Option<ast::VId>) -> Self {
+    pub fn from_token<A: FileArena>(opt_vid: Option<ast::VId>, arena: &mut A) -> Idx<Self> {
         match opt_vid {
-            Some(vid) => Self::Name(Name(vid.to_string())),
-            None => Self::Missing,
+            Some(vid) => Self::from_str(vid.syntax().text(), arena),
+            None => Self::missing(arena),
         }
     }
 
-    pub fn from_string(name: String) -> Self {
-        Self::Name(Name(name))
+    pub fn from_str<A: FileArena>(name: &str, arena: &mut A) -> Idx<Self> {
+        arena.alloc_vid(Self::Name(Name(name.to_owned())))
     }
 
-    pub fn missing() -> Self {
-        Self::Missing
+    pub fn missing<A: FileArena>(arena: &mut A) -> Idx<Self> {
+        arena.alloc_vid(Self::Missing)
     }
 }
 
@@ -74,15 +74,12 @@ pub struct LongStrId {
 }
 
 impl LongStrId {
-    pub fn new_from_node<A: FileArena>(node: &ast::LongStrId, arena: &mut A) -> Self {
+    pub fn from_node<A: FileArena>(node: &ast::LongStrId, arena: &mut A) -> Self {
         let mut strids = node
             .strids()
-            .map(|s| StrId::from_token(Some(s)))
-            .map(|s| arena.alloc_strid(s))
+            .map(|s| StrId::from_token(Some(s), arena))
             .collect::<Vec<_>>();
-        let strid = strids
-            .pop()
-            .unwrap_or_else(|| arena.alloc_strid(StrId::missing()));
+        let strid = strids.pop().unwrap_or_else(|| StrId::missing(arena));
 
         Self {
             strid_path: strids.into_boxed_slice(),
@@ -98,15 +95,19 @@ pub enum StrId {
 }
 
 impl StrId {
-    pub fn from_token(opt_strid: Option<ast::StrId>) -> Self {
+    pub fn from_token<A: FileArena>(opt_strid: Option<ast::StrId>, arena: &mut A) -> Idx<Self> {
         match opt_strid {
-            Some(strid) => Self::Name(Name(strid.to_string())),
-            None => Self::Missing,
+            Some(strid) => Self::from_str(strid.syntax().text(), arena),
+            None => Self::missing(arena),
         }
     }
 
-    pub fn missing() -> Self {
-        Self::Missing
+    pub fn from_str<A: FileArena>(name: &str, arena: &mut A) -> Idx<Self> {
+        arena.alloc_strid(Self::Name(Name(name.to_owned())))
+    }
+
+    pub fn missing<A: FileArena>(arena: &mut A) -> Idx<Self> {
+        arena.alloc_strid(Self::Missing)
     }
 }
 
@@ -117,11 +118,19 @@ pub enum TyVar {
 }
 
 impl TyVar {
-    pub fn from_token(opt_tyvar: Option<ast::TyVar>) -> Self {
+    pub fn from_token<A: BodyArena>(opt_tyvar: Option<ast::TyVar>, arena: &mut A) -> Idx<Self> {
         match opt_tyvar {
-            None => Self::Missing,
-            Some(t) => Self::Name(Name(t.syntax().text().to_owned())),
+            None => Self::missing(arena),
+            Some(t) => Self::from_str(t.syntax().text(), arena),
         }
+    }
+
+    pub fn from_str<A: BodyArena>(name: &str, arena: &mut A) -> Idx<Self> {
+        arena.alloc_tyvar(Self::Name(Name(name.to_owned())))
+    }
+
+    pub fn missing<A: BodyArena>(arena: &mut A) -> Idx<Self> {
+        arena.alloc_tyvar(Self::Missing)
     }
 }
 
@@ -132,24 +141,20 @@ pub struct LongTyCon {
 }
 
 impl LongTyCon {
-    pub fn new_from_node<A: FileArena>(node: &ast::LongTyCon, arena: &mut A) -> Self {
-        let mut strids = node
+    pub fn from_node<A: FileArena>(node: &ast::LongTyCon, arena: &mut A) -> Self {
+        let strids = node
             .strids()
-            .map(|s| StrId::from_token(Some(s)))
-            .map(|s| arena.alloc_strid(s))
+            .map(|s| StrId::from_token(Some(s), arena))
             .collect();
-        let tycon = arena.alloc_tycon(TyCon::from_token(node.tycon()));
+        let tycon = TyCon::from_token(node.tycon(), arena);
 
         Self { strids, tycon }
     }
 
-    pub fn new_from_opt_node<A: FileArena>(
-        opt_node: Option<&ast::LongTyCon>,
-        arena: &mut A,
-    ) -> Self {
+    pub fn from_opt_node<A: FileArena>(opt_node: Option<&ast::LongTyCon>, arena: &mut A) -> Self {
         match opt_node {
             None => Self::missing(arena),
-            Some(t) => Self::new_from_node(t, arena),
+            Some(t) => Self::from_node(t, arena),
         }
     }
 
@@ -169,11 +174,19 @@ pub enum TyCon {
 }
 
 impl TyCon {
-    pub fn from_token(opt_tycon: Option<ast::TyCon>) -> Self {
+    pub fn from_token<A: FileArena>(opt_tycon: Option<ast::TyCon>, arena: &mut A) -> Idx<Self> {
         match opt_tycon {
-            None => Self::Missing,
-            Some(t) => Self::Name(Name(t.syntax().text().to_owned())),
+            None => Self::missing(arena),
+            Some(t) => Self::from_str(t.syntax().text(), arena), 
         }
+    }
+
+    pub fn from_str<A: FileArena>(name: &str, arena: &mut A) -> Idx<Self> {
+        arena.alloc_tycon(Self::Name(Name(name.to_owned())))
+    }
+
+    pub fn missing<A: FileArena>(arena: &mut A) -> Idx<Self> {
+        arena.alloc_tycon(Self::Missing)
     }
 }
 

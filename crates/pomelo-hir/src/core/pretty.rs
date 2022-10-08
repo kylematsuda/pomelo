@@ -281,7 +281,7 @@ impl HirPrettyPrint for Idx<Type> {
 
 impl HirPrettyPrint for TyRow {
     fn pretty<A: BodyArena>(&self, arena: &A) -> String {
-        format!("{}: {}", self.lab.pretty(arena), self.ty.pretty(arena))
+        format!("{}: {}", self.label.pretty(arena), self.ty.pretty(arena))
     }
 }
 

@@ -290,7 +290,7 @@ impl Pat {
         let op = pat.op();
         let longvid = pat
             .longvid()
-            .map(|node| LongVId::new_from_node(&node, arena))
+            .map(|node| LongVId::from_node(&node, arena))
             .unwrap_or_else(|| LongVId::missing(arena));
 
         PatKind::VId { op, longvid }
@@ -309,7 +309,7 @@ impl Pat {
             PatKind::Nil
         } else {
             // Alloc "::" in arena
-            let cons = arena.alloc_vid(VId::from_string("::".to_owned()));
+            let cons = VId::from_str("::", arena);
 
             // Remember our AST position, since lowering will generate new nodes
             let node = ast::Pat::cast(pat.syntax().clone()).expect("ListPat is a Pat");
@@ -365,7 +365,7 @@ impl Pat {
 
     fn lower_cons<A: BodyArena>(pat: ast::ConsPat, arena: &mut A) -> PatKind {
         let op = pat.op();
-        let longvid = LongVId::new_from_opt_node(pat.longvid().as_ref(), arena);
+        let longvid = LongVId::from_opt_node(pat.longvid().as_ref(), arena);
         let pat_node = pat.atpat().and_then(|p| ast::Pat::cast(p.syntax().clone()));
         let pat = Pat::lower_opt(pat_node, arena);
         PatKind::Constructed { op, longvid, pat }
@@ -373,14 +373,14 @@ impl Pat {
 
     fn lower_cons_infix<A: BodyArena>(pat: ast::ConsInfixPat, arena: &mut A) -> PatKind {
         let lhs = Pat::lower_opt(pat.pat_1(), arena);
-        let vid = arena.alloc_vid(VId::from_token(pat.vid()));
+        let vid = VId::from_token(pat.vid(), arena);
         let rhs = Pat::lower_opt(pat.pat_2(), arena);
         PatKind::Infix { lhs, vid, rhs }
     }
 
     fn lower_layered<A: BodyArena>(pat: ast::LayeredPat, arena: &mut A) -> PatKind {
         let op = pat.op();
-        let vid = arena.alloc_vid(VId::from_token(pat.vid()));
+        let vid = VId::from_token(pat.vid(), arena);
         let ty = pat.ty().map(|t| Type::lower(t, arena));
         let pat = Pat::lower_opt(pat.pat(), arena);
         PatKind::Layered { op, vid, ty, pat }
@@ -448,7 +448,7 @@ impl Type {
 
     fn lower_cons<A: BodyArena>(ty: &ast::ConsTy, arena: &mut A) -> TyKind {
         let tyseq = ty.tys().map(|t| Self::lower(t, arena)).collect();
-        let longtycon = LongTyCon::new_from_opt_node(ty.longtycon().as_ref(), arena);
+        let longtycon = LongTyCon::from_opt_node(ty.longtycon().as_ref(), arena);
         TyKind::Constructed { tyseq, longtycon }
     }
 
@@ -464,7 +464,7 @@ impl Type {
     }
 
     fn lower_tyvar<A: BodyArena>(ty: &ast::TyVarTy, arena: &mut A) -> TyKind {
-        let idx = arena.alloc_tyvar(TyVar::from_token(ty.tyvar()));
+        let idx = TyVar::from_token(ty.tyvar(), arena);
         TyKind::Var(idx)
     }
 
