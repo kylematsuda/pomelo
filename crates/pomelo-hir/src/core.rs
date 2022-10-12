@@ -283,7 +283,6 @@ pub struct Expr {
 pub enum ExprKind {
     Missing,
     Scon(Scon),
-    Nil,
     Seq {
         exprs: Box<[Idx<Expr>]>,
     },
@@ -367,7 +366,6 @@ pub struct Pat {
 pub enum PatKind {
     Missing,
     Wildcard,
-    Nil,
     Scon(Scon),
     VId {
         op: bool,

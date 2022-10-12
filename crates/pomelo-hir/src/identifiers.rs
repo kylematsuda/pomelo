@@ -9,6 +9,7 @@ pub enum BuiltIn {
     True,
     False,
     Cons,
+    Nil,
 }
 
 impl BuiltIn {
@@ -17,6 +18,7 @@ impl BuiltIn {
             Self::True => "true",
             Self::False => "false",
             Self::Cons => "::",
+            Self::Nil => "nil",
         }
     }
 
@@ -25,6 +27,7 @@ impl BuiltIn {
             "true" => Some(Self::True),
             "false" => Some(Self::False),
             "::" => Some(Self::Cons),
+            "nil" => Some(Self::Nil),
             _ => None,
         }
     }

@@ -25,10 +25,18 @@ pub(crate) trait HirLowerGenerated: HirLower {
     fn generated<A: BodyArena>(origin: NodeParent, kind: Self::Kind, arena: &mut A) -> Idx<Self>;
 }
 
+// Used to lower lists [a1, a2, ... ] to a1 :: a2 :: ... :: nil 
+// Common code for both [`Expr`] and [`Pat`].
+// This is factored out on its own since it's probably the most complicated
+// part of this stage of lowering.
+//
+// elts: e.g., "expr.exprs()" or "pat.pats()"
+// vid_kind: construct an `ExprKind::VId` or `PatKind::VId`
+// infix_kind: construct an `ExprKind::Infix` or `PatKind::Infix`
 fn lower_list<A: BodyArena, H: HirLowerGenerated>(
     origin: NodeParent,
     elts: impl Iterator<Item = H::AstType>,
-    nil_kind: H::Kind,
+    vid_kind: impl Fn(LongVId) -> H::Kind,
     infix_kind: impl Fn(Idx<H>, Idx<VId>, Idx<H>) -> H::Kind,
     arena: &mut A,
 ) -> H::Kind {
@@ -38,16 +46,18 @@ fn lower_list<A: BodyArena, H: HirLowerGenerated>(
         .collect::<Vec<_>>();
     rev_indexed.reverse();
 
+    let nil = LongVId::from_vid(VId::from_builtin(BuiltIn::Nil, arena));
+
     if rev_indexed.len() == 0 {
-        nil_kind
+        vid_kind(nil)
     } else {
         let cons = VId::from_builtin(BuiltIn::Cons, arena);
 
         // The list ends with a nil pat
-        let nil_expr = H::generated(origin.clone(), nil_kind.clone(), arena);
+        let nil_expr = H::generated(origin.clone(), vid_kind(nil), arena);
 
         let mut last_idx = nil_expr;
-        let mut last = nil_kind.clone();
+        let mut last = vid_kind(nil);
 
         // "::" is right-associative, so we walk the list of pats in reverse.
         // We allocate each generated infix expr in the arena, except for the
@@ -268,7 +278,7 @@ impl Expr {
         lower_list(
             NodeParent::from_expr(&origin, arena),
             expr.exprs(),
-            ExprKind::Nil,
+            |longvid| ExprKind::VId { op: false, longvid },
             |lhs, vid, rhs| ExprKind::Infix { lhs, vid, rhs },
             arena,
         )
@@ -577,7 +587,7 @@ impl Pat {
         lower_list(
             NodeParent::from_pat(&origin, arena),
             pat.pats(),
-            PatKind::Nil,
+            |longvid| PatKind::VId { op: false, longvid },
             |lhs, vid, rhs| PatKind::Infix { lhs, vid, rhs },
             arena,
         )
