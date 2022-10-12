@@ -289,7 +289,7 @@ impl Expr {
         let originating =
             ast::Expr::cast(expr.syntax().clone()).expect("this conversion never fails");
 
-        let vid_false = LongVId::from_vid(VId::from_str("false", arena));
+        let vid_false = LongVId::from_vid(VId::from_builtin(BuiltIn::False, arena));
         let false_expr = Self::lower_with_kind(
             &originating,
             ExprKind::VId {
@@ -310,7 +310,7 @@ impl Expr {
         let originating =
             ast::Expr::cast(expr.syntax().clone()).expect("this conversion never fails");
 
-        let vid_true = LongVId::from_vid(VId::from_str("true", arena));
+        let vid_true = LongVId::from_vid(VId::from_builtin(BuiltIn::True, arena));
         let true_expr = Self::lower_with_kind(
             &originating,
             ExprKind::VId {
