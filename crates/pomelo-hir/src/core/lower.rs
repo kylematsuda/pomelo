@@ -234,12 +234,10 @@ impl Expr {
         let dec = Dec::lower_opt(expr.dec(), arena);
 
         let exprs = expr.exprs().map(|e| Self::lower(e, arena)).collect();
-        let seq = ExprKind::Seq { exprs };
-        let expr = Self::generated(
-            NodeParent::from_expr(&ast::Expr::cast(expr.syntax().clone()).expect("this conversion never fails"), arena),
-            seq,
-            arena,
-        );
+        let kind = ExprKind::Seq { exprs };
+
+        let origin = ast::Expr::from(ast::AtomicExpr::from(expr.clone()));
+        let expr = Self::generated(NodeParent::from_expr(&origin, arena), kind, arena);
 
         ExprKind::Let { dec, expr }
     }
@@ -284,7 +282,7 @@ impl Expr {
             let cons = VId::from_builtin(BuiltIn::Cons, arena);
 
             // Remember our AST position, since lowering will generate new nodes
-            let node = ast::Expr::cast(expr.syntax().clone()).expect("this conversion never fails");
+            let node = ast::Expr::from(ast::AtomicExpr::from(expr.clone()));
             let node = NodeParent::Expr(arena.alloc_ast_id(&node));
 
             // The list ends with a nil pat
@@ -317,16 +315,8 @@ impl Expr {
     }
 
     fn lower_application<A: BodyArena>(expr: &ast::ApplicationExpr, arena: &mut A) -> ExprKind {
-        let param = Self::lower_opt(
-            expr.atomic()
-                .and_then(|e| ast::Expr::cast(e.syntax().clone())),
-            arena,
-        );
-        let expr = Self::lower_opt(
-            expr.application()
-                .and_then(|e| ast::Expr::cast(e.syntax().clone())),
-            arena,
-        );
+        let param = Self::lower_opt(expr.atomic().map(ast::Expr::from), arena);
+        let expr = Self::lower_opt(expr.application().map(ast::Expr::from), arena);
         ExprKind::Application { expr, param }
     }
 
@@ -349,10 +339,7 @@ impl Expr {
     //
     // "exp1 andalso exp2" desugars to "if exp1 then exp2 else false"
     fn lower_andalso<A: BodyArena>(expr: &ast::AndAlsoExpr, arena: &mut A) -> ExprKind {
-        let originating = NodeParent::from_expr(
-            &ast::Expr::cast(expr.syntax().clone()).expect("this conversion never fails"),
-            arena,
-        );
+        let originating = NodeParent::from_expr(&ast::Expr::from(expr.clone()), arena);
 
         let vid_false = LongVId::from_vid(VId::from_builtin(BuiltIn::False, arena));
         let false_expr = Self::generated(
@@ -372,10 +359,7 @@ impl Expr {
 
     // "exp1 orelse exp2" desugars to "if exp1 then true else exp2"
     fn lower_orelse<A: BodyArena>(expr: &ast::OrElseExpr, arena: &mut A) -> ExprKind {
-        let originating = NodeParent::from_expr(
-            &ast::Expr::cast(expr.syntax().clone()).expect("this conversion never fails"),
-            arena,
-        );
+        let originating = NodeParent::from_expr(&ast::Expr::from(expr.clone()), arena);
 
         let vid_true = LongVId::from_vid(VId::from_builtin(BuiltIn::True, arena));
         let true_expr = Self::generated(
@@ -412,7 +396,7 @@ impl Expr {
         let expr2 = Self::lower_opt(expr.expr_2(), arena);
         let expr3 = Self::lower_opt(expr.expr_3(), arena);
         Self::_lower_if(
-            NodeParent::from_expr(&ast::Expr::cast(expr.syntax().clone()).expect("this conversion never fails"), arena),
+            NodeParent::from_expr(&ast::Expr::from(expr.clone()), arena),
             expr1,
             expr2,
             expr3,
@@ -454,12 +438,7 @@ impl Expr {
             Some(m) => MRule::lower_from_match(&m, arena),
         };
         let test = Self::lower_opt(expr.expr(), arena);
-        Self::_lower_case(
-            &ast::Expr::cast(expr.syntax().clone()).expect("this conversion never fails"),
-            test,
-            match_,
-            arena,
-        )
+        Self::_lower_case(&ast::Expr::from(expr.clone()), test, match_, arena)
     }
 
     fn _lower_case<A: BodyArena>(
@@ -471,7 +450,11 @@ impl Expr {
         let lowered_case = ExprKind::Fn {
             match_: boxed_match,
         };
-        let lowered_case = Self::generated(NodeParent::from_expr(&originating_expr, arena), lowered_case, arena);
+        let lowered_case = Self::generated(
+            NodeParent::from_expr(&originating_expr, arena),
+            lowered_case,
+            arena,
+        );
 
         ExprKind::Application {
             expr: lowered_case,
@@ -639,7 +622,7 @@ impl Pat {
             let cons = VId::from_builtin(BuiltIn::Cons, arena);
 
             // Remember our AST position, since lowering will generate new nodes
-            let node = ast::Pat::cast(pat.syntax().clone()).expect("ListPat is a Pat");
+            let node = ast::Pat::from(ast::AtomicPat::from(pat.clone()));
             let node = NodeParent::Pat(arena.alloc_ast_id(&node));
 
             // The list ends with a nil pat
@@ -695,7 +678,7 @@ impl Pat {
     fn lower_cons<A: BodyArena>(pat: ast::ConsPat, arena: &mut A) -> PatKind {
         let op = pat.op();
         let longvid = LongVId::from_opt_node(pat.longvid().as_ref(), arena);
-        let pat_node = pat.atpat().and_then(|p| ast::Pat::cast(p.syntax().clone()));
+        let pat_node = pat.atpat().map(ast::Pat::from);
         let pat = Pat::lower_opt(pat_node, arena);
         PatKind::Constructed { op, longvid, pat }
     }

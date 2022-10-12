@@ -1,5 +1,5 @@
 use crate::arena::{Arena, Idx};
-use crate::core::{BodyArena, BodyArenaImpl, Pat, PatKind, lower::HirLower};
+use crate::core::{lower::HirLower, BodyArena, BodyArenaImpl, Pat, PatKind};
 use crate::identifiers::{LongVId, StrId, TyCon, VId};
 use crate::topdecs::{CoreDec, File, FileArena, FileData, TopDec};
 use pomelo_parse::ast;

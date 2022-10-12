@@ -118,7 +118,10 @@ pub struct FileAstIdx<N> {
 
 impl<N> Clone for FileAstIdx<N> {
     fn clone(&self) -> Self {
-        Self { index: self.index, _ph: self._ph }
+        Self {
+            index: self.index,
+            _ph: self._ph,
+        }
     }
 }
 
