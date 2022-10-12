@@ -154,7 +154,7 @@ impl BodyArena for BodyArenaImpl {
 ///
 /// This node may be missing, an exact 1-1 translation of the AST node,
 /// or a node that was generated during lowering (modeled by [`NodeParent`]).
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AstId<N> {
     Missing,
     Node(FileAstIdx<N>),
@@ -163,10 +163,28 @@ pub enum AstId<N> {
 }
 
 /// Used to find the parent span of nodes that were generated during lowering.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NodeParent {
     Dec(FileAstIdx<ast::Dec>),
     Expr(FileAstIdx<ast::Expr>),
+    Pat(FileAstIdx<ast::Pat>),
+}
+
+impl NodeParent {
+    pub fn from_expr<A: BodyArena>(expr: &ast::Expr, arena: &mut A) -> Self {
+        let id = arena.alloc_ast_id(&AstPtr::new(expr));
+        Self::Expr(id)
+    }
+
+    pub fn from_pat<A: BodyArena>(pat: &ast::Pat, arena: &mut A) -> Self {
+        let id = arena.alloc_ast_id(&AstPtr::new(pat));
+        Self::Pat(id)
+    }
+
+    pub fn from_dec<A: BodyArena>(dec: &ast::Dec, arena: &mut A) -> Self {
+        let id = arena.alloc_ast_id(&AstPtr::new(dec));
+        Self::Dec(id)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

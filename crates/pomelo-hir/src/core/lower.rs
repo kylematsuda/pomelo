@@ -1,10 +1,29 @@
 use crate::arena::Idx;
 use crate::core::{
-    AstId, BodyArena, Dec, DecKind, ExpRow, Expr, ExprKind, FloatWrapper, MRule, Pat, PatKind,
-    PatRow, Scon, TyKind, TyRow, Type,
+    AstId, BodyArena, Dec, DecKind, ExpRow, Expr, ExprKind, FloatWrapper, MRule, NodeParent, Pat,
+    PatKind, PatRow, Scon, TyKind, TyRow, Type,
 };
 use crate::identifiers::{BuiltIn, Label, LongTyCon, LongVId, TyVar, VId};
 use pomelo_parse::{ast, AstNode, AstPtr};
+
+pub(crate) trait HirLower: Sized {
+    type AstType: AstNode;
+
+    fn missing<A: BodyArena>(arena: &mut A) -> Idx<Self>;
+    fn lower<A: BodyArena>(ast: Self::AstType, arena: &mut A) -> Idx<Self>;
+
+    fn lower_opt<A: BodyArena>(opt_ast: Option<Self::AstType>, arena: &mut A) -> Idx<Self> {
+        match opt_ast {
+            Some(a) => Self::lower(a, arena),
+            None => Self::missing(arena),
+        }
+    }
+}
+
+pub(crate) trait HirLowerGenerated: HirLower {
+    type Kind;
+    fn generated<A: BodyArena>(origin: NodeParent, kind: Self::Kind, arena: &mut A) -> Idx<Self>;
+}
 
 impl Dec {
     pub fn missing<A: BodyArena>(arena: &mut A) -> Idx<Self> {
@@ -99,8 +118,10 @@ impl Dec {
     }
 }
 
-impl Expr {
-    pub fn missing<A: BodyArena>(arena: &mut A) -> Idx<Self> {
+impl HirLower for Expr {
+    type AstType = ast::Expr;
+
+    fn missing<A: BodyArena>(arena: &mut A) -> Idx<Self> {
         let e = Self {
             kind: ExprKind::Missing,
             ast_id: AstId::Missing,
@@ -108,15 +129,8 @@ impl Expr {
         arena.alloc_expr(e)
     }
 
-    pub fn lower_opt<A: BodyArena>(opt_expr: Option<ast::Expr>, arena: &mut A) -> Idx<Self> {
-        match opt_expr {
-            Some(expr) => Self::lower(expr, arena),
-            None => Self::missing(arena),
-        }
-    }
-
-    pub fn lower<A: BodyArena>(expr: ast::Expr, arena: &mut A) -> Idx<Self> {
-        let kind = match &expr {
+    fn lower<A: BodyArena>(ast: Self::AstType, arena: &mut A) -> Idx<Self> {
+        let kind = match &ast {
             ast::Expr::Atomic(e) => Self::lower_atomic(e, arena),
             ast::Expr::Application(e) => Self::lower_application(e, arena),
             ast::Expr::Infix(e) => Self::lower_infix(e, arena),
@@ -130,18 +144,66 @@ impl Expr {
             ast::Expr::Case(e) => Self::lower_case(e, arena),
             ast::Expr::Fn(e) => Self::lower_fn(e, arena),
         };
-        Self::lower_with_kind(&expr, kind, arena)
+        let ast_id = AstId::Node(arena.alloc_ast_id(&AstPtr::new(&ast)));
+        arena.alloc_expr(Self { kind, ast_id })
     }
+}
 
-    pub fn lower_with_kind<A: BodyArena>(
-        expr: &ast::Expr,
-        kind: ExprKind,
-        arena: &mut A,
-    ) -> Idx<Self> {
-        let ast_id = AstId::Node(arena.alloc_ast_id(&AstPtr::new(expr)));
-        let e = Self { kind, ast_id };
+impl HirLowerGenerated for Expr {
+    type Kind = ExprKind;
+
+    fn generated<A: BodyArena>(origin: NodeParent, kind: Self::Kind, arena: &mut A) -> Idx<Self> {
+        let e = Self {
+            kind,
+            ast_id: AstId::Generated(origin),
+        };
         arena.alloc_expr(e)
     }
+}
+
+impl Expr {
+    // pub fn missing<A: BodyArena>(arena: &mut A) -> Idx<Self> {
+    //     let e = Self {
+    //         kind: ExprKind::Missing,
+    //         ast_id: AstId::Missing,
+    //     };
+    //     arena.alloc_expr(e)
+    // }
+
+    // pub fn lower_opt<A: BodyArena>(opt_expr: Option<ast::Expr>, arena: &mut A) -> Idx<Self> {
+    //     match opt_expr {
+    //         Some(expr) => Self::lower(expr, arena),
+    //         None => Self::missing(arena),
+    //     }
+    // }
+
+    // pub fn lower<A: BodyArena>(expr: ast::Expr, arena: &mut A) -> Idx<Self> {
+    //     let kind = match &expr {
+    //         ast::Expr::Atomic(e) => Self::lower_atomic(e, arena),
+    //         ast::Expr::Application(e) => Self::lower_application(e, arena),
+    //         ast::Expr::Infix(e) => Self::lower_infix(e, arena),
+    //         ast::Expr::Typed(e) => Self::lower_typed(e, arena),
+    //         ast::Expr::AndAlso(e) => Self::lower_andalso(e, arena),
+    //         ast::Expr::OrElse(e) => Self::lower_orelse(e, arena),
+    //         ast::Expr::Handle(e) => Self::lower_handle(e, arena),
+    //         ast::Expr::Raise(e) => Self::lower_raise(e, arena),
+    //         ast::Expr::If(e) => Self::lower_if(e, arena),
+    //         ast::Expr::While(e) => Self::lower_while(e, arena),
+    //         ast::Expr::Case(e) => Self::lower_case(e, arena),
+    //         ast::Expr::Fn(e) => Self::lower_fn(e, arena),
+    //     };
+    //     Self::lower_with_kind(&expr, kind, arena)
+    // }
+
+    // pub fn lower_with_kind<A: BodyArena>(
+    //     expr: &ast::Expr,
+    //     kind: ExprKind,
+    //     arena: &mut A,
+    // ) -> Idx<Self> {
+    //     let ast_id = AstId::Node(arena.alloc_ast_id(&AstPtr::new(expr)));
+    //     let e = Self { kind, ast_id };
+    //     arena.alloc_expr(e)
+    // }
 
     fn lower_atomic<A: BodyArena>(expr: &ast::AtomicExpr, arena: &mut A) -> ExprKind {
         match expr {
@@ -173,8 +235,10 @@ impl Expr {
 
         let exprs = expr.exprs().map(|e| Self::lower(e, arena)).collect();
         let seq = ExprKind::Seq { exprs };
-        let expr = Self::lower_with_kind(
-            &ast::Expr::cast(expr.syntax().clone()).expect("this conversion never fails"),
+        let expr = Self::generated(
+            NodeParent::Expr(arena.alloc_ast_id(&AstPtr::new(
+                &ast::Expr::cast(expr.syntax().clone()).expect("this conversion never fails"),
+            ))),
             seq,
             arena,
         );
@@ -223,9 +287,10 @@ impl Expr {
 
             // Remember our AST position, since lowering will generate new nodes
             let node = ast::Expr::cast(expr.syntax().clone()).expect("this conversion never fails");
+            let node = NodeParent::Expr(arena.alloc_ast_id(&AstPtr::new(&node)));
 
             // The list ends with a nil pat
-            let nil_expr = Expr::lower_with_kind(&node, ExprKind::Nil, arena);
+            let nil_expr = Expr::generated(node.clone(), ExprKind::Nil, arena);
 
             let mut last_idx = nil_expr;
             let mut last = ExprKind::Nil;
@@ -243,7 +308,7 @@ impl Expr {
                 if i == 0 {
                     return last;
                 }
-                last_idx = Expr::lower_with_kind(&node, last.clone(), arena);
+                last_idx = Expr::generated(node.clone(), last.clone(), arena);
             }
             last
         }
@@ -286,12 +351,14 @@ impl Expr {
     //
     // "exp1 andalso exp2" desugars to "if exp1 then exp2 else false"
     fn lower_andalso<A: BodyArena>(expr: &ast::AndAlsoExpr, arena: &mut A) -> ExprKind {
-        let originating =
-            ast::Expr::cast(expr.syntax().clone()).expect("this conversion never fails");
+        let originating = NodeParent::from_expr(
+            &ast::Expr::cast(expr.syntax().clone()).expect("this conversion never fails"),
+            arena,
+        );
 
         let vid_false = LongVId::from_vid(VId::from_builtin(BuiltIn::False, arena));
-        let false_expr = Self::lower_with_kind(
-            &originating,
+        let false_expr = Self::generated(
+            originating,
             ExprKind::VId {
                 op: false,
                 longvid: vid_false,
@@ -302,17 +369,19 @@ impl Expr {
         let expr_1 = Self::lower_opt(expr.expr_1(), arena);
         let expr_2 = Self::lower_opt(expr.expr_2(), arena);
 
-        Self::_lower_if(&originating, expr_1, expr_2, false_expr, arena)
+        Self::_lower_if(originating, expr_1, expr_2, false_expr, arena)
     }
 
     // "exp1 orelse exp2" desugars to "if exp1 then true else exp2"
     fn lower_orelse<A: BodyArena>(expr: &ast::OrElseExpr, arena: &mut A) -> ExprKind {
-        let originating =
-            ast::Expr::cast(expr.syntax().clone()).expect("this conversion never fails");
+        let originating = NodeParent::from_expr(
+            &ast::Expr::cast(expr.syntax().clone()).expect("this conversion never fails"),
+            arena,
+        );
 
         let vid_true = LongVId::from_vid(VId::from_builtin(BuiltIn::True, arena));
-        let true_expr = Self::lower_with_kind(
-            &originating,
+        let true_expr = Self::generated(
+            originating,
             ExprKind::VId {
                 op: false,
                 longvid: vid_true,
@@ -323,7 +392,7 @@ impl Expr {
         let expr_1 = Self::lower_opt(expr.expr_1(), arena);
         let expr_2 = Self::lower_opt(expr.expr_2(), arena);
 
-        Self::_lower_if(&originating, expr_1, true_expr, expr_2, arena)
+        Self::_lower_if(originating, expr_1, true_expr, expr_2, arena)
     }
 
     fn lower_handle<A: BodyArena>(expr: &ast::HandleExpr, arena: &mut A) -> ExprKind {
@@ -345,7 +414,7 @@ impl Expr {
         let expr2 = Self::lower_opt(expr.expr_2(), arena);
         let expr3 = Self::lower_opt(expr.expr_3(), arena);
         Self::_lower_if(
-            &ast::Expr::cast(expr.syntax().clone()).expect("this conversion never fails"),
+            NodeParent::from_expr(&ast::Expr::cast(expr.syntax().clone()).expect("this conversion never fails"), arena),
             expr1,
             expr2,
             expr3,
@@ -354,7 +423,7 @@ impl Expr {
     }
 
     fn _lower_if<A: BodyArena>(
-        _originating_expr: &ast::Expr,
+        _originating_expr: NodeParent,
         _expr1: Idx<Expr>,
         _expr2: Idx<Expr>,
         _expr3: Idx<Expr>,
@@ -404,7 +473,7 @@ impl Expr {
         let lowered_case = ExprKind::Fn {
             match_: boxed_match,
         };
-        let lowered_case = Self::lower_with_kind(&originating_expr, lowered_case, arena);
+        let lowered_case = Self::generated(NodeParent::from_expr(&originating_expr, arena), lowered_case, arena);
 
         ExprKind::Application {
             expr: lowered_case,
@@ -488,8 +557,10 @@ impl Scon {
     }
 }
 
-impl Pat {
-    pub fn missing<A: BodyArena>(arena: &mut A) -> Idx<Self> {
+impl HirLower for Pat {
+    type AstType = ast::Pat;
+
+    fn missing<A: BodyArena>(arena: &mut A) -> Idx<Self> {
         let p = Self {
             kind: PatKind::Missing,
             ast_id: AstId::Missing,
@@ -497,20 +568,7 @@ impl Pat {
         arena.alloc_pat(p)
     }
 
-    pub fn mapped_at_node<A: BodyArena>(pat: ast::Pat, kind: PatKind, arena: &mut A) -> Idx<Self> {
-        let ast_id = AstId::Node(arena.alloc_ast_id(&AstPtr::new(&pat)));
-        let p = Self { kind, ast_id };
-        arena.alloc_pat(p)
-    }
-
-    pub fn lower_opt<A: BodyArena>(opt_pat: Option<ast::Pat>, arena: &mut A) -> Idx<Self> {
-        match opt_pat {
-            Some(pat) => Self::lower(pat, arena),
-            None => Self::missing(arena),
-        }
-    }
-
-    pub fn lower<A: BodyArena>(pat: ast::Pat, arena: &mut A) -> Idx<Self> {
+    fn lower<A: BodyArena>(pat: ast::Pat, arena: &mut A) -> Idx<Self> {
         let kind = match pat.clone() {
             ast::Pat::Atomic(p) => Self::lower_atomic(p, arena),
             ast::Pat::Typed(p) => Self::lower_typed(p, arena),
@@ -522,7 +580,21 @@ impl Pat {
         let p = Self { kind, ast_id };
         arena.alloc_pat(p)
     }
+}
 
+impl HirLowerGenerated for Pat {
+    type Kind = PatKind;
+
+    fn generated<A: BodyArena>(origin: NodeParent, kind: Self::Kind, arena: &mut A) -> Idx<Self> {
+        let p = Pat {
+            kind,
+            ast_id: AstId::Generated(origin),
+        };
+        arena.alloc_pat(p)
+    }
+}
+
+impl Pat {
     fn lower_atomic<A: BodyArena>(pat: ast::AtomicPat, arena: &mut A) -> PatKind {
         match pat {
             ast::AtomicPat::Wildcard(p) => Self::lower_wildcard(p, arena),
@@ -570,9 +642,10 @@ impl Pat {
 
             // Remember our AST position, since lowering will generate new nodes
             let node = ast::Pat::cast(pat.syntax().clone()).expect("ListPat is a Pat");
+            let node = NodeParent::Pat(arena.alloc_ast_id(&AstPtr::new(&node)));
 
             // The list ends with a nil pat
-            let nil_pat = Pat::mapped_at_node(node.clone(), PatKind::Nil, arena);
+            let nil_pat = Pat::generated(node.clone(), PatKind::Nil, arena);
 
             let mut last_idx = nil_pat;
             let mut last = PatKind::Nil;
@@ -590,7 +663,7 @@ impl Pat {
                 if i == 0 {
                     return last;
                 }
-                last_idx = Pat::mapped_at_node(node.clone(), last.clone(), arena);
+                last_idx = Pat::generated(node.clone(), last.clone(), arena);
             }
             last
         }
@@ -665,8 +738,10 @@ impl PatRow {
     }
 }
 
-impl Type {
-    pub fn missing<A: BodyArena>(arena: &mut A) -> Idx<Self> {
+impl HirLower for Type {
+    type AstType = ast::Ty;
+
+    fn missing<A: BodyArena>(arena: &mut A) -> Idx<Self> {
         let t = Self {
             kind: TyKind::Missing,
             ast_id: AstId::Missing,
@@ -674,14 +749,7 @@ impl Type {
         arena.alloc_ty(t)
     }
 
-    pub fn lower_opt<A: BodyArena>(opt_ty: Option<ast::Ty>, arena: &mut A) -> Idx<Self> {
-        match opt_ty {
-            Some(ty) => Self::lower(ty, arena),
-            None => Self::missing(arena),
-        }
-    }
-
-    pub fn lower<A: BodyArena>(ty: ast::Ty, arena: &mut A) -> Idx<Self> {
+    fn lower<A: BodyArena>(ty: ast::Ty, arena: &mut A) -> Idx<Self> {
         let kind = match &ty {
             ast::Ty::Fun(t) => Self::lower_fun(t, arena),
             ast::Ty::Cons(t) => Self::lower_cons(t, arena),
@@ -689,14 +757,58 @@ impl Type {
             ast::Ty::TyVar(t) => Self::lower_tyvar(t, arena),
             ast::Ty::Record(t) => Self::lower_record(t, arena),
         };
-        Self::lower_with_kind(&ty, kind, arena)
+        let t = Self {
+            kind,
+            ast_id: AstId::Node(arena.alloc_ast_id(&AstPtr::new(&ty))),
+        };
+        arena.alloc_ty(t)
     }
+}
 
-    fn lower_with_kind<A: BodyArena>(ty: &ast::Ty, kind: TyKind, arena: &mut A) -> Idx<Self> {
-        let ast_id = AstId::Node(arena.alloc_ast_id(&AstPtr::new(ty)));
-        let p = Self { kind, ast_id };
-        arena.alloc_ty(p)
+impl HirLowerGenerated for Type {
+    type Kind = TyKind;
+
+    fn generated<A: BodyArena>(origin: NodeParent, kind: Self::Kind, arena: &mut A) -> Idx<Self> {
+        let t = Self {
+            kind,
+            ast_id: AstId::Generated(origin),
+        };
+        arena.alloc_ty(t)
     }
+}
+
+impl Type {
+    // pub fn missing<A: BodyArena>(arena: &mut A) -> Idx<Self> {
+    //     let t = Self {
+    //         kind: TyKind::Missing,
+    //         ast_id: AstId::Missing,
+    //     };
+    //     arena.alloc_ty(t)
+    // }
+
+    // pub fn lower_opt<A: BodyArena>(opt_ty: Option<ast::Ty>, arena: &mut A) -> Idx<Self> {
+    //     match opt_ty {
+    //         Some(ty) => Self::lower(ty, arena),
+    //         None => Self::missing(arena),
+    //     }
+    // }
+
+    // pub fn lower<A: BodyArena>(ty: ast::Ty, arena: &mut A) -> Idx<Self> {
+    //     let kind = match &ty {
+    //         ast::Ty::Fun(t) => Self::lower_fun(t, arena),
+    //         ast::Ty::Cons(t) => Self::lower_cons(t, arena),
+    //         ast::Ty::Tuple(t) => Self::lower_tuple(t, arena),
+    //         ast::Ty::TyVar(t) => Self::lower_tyvar(t, arena),
+    //         ast::Ty::Record(t) => Self::lower_record(t, arena),
+    //     };
+    //     Self::lower_with_kind(&ty, kind, arena)
+    // }
+
+    // fn lower_with_kind<A: BodyArena>(ty: &ast::Ty, kind: TyKind, arena: &mut A) -> Idx<Self> {
+    //     let ast_id = AstId::Node(arena.alloc_ast_id(&AstPtr::new(ty)));
+    //     let p = Self { kind, ast_id };
+    //     arena.alloc_ty(p)
+    // }
 
     fn lower_fun<A: BodyArena>(ty: &ast::FunTy, arena: &mut A) -> TyKind {
         let domain = Self::lower_opt(ty.ty_1(), arena);

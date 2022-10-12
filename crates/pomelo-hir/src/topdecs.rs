@@ -109,11 +109,19 @@ impl FileArena for FileData {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct FileAstIdx<N> {
     index: Idx<SyntaxNodePtr>,
     _ph: PhantomData<fn() -> N>,
 }
+
+impl<N> Clone for FileAstIdx<N> {
+    fn clone(&self) -> Self {
+        Self { index: self.index, _ph: self._ph }
+    }
+}
+
+impl<N> Copy for FileAstIdx<N> {}
 
 /// Fundamental reuse unit is the TopDec
 ///
