@@ -3,12 +3,46 @@ use crate::core::BodyArena;
 use crate::topdecs::FileArena;
 use pomelo_parse::{ast, AstToken};
 
-#[derive(Default, Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Name(String);
+/// Intern built-in identifiers
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum BuiltIn {
+    True,
+    False,
+    Cons,
+}
+
+impl BuiltIn {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::True => "true",
+            Self::False => "false",
+            Self::Cons => "::",
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum Name {
+    BuiltIn(BuiltIn),
+    String(String),
+}
 
 impl std::fmt::Display for Name {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
+        match self {
+            Self::BuiltIn(b) => write!(f, "{}", b.as_str()),
+            Self::String(s) => write!(f, "{}", s),
+        }
+    }
+}
+
+impl Name {
+    pub fn from_str(s: &str) -> Self {
+        Self::String(s.to_owned())
+    }
+
+    pub fn from_builtin(b: BuiltIn) -> Self {
+        Self::BuiltIn(b)
     }
 }
 
@@ -66,7 +100,7 @@ impl VId {
     }
 
     pub fn from_str<A: FileArena>(name: &str, arena: &mut A) -> Idx<Self> {
-        arena.alloc_vid(Self::Name(Name(name.to_owned())))
+        arena.alloc_vid(Self::Name(Name::from_str(name)))
     }
 
     pub fn missing<A: FileArena>(arena: &mut A) -> Idx<Self> {
@@ -110,7 +144,7 @@ impl StrId {
     }
 
     pub fn from_str<A: FileArena>(name: &str, arena: &mut A) -> Idx<Self> {
-        arena.alloc_strid(Self::Name(Name(name.to_owned())))
+        arena.alloc_strid(Self::Name(Name::from_str(name)))
     }
 
     pub fn missing<A: FileArena>(arena: &mut A) -> Idx<Self> {
@@ -133,7 +167,7 @@ impl TyVar {
     }
 
     pub fn from_str<A: BodyArena>(name: &str, arena: &mut A) -> Idx<Self> {
-        arena.alloc_tyvar(Self::Name(Name(name.to_owned())))
+        arena.alloc_tyvar(Self::Name(Name::from_str(name)))
     }
 
     pub fn missing<A: BodyArena>(arena: &mut A) -> Idx<Self> {
@@ -189,7 +223,7 @@ impl TyCon {
     }
 
     pub fn from_str<A: FileArena>(name: &str, arena: &mut A) -> Idx<Self> {
-        arena.alloc_tycon(Self::Name(Name(name.to_owned())))
+        arena.alloc_tycon(Self::Name(Name::from_str(name)))
     }
 
     pub fn missing<A: FileArena>(arena: &mut A) -> Idx<Self> {
@@ -212,7 +246,7 @@ impl Label {
             if let Ok(n) = s.parse::<u32>() {
                 Self::Numeric(n)
             } else {
-                Self::Named(Name(s.to_owned()))
+                Self::Named(Name::from_str(s))
             }
         } else {
             Self::Missing

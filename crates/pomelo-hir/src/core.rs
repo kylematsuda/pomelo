@@ -159,10 +159,10 @@ pub enum AstId<N> {
     Missing,
     Node(FileAstIdx<N>),
     // Generated during AST lowering
-    Generated(NodeParent)
+    Generated(NodeParent),
 }
 
-/// Used to find the parent span of nodes that were generated during lowering. 
+/// Used to find the parent span of nodes that were generated during lowering.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum NodeParent {
     Dec(FileAstIdx<ast::Dec>),
@@ -258,7 +258,7 @@ pub enum Fixity {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Expr {
     pub kind: ExprKind,
-    pub ast_id: AstId<ast::Expr>, 
+    pub ast_id: AstId<ast::Expr>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -342,7 +342,7 @@ pub struct ExpRow {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Pat {
     pub kind: PatKind,
-    pub ast_id: AstId<ast::Pat>, 
+    pub ast_id: AstId<ast::Pat>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -394,7 +394,7 @@ pub type LabelIdx = Idx<Label>;
 pub struct Type {
     pub kind: TyKind,
     // None only if TyKind::Missing
-    pub ast_id: AstId<ast::Ty>, 
+    pub ast_id: AstId<ast::Ty>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

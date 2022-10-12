@@ -1,7 +1,7 @@
 use crate::arena::Idx;
 use crate::core::{
-    AstId, BodyArena, Dec, DecKind, ExpRow, Expr, ExprKind, FloatWrapper, MRule, Pat, PatKind, PatRow,
-    Scon, TyKind, TyRow, Type,
+    AstId, BodyArena, Dec, DecKind, ExpRow, Expr, ExprKind, FloatWrapper, MRule, Pat, PatKind,
+    PatRow, Scon, TyKind, TyRow, Type,
 };
 use crate::identifiers::{Label, LongTyCon, LongVId, TyVar, VId};
 use pomelo_parse::{ast, AstNode, AstPtr};
@@ -209,7 +209,7 @@ impl Expr {
     }
 
     fn lower_list<A: BodyArena>(expr: &ast::ListExpr, arena: &mut A) -> ExprKind {
-        let mut rev_expr_indexes = expr 
+        let mut rev_expr_indexes = expr
             .exprs()
             .map(|e| Expr::lower(e, arena))
             .enumerate()
