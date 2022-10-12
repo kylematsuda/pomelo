@@ -21,8 +21,46 @@ pub(crate) trait HirLower: Sized {
 }
 
 pub(crate) trait HirLowerGenerated: HirLower {
-    type Kind;
+    type Kind: Clone;
     fn generated<A: BodyArena>(origin: NodeParent, kind: Self::Kind, arena: &mut A) -> Idx<Self>;
+}
+
+fn lower_list<A: BodyArena, H: HirLowerGenerated>(
+    origin: NodeParent,
+    elts: impl Iterator<Item = H::AstType>,
+    nil_kind: H::Kind,
+    infix_kind: impl Fn(Idx<H>, Idx<VId>, Idx<H>) -> H::Kind,
+    arena: &mut A,
+) -> H::Kind {
+    let mut rev_indexed = elts
+        .map(|e| H::lower(e, arena))
+        .enumerate()
+        .collect::<Vec<_>>();
+    rev_indexed.reverse();
+
+    if rev_indexed.len() == 0 {
+        nil_kind
+    } else {
+        let cons = VId::from_builtin(BuiltIn::Cons, arena);
+
+        // The list ends with a nil pat
+        let nil_expr = H::generated(origin.clone(), nil_kind.clone(), arena);
+
+        let mut last_idx = nil_expr;
+        let mut last = nil_kind.clone();
+
+        // "::" is right-associative, so we walk the list of pats in reverse.
+        // We allocate each generated infix expr in the arena, except for the
+        // final one ("hd :: ( ... )"), whose `ExprKind` we need to return from the function
+        for (i, p_idx) in rev_indexed {
+            last = infix_kind(p_idx, cons, last_idx);
+            if i == 0 {
+                return last;
+            }
+            last_idx = H::generated(origin.clone(), last.clone(), arena);
+        }
+        last
+    }
 }
 
 impl Dec {
@@ -226,45 +264,14 @@ impl Expr {
     }
 
     fn lower_list<A: BodyArena>(expr: &ast::ListExpr, arena: &mut A) -> ExprKind {
-        let mut rev_expr_indexes = expr
-            .exprs()
-            .map(|e| Expr::lower(e, arena))
-            .enumerate()
-            .collect::<Vec<_>>();
-        rev_expr_indexes.reverse();
-
-        if rev_expr_indexes.len() == 0 {
-            ExprKind::Nil
-        } else {
-            let cons = VId::from_builtin(BuiltIn::Cons, arena);
-
-            // Remember our AST position, since lowering will generate new nodes
-            let node = ast::Expr::from(ast::AtomicExpr::from(expr.clone()));
-            let node = NodeParent::Expr(arena.alloc_ast_id(&node));
-
-            // The list ends with a nil pat
-            let nil_expr = Expr::generated(node.clone(), ExprKind::Nil, arena);
-
-            let mut last_idx = nil_expr;
-            let mut last = ExprKind::Nil;
-
-            // "::" is right-associative, so we walk the list of pats in reverse.
-            // We allocate each generated infix expr in the arena, except for the
-            // final one ("hd :: ( ... )"), whose `ExprKind` we need to return from the function
-            for (i, p_idx) in rev_expr_indexes {
-                last = ExprKind::Infix {
-                    lhs: p_idx,
-                    vid: cons,
-                    rhs: last_idx,
-                };
-
-                if i == 0 {
-                    return last;
-                }
-                last_idx = Expr::generated(node.clone(), last.clone(), arena);
-            }
-            last
-        }
+        let origin = ast::Expr::from(ast::AtomicExpr::from(expr.clone()));
+        lower_list(
+            NodeParent::from_expr(&origin, arena),
+            expr.exprs(),
+            ExprKind::Nil,
+            |lhs, vid, rhs| ExprKind::Infix { lhs, vid, rhs },
+            arena,
+        )
     }
 
     fn lower_recsel<A: BodyArena>(_expr: &ast::RecSelExpr, _arena: &mut A) -> ExprKind {
@@ -566,45 +573,14 @@ impl Pat {
 
     // [pat1, pat2, ..., patn] lowers to pat1 :: pat2 :: ... :: patn :: nil
     fn lower_list<A: BodyArena>(pat: ast::ListPat, arena: &mut A) -> PatKind {
-        let mut rev_pat_indexes = pat
-            .pats()
-            .map(|p| Pat::lower(p, arena))
-            .enumerate()
-            .collect::<Vec<_>>();
-        rev_pat_indexes.reverse();
-
-        if rev_pat_indexes.len() == 0 {
-            PatKind::Nil
-        } else {
-            let cons = VId::from_builtin(BuiltIn::Cons, arena);
-
-            // Remember our AST position, since lowering will generate new nodes
-            let node = ast::Pat::from(ast::AtomicPat::from(pat.clone()));
-            let node = NodeParent::Pat(arena.alloc_ast_id(&node));
-
-            // The list ends with a nil pat
-            let nil_pat = Pat::generated(node.clone(), PatKind::Nil, arena);
-
-            let mut last_idx = nil_pat;
-            let mut last = PatKind::Nil;
-
-            // "::" is right-associative, so we walk the list of pats in reverse.
-            // We allocate each generated infix pat in the arena, except for the
-            // final one ("hd :: ( ... )"), whose `PatKind` we need to return from the function
-            for (i, p_idx) in rev_pat_indexes {
-                last = PatKind::Infix {
-                    lhs: p_idx,
-                    vid: cons,
-                    rhs: last_idx,
-                };
-
-                if i == 0 {
-                    return last;
-                }
-                last_idx = Pat::generated(node.clone(), last.clone(), arena);
-            }
-            last
-        }
+        let origin = ast::Pat::from(ast::AtomicPat::from(pat.clone()));
+        lower_list(
+            NodeParent::from_pat(&origin, arena),
+            pat.pats(),
+            PatKind::Nil,
+            |lhs, vid, rhs| PatKind::Infix { lhs, vid, rhs },
+            arena,
+        )
     }
 
     fn lower_tuple<A: BodyArena>(tuple: ast::TuplePat, arena: &mut A) -> PatKind {
