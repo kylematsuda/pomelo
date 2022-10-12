@@ -162,49 +162,6 @@ impl HirLowerGenerated for Expr {
 }
 
 impl Expr {
-    // pub fn missing<A: BodyArena>(arena: &mut A) -> Idx<Self> {
-    //     let e = Self {
-    //         kind: ExprKind::Missing,
-    //         ast_id: AstId::Missing,
-    //     };
-    //     arena.alloc_expr(e)
-    // }
-
-    // pub fn lower_opt<A: BodyArena>(opt_expr: Option<ast::Expr>, arena: &mut A) -> Idx<Self> {
-    //     match opt_expr {
-    //         Some(expr) => Self::lower(expr, arena),
-    //         None => Self::missing(arena),
-    //     }
-    // }
-
-    // pub fn lower<A: BodyArena>(expr: ast::Expr, arena: &mut A) -> Idx<Self> {
-    //     let kind = match &expr {
-    //         ast::Expr::Atomic(e) => Self::lower_atomic(e, arena),
-    //         ast::Expr::Application(e) => Self::lower_application(e, arena),
-    //         ast::Expr::Infix(e) => Self::lower_infix(e, arena),
-    //         ast::Expr::Typed(e) => Self::lower_typed(e, arena),
-    //         ast::Expr::AndAlso(e) => Self::lower_andalso(e, arena),
-    //         ast::Expr::OrElse(e) => Self::lower_orelse(e, arena),
-    //         ast::Expr::Handle(e) => Self::lower_handle(e, arena),
-    //         ast::Expr::Raise(e) => Self::lower_raise(e, arena),
-    //         ast::Expr::If(e) => Self::lower_if(e, arena),
-    //         ast::Expr::While(e) => Self::lower_while(e, arena),
-    //         ast::Expr::Case(e) => Self::lower_case(e, arena),
-    //         ast::Expr::Fn(e) => Self::lower_fn(e, arena),
-    //     };
-    //     Self::lower_with_kind(&expr, kind, arena)
-    // }
-
-    // pub fn lower_with_kind<A: BodyArena>(
-    //     expr: &ast::Expr,
-    //     kind: ExprKind,
-    //     arena: &mut A,
-    // ) -> Idx<Self> {
-    //     let ast_id = AstId::Node(arena.alloc_ast_id(&AstPtr::new(expr)));
-    //     let e = Self { kind, ast_id };
-    //     arena.alloc_expr(e)
-    // }
-
     fn lower_atomic<A: BodyArena>(expr: &ast::AtomicExpr, arena: &mut A) -> ExprKind {
         match expr {
             ast::AtomicExpr::SCon(e) => Self::lower_scon(e, arena),
@@ -759,38 +716,6 @@ impl HirLowerGenerated for Type {
 }
 
 impl Type {
-    // pub fn missing<A: BodyArena>(arena: &mut A) -> Idx<Self> {
-    //     let t = Self {
-    //         kind: TyKind::Missing,
-    //         ast_id: AstId::Missing,
-    //     };
-    //     arena.alloc_ty(t)
-    // }
-
-    // pub fn lower_opt<A: BodyArena>(opt_ty: Option<ast::Ty>, arena: &mut A) -> Idx<Self> {
-    //     match opt_ty {
-    //         Some(ty) => Self::lower(ty, arena),
-    //         None => Self::missing(arena),
-    //     }
-    // }
-
-    // pub fn lower<A: BodyArena>(ty: ast::Ty, arena: &mut A) -> Idx<Self> {
-    //     let kind = match &ty {
-    //         ast::Ty::Fun(t) => Self::lower_fun(t, arena),
-    //         ast::Ty::Cons(t) => Self::lower_cons(t, arena),
-    //         ast::Ty::Tuple(t) => Self::lower_tuple(t, arena),
-    //         ast::Ty::TyVar(t) => Self::lower_tyvar(t, arena),
-    //         ast::Ty::Record(t) => Self::lower_record(t, arena),
-    //     };
-    //     Self::lower_with_kind(&ty, kind, arena)
-    // }
-
-    // fn lower_with_kind<A: BodyArena>(ty: &ast::Ty, kind: TyKind, arena: &mut A) -> Idx<Self> {
-    //     let ast_id = AstId::Node(arena.alloc_ast_id(&AstPtr::new(ty)));
-    //     let p = Self { kind, ast_id };
-    //     arena.alloc_ty(p)
-    // }
-
     fn lower_fun<A: BodyArena>(ty: &ast::FunTy, arena: &mut A) -> TyKind {
         let domain = Self::lower_opt(ty.ty_1(), arena);
         let range = Self::lower_opt(ty.ty_2(), arena);
