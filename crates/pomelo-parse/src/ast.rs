@@ -131,6 +131,19 @@ pub mod support {
     }
 }
 
+mod util {
+    #[macro_export]
+    macro_rules! impl_from {
+        ($target:ty, $x:ident, $t:ty) => {
+            impl From<$t> for $target {
+                fn from(x: $t) -> Self {
+                    Self::$x(x)
+                }
+            }
+        };
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use expect_test::{expect, Expect};

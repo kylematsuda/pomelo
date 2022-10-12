@@ -1,4 +1,4 @@
-use crate::{ast, ast::support, impl_ast_node, AstNode, SyntaxKind, SyntaxNode};
+use crate::{ast, ast::support, impl_ast_node, impl_from, AstNode, SyntaxKind, SyntaxNode};
 use SyntaxKind::*;
 
 use std::fmt;
@@ -96,6 +96,19 @@ impl fmt::Display for Expr {
         write!(f, "{}", self.syntax())
     }
 }
+
+impl_from!(Expr, Fn, FnExpr);
+impl_from!(Expr, Case, CaseExpr);
+impl_from!(Expr, While, WhileExpr);
+impl_from!(Expr, If, IfExpr);
+impl_from!(Expr, Raise, RaiseExpr);
+impl_from!(Expr, Handle, HandleExpr);
+impl_from!(Expr, OrElse, OrElseExpr);
+impl_from!(Expr, AndAlso, AndAlsoExpr);
+impl_from!(Expr, Typed, TypedExpr);
+impl_from!(Expr, Infix, InfixExpr);
+impl_from!(Expr, Application, ApplicationExpr);
+impl_from!(Expr, Atomic, AtomicExpr);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct FnExpr {
@@ -354,6 +367,16 @@ impl fmt::Display for AtomicExpr {
         write!(f, "{}", self.syntax())
     }
 }
+
+impl_from!(AtomicExpr, SCon, SConExpr);
+impl_from!(AtomicExpr, VId, VIdExpr);
+impl_from!(AtomicExpr, Record, RecordExpr);
+impl_from!(AtomicExpr, RecSel, RecSelExpr);
+impl_from!(AtomicExpr, Unit, UnitExpr);
+impl_from!(AtomicExpr, Tuple, TupleExpr);
+impl_from!(AtomicExpr, List, ListExpr);
+impl_from!(AtomicExpr, Seq, SeqExpr);
+impl_from!(AtomicExpr, Let, LetExpr);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SConExpr {

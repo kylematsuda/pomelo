@@ -1,4 +1,4 @@
-use crate::{ast, ast::support, impl_ast_node, AstNode, SyntaxKind, SyntaxNode};
+use crate::{ast, ast::support, impl_ast_node, impl_from, AstNode, SyntaxKind, SyntaxNode};
 use SyntaxKind::*;
 
 use std::fmt;
@@ -89,6 +89,20 @@ impl fmt::Display for Dec {
         write!(f, "{}", self.syntax())
     }
 }
+
+impl_from!(Dec, Val, ValDec);
+impl_from!(Dec, Fun, FunDec);
+impl_from!(Dec, Type, TypeDec);
+impl_from!(Dec, Datatype, DatatypeDec);
+impl_from!(Dec, DatatypeRep, DatatypeRepDec);
+impl_from!(Dec, Abstype, AbstypeDec);
+impl_from!(Dec, Exception, ExceptionDec);
+impl_from!(Dec, Local, LocalDec);
+impl_from!(Dec, Open, OpenDec);
+impl_from!(Dec, Seq, SeqDec);
+impl_from!(Dec, Infix, InfixDec);
+impl_from!(Dec, Infixr, InfixrDec);
+impl_from!(Dec, Nonfix, NonfixDec);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ValDec {

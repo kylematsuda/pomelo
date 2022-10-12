@@ -1,4 +1,4 @@
-use crate::{ast, ast::support, impl_ast_node, AstNode, SyntaxKind, SyntaxNode};
+use crate::{ast, ast::support, impl_ast_node, impl_from, AstNode, SyntaxKind, SyntaxNode};
 use SyntaxKind::*;
 
 use std::fmt;
@@ -50,6 +50,12 @@ impl fmt::Display for Ty {
         write!(f, "{}", self.syntax())
     }
 }
+
+impl_from!(Ty, Fun, FunTy);
+impl_from!(Ty, Tuple, TupleTy);
+impl_from!(Ty, Cons, ConsTy);
+impl_from!(Ty, Record, RecordTy);
+impl_from!(Ty, TyVar, TyVarTy);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct FunTy {

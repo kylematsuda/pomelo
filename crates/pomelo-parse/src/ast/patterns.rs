@@ -1,4 +1,4 @@
-use crate::{ast, ast::support, impl_ast_node, AstNode, SyntaxKind, SyntaxNode};
+use crate::{ast, ast::support, impl_ast_node, impl_from, AstNode, SyntaxKind, SyntaxNode};
 use SyntaxKind::*;
 
 use std::fmt;
@@ -63,6 +63,12 @@ impl fmt::Display for Pat {
         write!(f, "{}", self.syntax())
     }
 }
+
+impl_from!(Pat, Layered, LayeredPat);
+impl_from!(Pat, Typed, TypedPat);
+impl_from!(Pat, ConsInfix, ConsInfixPat);
+impl_from!(Pat, Cons, ConsPat);
+impl_from!(Pat, Atomic, AtomicPat);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct LayeredPat {
@@ -205,6 +211,14 @@ impl fmt::Display for AtomicPat {
     }
 }
 
+impl_from!(AtomicPat, Wildcard, WildcardPat);
+impl_from!(AtomicPat, SCon, SConPat);
+impl_from!(AtomicPat, VId, VIdPat);
+impl_from!(AtomicPat, Record, RecordPat);
+impl_from!(AtomicPat, Unit, UnitPat);
+impl_from!(AtomicPat, Tuple, TuplePat);
+impl_from!(AtomicPat, List, ListPat);
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct WildcardPat {
     pub syntax: SyntaxNode,
@@ -223,26 +237,6 @@ impl SConPat {
     pub fn scon(&self) -> Option<ast::Scon> {
         support::tokens(self.syntax()).next()
     }
-
-    // pub fn int(&self) -> Option<ast::Int> {
-    //     support::tokens(self.syntax()).next()
-    // }
-
-    // pub fn real(&self) -> Option<ast::Real> {
-    //     support::tokens(self.syntax()).next()
-    // }
-
-    // pub fn word(&self) -> Option<ast::Word> {
-    //     support::tokens(self.syntax()).next()
-    // }
-
-    // pub fn char(&self) -> Option<ast::Char> {
-    //     support::tokens(self.syntax()).next()
-    // }
-
-    // pub fn string(&self) -> Option<ast::String> {
-    //     support::tokens(self.syntax()).next()
-    // }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
