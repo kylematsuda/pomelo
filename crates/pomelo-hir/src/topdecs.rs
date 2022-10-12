@@ -31,8 +31,9 @@ pub struct AstIdMap {
 }
 
 impl AstIdMap {
-    pub fn alloc<N: AstNode<Language = SML>>(&mut self, ast: &AstPtr<N>) -> FileAstIdx<N> {
-        let syntax = ast.syntax_node_ptr();
+    pub fn alloc<N: AstNode<Language = SML>>(&mut self, ast: &N) -> FileAstIdx<N> {
+        let astptr = AstPtr::new(ast);
+        let syntax = astptr.syntax_node_ptr();
 
         let index = self.arena.alloc(syntax.clone());
         self.backmap.insert(syntax, index.clone());
@@ -61,7 +62,7 @@ pub trait FileArena {
     fn alloc_tycon(&mut self, tycon: TyCon) -> Idx<TyCon>;
     fn get_tycon(&self, index: Idx<TyCon>) -> Option<&TyCon>;
 
-    fn alloc_ast_id<N>(&mut self, ast: &AstPtr<N>) -> FileAstIdx<N>
+    fn alloc_ast_id<N>(&mut self, ast: &N) -> FileAstIdx<N>
     where
         N: AstNode<Language = SML>;
     fn get_ast_id<N>(&mut self, index: FileAstIdx<N>) -> Option<AstPtr<N>>
@@ -94,7 +95,7 @@ impl FileArena for FileData {
         self.tycons.get(index)
     }
 
-    fn alloc_ast_id<N>(&mut self, ast: &AstPtr<N>) -> FileAstIdx<N>
+    fn alloc_ast_id<N>(&mut self, ast: &N) -> FileAstIdx<N>
     where
         N: AstNode<Language = SML>,
     {

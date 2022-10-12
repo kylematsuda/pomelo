@@ -4,7 +4,7 @@ use crate::core::{
     PatKind, PatRow, Scon, TyKind, TyRow, Type,
 };
 use crate::identifiers::{BuiltIn, Label, LongTyCon, LongVId, TyVar, VId};
-use pomelo_parse::{ast, AstNode, AstPtr};
+use pomelo_parse::{ast, AstNode};
 
 pub(crate) trait HirLower: Sized {
     type AstType: AstNode;
@@ -35,7 +35,7 @@ impl Dec {
     }
 
     pub fn mapped_at_node<A: BodyArena>(dec: ast::Dec, kind: DecKind, arena: &mut A) -> Idx<Self> {
-        let ast_id = AstId::Node(arena.alloc_ast_id(&AstPtr::new(&dec)));
+        let ast_id = AstId::Node(arena.alloc_ast_id(&dec));
         let d = Self { kind, ast_id };
         arena.alloc_dec(d)
     }
@@ -144,7 +144,7 @@ impl HirLower for Expr {
             ast::Expr::Case(e) => Self::lower_case(e, arena),
             ast::Expr::Fn(e) => Self::lower_fn(e, arena),
         };
-        let ast_id = AstId::Node(arena.alloc_ast_id(&AstPtr::new(&ast)));
+        let ast_id = AstId::Node(arena.alloc_ast_id(&ast));
         arena.alloc_expr(Self { kind, ast_id })
     }
 }
@@ -236,9 +236,7 @@ impl Expr {
         let exprs = expr.exprs().map(|e| Self::lower(e, arena)).collect();
         let seq = ExprKind::Seq { exprs };
         let expr = Self::generated(
-            NodeParent::Expr(arena.alloc_ast_id(&AstPtr::new(
-                &ast::Expr::cast(expr.syntax().clone()).expect("this conversion never fails"),
-            ))),
+            NodeParent::from_expr(&ast::Expr::cast(expr.syntax().clone()).expect("this conversion never fails"), arena),
             seq,
             arena,
         );
@@ -287,7 +285,7 @@ impl Expr {
 
             // Remember our AST position, since lowering will generate new nodes
             let node = ast::Expr::cast(expr.syntax().clone()).expect("this conversion never fails");
-            let node = NodeParent::Expr(arena.alloc_ast_id(&AstPtr::new(&node)));
+            let node = NodeParent::Expr(arena.alloc_ast_id(&node));
 
             // The list ends with a nil pat
             let nil_expr = Expr::generated(node.clone(), ExprKind::Nil, arena);
@@ -576,7 +574,7 @@ impl HirLower for Pat {
             ast::Pat::ConsInfix(p) => Self::lower_cons_infix(p, arena),
             ast::Pat::Layered(p) => Self::lower_layered(p, arena),
         };
-        let ast_id = AstId::Node(arena.alloc_ast_id(&AstPtr::new(&pat)));
+        let ast_id = AstId::Node(arena.alloc_ast_id(&pat));
         let p = Self { kind, ast_id };
         arena.alloc_pat(p)
     }
@@ -642,7 +640,7 @@ impl Pat {
 
             // Remember our AST position, since lowering will generate new nodes
             let node = ast::Pat::cast(pat.syntax().clone()).expect("ListPat is a Pat");
-            let node = NodeParent::Pat(arena.alloc_ast_id(&AstPtr::new(&node)));
+            let node = NodeParent::Pat(arena.alloc_ast_id(&node));
 
             // The list ends with a nil pat
             let nil_pat = Pat::generated(node.clone(), PatKind::Nil, arena);
@@ -759,7 +757,7 @@ impl HirLower for Type {
         };
         let t = Self {
             kind,
-            ast_id: AstId::Node(arena.alloc_ast_id(&AstPtr::new(&ty))),
+            ast_id: AstId::Node(arena.alloc_ast_id(&ty)),
         };
         arena.alloc_ty(t)
     }

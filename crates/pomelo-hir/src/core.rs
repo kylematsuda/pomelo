@@ -85,7 +85,7 @@ impl FileArena for BodyArenaImpl {
         self.tycons.get(index)
     }
 
-    fn alloc_ast_id<N>(&mut self, ast: &AstPtr<N>) -> FileAstIdx<N>
+    fn alloc_ast_id<N>(&mut self, ast: &N) -> FileAstIdx<N>
     where
         N: AstNode<Language = SML>,
     {
@@ -172,17 +172,17 @@ pub enum NodeParent {
 
 impl NodeParent {
     pub fn from_expr<A: BodyArena>(expr: &ast::Expr, arena: &mut A) -> Self {
-        let id = arena.alloc_ast_id(&AstPtr::new(expr));
+        let id = arena.alloc_ast_id(expr);
         Self::Expr(id)
     }
 
     pub fn from_pat<A: BodyArena>(pat: &ast::Pat, arena: &mut A) -> Self {
-        let id = arena.alloc_ast_id(&AstPtr::new(pat));
+        let id = arena.alloc_ast_id(pat);
         Self::Pat(id)
     }
 
     pub fn from_dec<A: BodyArena>(dec: &ast::Dec, arena: &mut A) -> Self {
-        let id = arena.alloc_ast_id(&AstPtr::new(dec));
+        let id = arena.alloc_ast_id(dec);
         Self::Dec(id)
     }
 }

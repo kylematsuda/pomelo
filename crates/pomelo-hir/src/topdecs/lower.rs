@@ -2,7 +2,7 @@ use crate::arena::{Arena, Idx};
 use crate::core::{BodyArena, BodyArenaImpl, Pat, PatKind, lower::HirLower};
 use crate::identifiers::{LongVId, StrId, TyCon, VId};
 use crate::topdecs::{CoreDec, File, FileArena, FileData, TopDec};
-use pomelo_parse::{ast, AstPtr};
+use pomelo_parse::ast;
 
 impl File {
     pub fn from_syntax(node: ast::File) -> Self {
@@ -90,7 +90,7 @@ impl CoreDec {
             }
         }
 
-        let ast_id = arena.alloc_ast_id(&AstPtr::new(&node));
+        let ast_id = arena.alloc_ast_id(&node);
 
         Self::Val {
             names: vids.into_boxed_slice(),
