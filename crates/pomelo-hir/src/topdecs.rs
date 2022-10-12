@@ -110,7 +110,7 @@ impl FileArena for FileData {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct FileAstIdx<N: AstNode> {
+pub struct FileAstIdx<N> {
     index: Idx<SyntaxNodePtr>,
     _ph: PhantomData<fn() -> N>,
 }

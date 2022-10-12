@@ -1,6 +1,6 @@
 use crate::arena::Idx;
 use crate::core::{
-    BodyArena, Dec, DecKind, ExpRow, Expr, ExprKind, FloatWrapper, MRule, Pat, PatKind, PatRow,
+    AstId, BodyArena, Dec, DecKind, ExpRow, Expr, ExprKind, FloatWrapper, MRule, Pat, PatKind, PatRow,
     Scon, TyKind, TyRow, Type,
 };
 use crate::identifiers::{Label, LongTyCon, LongVId, TyVar, VId};
@@ -10,13 +10,13 @@ impl Dec {
     pub fn missing<A: BodyArena>(arena: &mut A) -> Idx<Self> {
         let d = Self {
             kind: DecKind::Missing,
-            ast_id: None,
+            ast_id: AstId::Missing,
         };
         arena.alloc_dec(d)
     }
 
     pub fn mapped_at_node<A: BodyArena>(dec: ast::Dec, kind: DecKind, arena: &mut A) -> Idx<Self> {
-        let ast_id = Some(arena.alloc_ast_id(&AstPtr::new(&dec)));
+        let ast_id = AstId::Node(arena.alloc_ast_id(&AstPtr::new(&dec)));
         let d = Self { kind, ast_id };
         arena.alloc_dec(d)
     }
@@ -103,7 +103,7 @@ impl Expr {
     pub fn missing<A: BodyArena>(arena: &mut A) -> Idx<Self> {
         let e = Self {
             kind: ExprKind::Missing,
-            ast_id: None,
+            ast_id: AstId::Missing,
         };
         arena.alloc_expr(e)
     }
@@ -138,7 +138,7 @@ impl Expr {
         kind: ExprKind,
         arena: &mut A,
     ) -> Idx<Self> {
-        let ast_id = Some(arena.alloc_ast_id(&AstPtr::new(expr)));
+        let ast_id = AstId::Node(arena.alloc_ast_id(&AstPtr::new(expr)));
         let e = Self { kind, ast_id };
         arena.alloc_expr(e)
     }
@@ -494,13 +494,13 @@ impl Pat {
     pub fn missing<A: BodyArena>(arena: &mut A) -> Idx<Self> {
         let p = Self {
             kind: PatKind::Missing,
-            ast_id: None,
+            ast_id: AstId::Missing,
         };
         arena.alloc_pat(p)
     }
 
     pub fn mapped_at_node<A: BodyArena>(pat: ast::Pat, kind: PatKind, arena: &mut A) -> Idx<Self> {
-        let ast_id = Some(arena.alloc_ast_id(&AstPtr::new(&pat)));
+        let ast_id = AstId::Node(arena.alloc_ast_id(&AstPtr::new(&pat)));
         let p = Self { kind, ast_id };
         arena.alloc_pat(p)
     }
@@ -520,7 +520,7 @@ impl Pat {
             ast::Pat::ConsInfix(p) => Self::lower_cons_infix(p, arena),
             ast::Pat::Layered(p) => Self::lower_layered(p, arena),
         };
-        let ast_id = Some(arena.alloc_ast_id(&AstPtr::new(&pat)));
+        let ast_id = AstId::Node(arena.alloc_ast_id(&AstPtr::new(&pat)));
         let p = Self { kind, ast_id };
         arena.alloc_pat(p)
     }
@@ -673,7 +673,7 @@ impl Type {
     pub fn missing<A: BodyArena>(arena: &mut A) -> Idx<Self> {
         let t = Self {
             kind: TyKind::Missing,
-            ast_id: None,
+            ast_id: AstId::Missing,
         };
         arena.alloc_ty(t)
     }
@@ -697,7 +697,7 @@ impl Type {
     }
 
     fn lower_with_kind<A: BodyArena>(ty: &ast::Ty, kind: TyKind, arena: &mut A) -> Idx<Self> {
-        let ast_id = Some(arena.alloc_ast_id(&AstPtr::new(ty)));
+        let ast_id = AstId::Node(arena.alloc_ast_id(&AstPtr::new(ty)));
         let p = Self { kind, ast_id };
         arena.alloc_ty(p)
     }

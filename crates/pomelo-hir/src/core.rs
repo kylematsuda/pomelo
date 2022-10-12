@@ -150,11 +150,29 @@ impl BodyArena for BodyArenaImpl {
     }
 }
 
+/// Used as a pointer from the HIR node back to its corresponding AST node.
+///
+/// This node may be missing, an exact 1-1 translation of the AST node,
+/// or a node that was generated during lowering (modeled by [`NodeParent`]).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AstId<N> {
+    Missing,
+    Node(FileAstIdx<N>),
+    // Generated during AST lowering
+    Generated(NodeParent)
+}
+
+/// Used to find the parent span of nodes that were generated during lowering. 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum NodeParent {
+    Dec(FileAstIdx<ast::Dec>),
+    Expr(FileAstIdx<ast::Expr>),
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Dec {
     pub kind: DecKind,
-    // None only if DecKind::Missing
-    pub ast_id: Option<FileAstIdx<ast::Dec>>,
+    pub ast_id: AstId<ast::Dec>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -240,8 +258,7 @@ pub enum Fixity {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Expr {
     pub kind: ExprKind,
-    // None only if ExprKind::Missing
-    pub ast_id: Option<FileAstIdx<ast::Expr>>,
+    pub ast_id: AstId<ast::Expr>, 
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -325,8 +342,7 @@ pub struct ExpRow {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Pat {
     pub kind: PatKind,
-    // None only if PatKind::Missing
-    pub ast_id: Option<FileAstIdx<ast::Pat>>,
+    pub ast_id: AstId<ast::Pat>, 
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -378,7 +394,7 @@ pub type LabelIdx = Idx<Label>;
 pub struct Type {
     pub kind: TyKind,
     // None only if TyKind::Missing
-    pub ast_id: Option<FileAstIdx<ast::Ty>>,
+    pub ast_id: AstId<ast::Ty>, 
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
