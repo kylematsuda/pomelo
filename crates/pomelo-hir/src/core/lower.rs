@@ -25,7 +25,7 @@ pub(crate) trait HirLowerGenerated: HirLower {
     fn generated<A: BodyArena>(origin: NodeParent, kind: Self::Kind, arena: &mut A) -> Idx<Self>;
 }
 
-// Used to lower lists [a1, a2, ... ] to a1 :: a2 :: ... :: nil 
+// Used to lower lists [a1, a2, ... ] to a1 :: a2 :: ... :: nil
 // Common code for both [`Expr`] and [`Pat`].
 // This is factored out on its own since it's probably the most complicated
 // part of this stage of lowering.
@@ -37,7 +37,7 @@ fn lower_list<A: BodyArena, H: HirLowerGenerated>(
     origin: NodeParent,
     elts: impl Iterator<Item = H::AstType>,
     vid_kind: impl Fn(LongVId) -> H::Kind,
-    infix_kind: impl Fn(Idx<H>, Idx<VId>, Idx<H>) -> H::Kind,
+    infix_kind: impl Fn(Idx<H>, VId, Idx<H>) -> H::Kind,
     arena: &mut A,
 ) -> H::Kind {
     let mut rev_indexed = elts
@@ -46,18 +46,18 @@ fn lower_list<A: BodyArena, H: HirLowerGenerated>(
         .collect::<Vec<_>>();
     rev_indexed.reverse();
 
-    let nil = LongVId::from_vid(VId::from_builtin(BuiltIn::Nil, arena));
+    let nil = LongVId::from_vid(VId::from_builtin(BuiltIn::Nil));
 
     if rev_indexed.len() == 0 {
-        vid_kind(nil)
+        vid_kind(nil.clone())
     } else {
-        let cons = VId::from_builtin(BuiltIn::Cons, arena);
+        let cons = VId::from_builtin(BuiltIn::Cons);
 
         // The list ends with a nil pat
-        let nil_expr = H::generated(origin.clone(), vid_kind(nil), arena);
+        let nil_expr = H::generated(origin.clone(), vid_kind(nil.clone()), arena);
 
         let mut last_idx = nil_expr;
-        let mut last = vid_kind(nil);
+        let mut last = vid_kind(nil.clone());
 
         // "::" is right-associative, so we walk the list of pats in reverse.
         // We allocate each generated infix expr in the arena, except for the
@@ -265,7 +265,7 @@ impl Expr {
         let mut rows = vec![];
         for (i, e) in expr.exprs().enumerate() {
             let exp = Self::lower(e, arena);
-            let exprow = ExpRow::new_from_expr(exp, Label::Numeric(i as u32), arena);
+            let exprow = ExpRow::new_from_expr(exp, Label::Numeric(i as u32));
             rows.push(exprow);
         }
         ExprKind::Record {
@@ -315,7 +315,7 @@ impl Expr {
     fn lower_andalso<A: BodyArena>(expr: &ast::AndAlsoExpr, arena: &mut A) -> ExprKind {
         let originating = NodeParent::from_expr(&ast::Expr::from(expr.clone()), arena);
 
-        let vid_false = LongVId::from_vid(VId::from_builtin(BuiltIn::False, arena));
+        let vid_false = LongVId::from_vid(VId::from_builtin(BuiltIn::False));
         let false_expr = Self::generated(
             originating,
             ExprKind::VId {
@@ -335,7 +335,7 @@ impl Expr {
     fn lower_orelse<A: BodyArena>(expr: &ast::OrElseExpr, arena: &mut A) -> ExprKind {
         let originating = NodeParent::from_expr(&ast::Expr::from(expr.clone()), arena);
 
-        let vid_true = LongVId::from_vid(VId::from_builtin(BuiltIn::True, arena));
+        let vid_true = LongVId::from_vid(VId::from_builtin(BuiltIn::True));
         let true_expr = Self::generated(
             originating,
             ExprKind::VId {
@@ -448,12 +448,11 @@ impl Expr {
 impl ExpRow {
     pub fn lower<A: BodyArena>(exprow: ast::ExprRow, arena: &mut A) -> Self {
         let expr = Expr::lower_opt(exprow.expr(), arena);
-        let label = Label::from_token(exprow.label());
-        Self::new_from_expr(expr, label, arena)
+        let label = Label::from_token(exprow.label(), arena);
+        Self::new_from_expr(expr, label)
     }
 
-    pub fn new_from_expr<A: BodyArena>(expr: Idx<Expr>, label: Label, arena: &mut A) -> Self {
-        let label = arena.alloc_label(label);
+    pub fn new_from_expr(expr: Idx<Expr>, label: Label) -> Self {
         Self { label, expr }
     }
 }
@@ -576,7 +575,7 @@ impl Pat {
         let longvid = pat
             .longvid()
             .map(|node| LongVId::from_node(&node, arena))
-            .unwrap_or_else(|| LongVId::missing(arena));
+            .unwrap_or_else(|| LongVId::missing());
 
         PatKind::VId { op, longvid }
     }
@@ -648,15 +647,14 @@ impl PatRow {
             .pat()
             .map(|node| Pat::lower(node, arena))
             .unwrap_or_else(|| Pat::missing(arena));
-        let label = Label::from_token(patrow.label());
+        let label = Label::from_token(patrow.label(), arena);
         Self::new_from_pat(pat, label, arena)
     }
 
     pub fn new_from_pat<A: BodyArena>(pat: Idx<Pat>, label: Label, arena: &mut A) -> Self {
-        if let PatKind::Wildcard = arena.get_pat(pat).expect("pat index is valid").kind {
+        if let PatKind::Wildcard = arena.get_pat(pat).kind {
             Self::Wildcard
         } else {
-            let label = arena.alloc_label(label);
             Self::Pattern { label, pat }
         }
     }
@@ -717,7 +715,7 @@ impl Type {
     fn lower_tuple<A: BodyArena>(ty: &ast::TupleTy, arena: &mut A) -> TyKind {
         let mut tyrows = vec![];
         for (i, t) in ty.tys().enumerate() {
-            let tyrow = TyRow::new_from_ty(Self::lower(t, arena), Label::Numeric(i as u32), arena);
+            let tyrow = TyRow::new_from_ty(Self::lower(t, arena), Label::Numeric(i as u32));
             tyrows.push(tyrow);
         }
         TyKind::Record {
@@ -739,12 +737,11 @@ impl Type {
 impl TyRow {
     pub fn lower<A: BodyArena>(tyrow: ast::TyRow, arena: &mut A) -> Self {
         let ty = Type::lower_opt(tyrow.ty(), arena);
-        let label = arena.alloc_label(Label::from_token(tyrow.label()));
+        let label = Label::from_token(tyrow.label(), arena);
         Self { label, ty }
     }
 
-    pub fn new_from_ty<A: BodyArena>(ty: Idx<Type>, label: Label, arena: &mut A) -> Self {
-        let label = arena.alloc_label(label);
+    pub fn new_from_ty(ty: Idx<Type>, label: Label) -> Self {
         Self { label, ty }
     }
 }

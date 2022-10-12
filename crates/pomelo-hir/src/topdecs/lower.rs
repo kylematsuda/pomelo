@@ -1,6 +1,6 @@
 use crate::arena::{Arena, Idx};
 use crate::core::{lower::HirLower, BodyArena, BodyArenaImpl, Pat, PatKind};
-use crate::identifiers::{LongVId, StrId, TyCon, VId};
+use crate::identifiers::{LongVId, Name, NameInterner, NameInternerImpl, StrId, TyCon, VId};
 use crate::topdecs::{CoreDec, File, FileArena, FileData, TopDec};
 use pomelo_parse::ast;
 
@@ -21,37 +21,48 @@ impl File {
 }
 
 #[derive(Default, Debug, Clone)]
-struct NameOnlyArena {
-    vids: Arena<VId>,
-    strids: Arena<StrId>,
-    tycons: Arena<TyCon>,
+struct NameOnlyArena<I> {
+    interner: I,
 }
 
-impl NameOnlyArena {
-    fn new(arena: BodyArenaImpl) -> Self {
+impl<I: NameInterner> NameOnlyArena<I> {
+    fn new(arena: BodyArenaImpl<I>) -> Self {
         Self {
-            vids: arena.vids,
-            strids: arena.strids,
-            tycons: arena.tycons,
+            interner: arena.name_interner,
         }
     }
 
-    fn map_vid<A: FileArena>(&self, index: Idx<VId>, other_arena: &mut A) -> Idx<VId> {
-        let vid = self.vids.get(index).expect("index is valid");
-        other_arena.alloc_vid(vid.clone())
+    fn map_vid<A: NameInterner>(&mut self, vid: VId, other_arena: &mut A) -> VId {
+        match vid {
+            VId::Name(Name::String(index)) => {
+                let s = other_arena.get(index);
+                VId::Name(Name::String(self.interner.alloc(s)))
+            }
+            _ => vid
+        }
     }
 
-    fn map_strid<A: FileArena>(&self, index: Idx<StrId>, other_arena: &mut A) -> Idx<StrId> {
-        let strid = self.strids.get(index).expect("index is valid");
-        other_arena.alloc_strid(strid.clone())
+    fn map_strid<A: NameInterner>(&mut self, strid: StrId, other_arena: &mut A) -> StrId {
+        match strid {
+            StrId::Name(Name::String(index)) => {
+                let s = other_arena.get(index);
+                StrId::Name(Name::String(self.interner.alloc(s)))
+            }
+            _ => strid 
+        }
     }
 
-    fn map_tycon<A: FileArena>(&self, index: Idx<TyCon>, other_arena: &mut A) -> Idx<TyCon> {
-        let tycon = self.tycons.get(index).expect("index is valid");
-        other_arena.alloc_tycon(tycon.clone())
+    fn map_tycon<A: NameInterner>(&mut self, tycon: TyCon, other_arena: &mut A) -> TyCon {
+        match tycon {
+            TyCon::Name(Name::String(index)) => {
+                let s = other_arena.get(index);
+                TyCon::Name(Name::String(self.interner.alloc(s)))
+            }
+            _ => tycon
+        }
     }
 
-    fn map_longvid<A: FileArena>(&self, longvid: LongVId, other_arena: &mut A) -> LongVId {
+    fn map_longvid<A: FileArena>(&mut self, longvid: LongVId, other_arena: &mut A) -> LongVId {
         let LongVId { strids, vid } = longvid;
         let strids = strids
             .into_iter()
@@ -99,13 +110,14 @@ impl CoreDec {
     }
 
     fn lower_pat_names<A: FileArena>(pat: ast::Pat, arena: &mut A) -> Vec<LongVId> {
-        let mut body_arena = BodyArenaImpl::default();
+        let mut body_arena = BodyArenaImpl::<NameInternerImpl>::default();
         let p = Pat::lower(pat, &mut body_arena);
 
         let mut names = vec![];
         Self::collect_pat_names(p, &mut body_arena, &mut names);
 
-        let dummy_arena = NameOnlyArena::new(body_arena);
+        // FIXME: doubt that this makes sense
+        let mut dummy_arena = NameOnlyArena::new(body_arena);
 
         names
             .iter_mut()
@@ -114,29 +126,27 @@ impl CoreDec {
     }
 
     fn collect_pat_names<A: BodyArena>(pat: Idx<Pat>, arena: &A, names: &mut Vec<LongVId>) {
-        if let Some(pat) = arena.get_pat(pat) {
-            match &pat.kind {
-                PatKind::VId { longvid, .. } => names.push(longvid.clone()),
-                PatKind::Record { .. } => {}
-                PatKind::Infix { lhs, vid: _, rhs } => {
-                    Self::collect_pat_names(*lhs, arena, names);
-                    Self::collect_pat_names(*rhs, arena, names);
-                }
-                PatKind::Typed { pat, .. } => {
-                    Self::collect_pat_names(*pat, arena, names);
-                }
-                PatKind::Constructed { pat, .. } => {
-                    Self::collect_pat_names(*pat, arena, names);
-                }
-                PatKind::Layered { vid, pat, .. } => {
-                    names.push(LongVId {
-                        strids: Box::new([]),
-                        vid: *vid,
-                    });
-                    Self::collect_pat_names(*pat, arena, names);
-                }
-                PatKind::Missing | PatKind::Nil | PatKind::Wildcard | PatKind::Scon(_) => {}
+        match &arena.get_pat(pat).kind {
+            PatKind::VId { longvid, .. } => names.push(longvid.clone()),
+            PatKind::Record { .. } => {}
+            PatKind::Infix { lhs, vid: _, rhs } => {
+                Self::collect_pat_names(*lhs, arena, names);
+                Self::collect_pat_names(*rhs, arena, names);
             }
+            PatKind::Typed { pat, .. } => {
+                Self::collect_pat_names(*pat, arena, names);
+            }
+            PatKind::Constructed { pat, .. } => {
+                Self::collect_pat_names(*pat, arena, names);
+            }
+            PatKind::Layered { vid, pat, .. } => {
+                names.push(LongVId {
+                    strids: Box::new([]),
+                    vid: *vid,
+                });
+                Self::collect_pat_names(*pat, arena, names);
+            }
+            PatKind::Missing | PatKind::Wildcard | PatKind::Scon(_) => {}
         }
     }
 

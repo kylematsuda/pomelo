@@ -2,7 +2,7 @@
 //!
 //! Is this even necessary...?
 use crate::arena::{Arena, Idx};
-use crate::identifiers::{LongStrId, LongVId, StrId, TyCon, VId};
+use crate::identifiers::{LongStrId, LongVId, NameInterner, NameInternerImpl, TyCon, VId};
 use pomelo_parse::{ast, language::SML, AstNode, AstPtr, SyntaxNodePtr};
 use std::collections::HashMap;
 use std::marker::PhantomData;
@@ -12,14 +12,15 @@ pub mod lower;
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct File {
     pub(crate) decs: Vec<TopDec>,
-    pub(crate) data: Box<FileData>,
+    pub(crate) data: Box<FileData<NameInternerImpl>>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
-pub struct FileData {
-    pub vids: Arena<VId>,
-    pub strids: Arena<StrId>,
-    pub tycons: Arena<TyCon>,
+pub struct FileData<I> {
+    pub interner: I,
+    // pub vids: Arena<VId>,
+    // pub strids: Arena<StrId>,
+    // pub tycons: Arena<TyCon>,
     pub sources: AstIdMap,
 }
 
@@ -45,22 +46,20 @@ impl AstIdMap {
     }
 
     pub fn get<N: AstNode<Language = SML>>(&self, index: FileAstIdx<N>) -> Option<AstPtr<N>> {
-        self.arena
-            .get(index.index)
-            .map(Clone::clone)
-            .and_then(SyntaxNodePtr::cast)
+        let ptr = self.arena.get(index.index).clone();
+        SyntaxNodePtr::cast(ptr)
     }
 }
 
-pub trait FileArena {
-    fn alloc_vid(&mut self, vid: VId) -> Idx<VId>;
-    fn get_vid(&self, index: Idx<VId>) -> Option<&VId>;
-
-    fn alloc_strid(&mut self, strid: StrId) -> Idx<StrId>;
-    fn get_strid(&self, index: Idx<StrId>) -> Option<&StrId>;
-
-    fn alloc_tycon(&mut self, tycon: TyCon) -> Idx<TyCon>;
-    fn get_tycon(&self, index: Idx<TyCon>) -> Option<&TyCon>;
+pub trait FileArena: NameInterner {
+    //    fn alloc_vid(&mut self, vid: VId) -> Idx<VId>;
+    //    fn get_vid(&self, index: Idx<VId>) -> Option<&VId>;
+    //
+    //    fn alloc_strid(&mut self, strid: StrId) -> Idx<StrId>;
+    //    fn get_strid(&self, index: Idx<StrId>) -> Option<&StrId>;
+    //
+    //    fn alloc_tycon(&mut self, tycon: TyCon) -> Idx<TyCon>;
+    //    fn get_tycon(&self, index: Idx<TyCon>) -> Option<&TyCon>;
 
     fn alloc_ast_id<N>(&mut self, ast: &N) -> FileAstIdx<N>
     where
@@ -70,30 +69,44 @@ pub trait FileArena {
         N: AstNode<Language = SML>;
 }
 
-impl FileArena for FileData {
-    fn alloc_vid(&mut self, vid: VId) -> Idx<VId> {
-        self.vids.alloc(vid)
+impl<I: NameInterner> NameInterner for FileData<I> {
+    fn fresh(&mut self) -> u32 {
+        self.interner.fresh()
     }
 
-    fn get_vid(&self, index: Idx<VId>) -> Option<&VId> {
-        self.vids.get(index)
+    fn alloc(&mut self, s: &str) -> Idx<String> {
+        self.interner.alloc(s)
     }
 
-    fn alloc_strid(&mut self, strid: StrId) -> Idx<StrId> {
-        self.strids.alloc(strid)
+    fn get(&self, index: Idx<String>) -> &str {
+        self.interner.get(index)
     }
+}
 
-    fn get_strid(&self, index: Idx<StrId>) -> Option<&StrId> {
-        self.strids.get(index)
-    }
-
-    fn alloc_tycon(&mut self, tycon: TyCon) -> Idx<TyCon> {
-        self.tycons.alloc(tycon)
-    }
-
-    fn get_tycon(&self, index: Idx<TyCon>) -> Option<&TyCon> {
-        self.tycons.get(index)
-    }
+impl<I: NameInterner> FileArena for FileData<I> {
+    //    fn alloc_vid(&mut self, vid: VId) -> Idx<VId> {
+    //        self.vids.alloc(vid)
+    //    }
+    //
+    //    fn get_vid(&self, index: Idx<VId>) -> Option<&VId> {
+    //        self.vids.get(index)
+    //    }
+    //
+    //    fn alloc_strid(&mut self, strid: StrId) -> Idx<StrId> {
+    //        self.strids.alloc(strid)
+    //    }
+    //
+    //    fn get_strid(&self, index: Idx<StrId>) -> Option<&StrId> {
+    //        self.strids.get(index)
+    //    }
+    //
+    //    fn alloc_tycon(&mut self, tycon: TyCon) -> Idx<TyCon> {
+    //        self.tycons.alloc(tycon)
+    //    }
+    //
+    //    fn get_tycon(&self, index: Idx<TyCon>) -> Option<&TyCon> {
+    //        self.tycons.get(index)
+    //    }
 
     fn alloc_ast_id<N>(&mut self, ast: &N) -> FileAstIdx<N>
     where

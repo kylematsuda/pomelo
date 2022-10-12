@@ -3,7 +3,9 @@ use crate::core::{
     BodyArena, ConBind, DataBind, Dec, DecKind, ExBind, ExpRow, Expr, ExprKind, Fixity, MRule, Pat,
     PatKind, PatRow, Scon, TyKind, TyRow, Type,
 };
-use crate::identifiers::{Label, LongStrId, LongTyCon, LongVId, StrId, TyCon, TyVar, VId};
+use crate::identifiers::{
+    Label, LongStrId, LongTyCon, LongVId, Name, NameInterner, StrId, TyCon, TyVar, VId,
+};
 
 const MISSING: &str = "*missing*";
 
@@ -25,6 +27,16 @@ fn boxed_seq<N: HirPrettyPrint, A: BodyArena>(nodes: &Box<[N]>, arena: &A, joine
 
 pub(crate) trait HirPrettyPrint {
     fn pretty<A: BodyArena>(&self, arena: &A) -> String;
+}
+
+impl HirPrettyPrint for Name {
+    fn pretty<A: BodyArena>(&self, arena: &A) -> String {
+        match self {
+            Self::String(index) => <A as NameInterner>::get(arena, *index).to_owned(),
+            Self::Generated(n) => format!("_temp{}", n),
+            Self::BuiltIn(b) => b.as_str().to_owned(),
+        }
+    }
 }
 
 impl HirPrettyPrint for Dec {
@@ -114,10 +126,7 @@ impl HirPrettyPrint for Dec {
 
 impl HirPrettyPrint for Idx<Dec> {
     fn pretty<A: BodyArena>(&self, arena: &A) -> String {
-        arena
-            .get_dec(*self)
-            .map(|d| d.pretty(arena))
-            .expect("index is valid")
+        arena.get_dec(*self).pretty(arena)
     }
 }
 
@@ -177,7 +186,6 @@ impl HirPrettyPrint for Pat {
         match &self.kind {
             PatKind::Missing => MISSING.to_owned(),
             PatKind::Wildcard => "_".to_owned(),
-            PatKind::Nil => "nil".to_owned(),
             PatKind::Scon(s) => s.pretty(arena),
             PatKind::VId { op, longvid } => {
                 format!("{}{}", op_str(*op), longvid.pretty(arena))
@@ -227,10 +235,7 @@ impl HirPrettyPrint for Pat {
 
 impl HirPrettyPrint for Idx<Pat> {
     fn pretty<A: BodyArena>(&self, arena: &A) -> String {
-        arena
-            .get_pat(*self)
-            .map(|p| p.pretty(arena))
-            .expect("index is valid")
+        arena.get_pat(*self).pretty(arena)
     }
 }
 
@@ -273,10 +278,7 @@ impl HirPrettyPrint for Type {
 
 impl HirPrettyPrint for Idx<Type> {
     fn pretty<A: BodyArena>(&self, arena: &A) -> String {
-        arena
-            .get_ty(*self)
-            .map(|t| t.pretty(arena))
-            .expect("index is valid")
+        arena.get_ty(*self).pretty(arena)
     }
 }
 
@@ -290,7 +292,6 @@ impl HirPrettyPrint for Expr {
     fn pretty<A: BodyArena>(&self, arena: &A) -> String {
         match &self.kind {
             ExprKind::Missing => MISSING.to_owned(),
-            ExprKind::Nil => "nil".to_owned(),
             ExprKind::Seq { exprs } => boxed_seq(exprs, arena, "; "),
             ExprKind::Scon(s) => s.pretty(arena),
             ExprKind::VId { op, longvid } => {
@@ -340,10 +341,7 @@ impl HirPrettyPrint for Expr {
 
 impl HirPrettyPrint for Idx<Expr> {
     fn pretty<A: BodyArena>(&self, arena: &A) -> String {
-        arena
-            .get_expr(*self)
-            .map(|e| e.pretty(arena))
-            .expect("index is valid")
+        arena.get_expr(*self).pretty(arena)
     }
 }
 
@@ -373,41 +371,41 @@ impl HirPrettyPrint for Scon {
 }
 
 impl HirPrettyPrint for Label {
-    fn pretty<A: BodyArena>(&self, _arena: &A) -> String {
+    fn pretty<A: BodyArena>(&self, arena: &A) -> String {
         match self {
             Label::Missing => MISSING.to_owned(),
             Label::Numeric(i) => i.to_string(),
-            Label::Named(n) => n.to_string(),
+            Label::Named(n) => n.pretty(arena),
         }
     }
 }
 
-impl HirPrettyPrint for Idx<Label> {
-    fn pretty<A: BodyArena>(&self, arena: &A) -> String {
-        arena
-            .get_label(*self)
-            .map(|l| l.pretty(arena))
-            .expect("index is valid")
-    }
-}
+// impl HirPrettyPrint for Idx<Label> {
+//     fn pretty<A: BodyArena>(&self, arena: &A) -> String {
+//         arena
+//             .get_label(*self)
+//             .map(|l| l.pretty(arena))
+//             .expect("index is valid")
+//     }
+// }
 
 impl HirPrettyPrint for VId {
-    fn pretty<A: BodyArena>(&self, _arena: &A) -> String {
+    fn pretty<A: BodyArena>(&self, arena: &A) -> String {
         match self {
             VId::Missing => MISSING.to_owned(),
-            VId::Name(n) => n.to_string(),
+            VId::Name(n) => n.pretty(arena),
         }
     }
 }
 
-impl HirPrettyPrint for Idx<VId> {
-    fn pretty<A: BodyArena>(&self, arena: &A) -> String {
-        arena
-            .get_vid(*self)
-            .map(|v| v.pretty(arena))
-            .expect("index is valid")
-    }
-}
+// impl HirPrettyPrint for Idx<VId> {
+//     fn pretty<A: BodyArena>(&self, arena: &A) -> String {
+//         arena
+//             .get_vid(*self)
+//             .map(|v| v.pretty(arena))
+//             .expect("index is valid")
+//     }
+// }
 
 impl HirPrettyPrint for LongVId {
     fn pretty<A: BodyArena>(&self, arena: &A) -> String {
@@ -419,22 +417,22 @@ impl HirPrettyPrint for LongVId {
 }
 
 impl HirPrettyPrint for StrId {
-    fn pretty<A: BodyArena>(&self, _arena: &A) -> String {
+    fn pretty<A: BodyArena>(&self, arena: &A) -> String {
         match self {
             StrId::Missing => MISSING.to_owned(),
-            StrId::Name(n) => n.to_string(),
+            StrId::Name(n) => n.pretty(arena),
         }
     }
 }
 
-impl HirPrettyPrint for Idx<StrId> {
-    fn pretty<A: BodyArena>(&self, arena: &A) -> String {
-        arena
-            .get_strid(*self)
-            .map(|s| s.pretty(arena))
-            .expect("index is valid")
-    }
-}
+// impl HirPrettyPrint for Idx<StrId> {
+//     fn pretty<A: BodyArena>(&self, arena: &A) -> String {
+//         arena
+//             .get_strid(*self)
+//             .map(|s| s.pretty(arena))
+//             .expect("index is valid")
+//     }
+// }
 
 impl HirPrettyPrint for LongStrId {
     fn pretty<A: BodyArena>(&self, arena: &A) -> String {
@@ -446,40 +444,40 @@ impl HirPrettyPrint for LongStrId {
 }
 
 impl HirPrettyPrint for TyVar {
-    fn pretty<A: BodyArena>(&self, _arena: &A) -> String {
+    fn pretty<A: BodyArena>(&self, arena: &A) -> String {
         match self {
             TyVar::Missing => MISSING.to_owned(),
-            TyVar::Name(n) => n.to_string(),
+            TyVar::Name(n) => n.pretty(arena),
         }
     }
 }
 
-impl HirPrettyPrint for Idx<TyVar> {
-    fn pretty<A: BodyArena>(&self, arena: &A) -> String {
-        arena
-            .get_tyvar(*self)
-            .map(|t| t.pretty(arena))
-            .expect("index is valid")
-    }
-}
+// impl HirPrettyPrint for Idx<TyVar> {
+//     fn pretty<A: BodyArena>(&self, arena: &A) -> String {
+//         arena
+//             .get_tyvar(*self)
+//             .map(|t| t.pretty(arena))
+//             .expect("index is valid")
+//     }
+// }
 
 impl HirPrettyPrint for TyCon {
-    fn pretty<A: BodyArena>(&self, _arena: &A) -> String {
+    fn pretty<A: BodyArena>(&self, arena: &A) -> String {
         match self {
             TyCon::Missing => MISSING.to_owned(),
-            TyCon::Name(n) => n.to_string(),
+            TyCon::Name(n) => n.pretty(arena),
         }
     }
 }
 
-impl HirPrettyPrint for Idx<TyCon> {
-    fn pretty<A: BodyArena>(&self, arena: &A) -> String {
-        arena
-            .get_tycon(*self)
-            .map(|t| t.pretty(arena))
-            .expect("index is valid")
-    }
-}
+// impl HirPrettyPrint for Idx<TyCon> {
+//     fn pretty<A: BodyArena>(&self, arena: &A) -> String {
+//         arena
+//             .get_tycon(*self)
+//             .map(|t| t.pretty(arena))
+//             .expect("index is valid")
+//     }
+// }
 
 impl HirPrettyPrint for LongTyCon {
     fn pretty<A: BodyArena>(&self, arena: &A) -> String {

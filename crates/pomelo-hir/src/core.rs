@@ -1,5 +1,7 @@
 use crate::arena::{Arena, Idx};
-use crate::identifiers::{Label, LongStrId, LongTyCon, LongVId, StrId, TyCon, TyVar, VId};
+use crate::identifiers::{
+    Label, LongStrId, LongTyCon, LongVId, NameInterner, NameInternerImpl, TyCon, TyVar, VId,
+};
 use crate::topdecs::{AstIdMap, FileArena, FileAstIdx};
 use pomelo_parse::{ast, language::SML, AstNode, AstPtr};
 
@@ -9,7 +11,7 @@ mod test;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TopDecBody {
-    arenas: BodyArenaImpl,
+    arenas: BodyArenaImpl<NameInternerImpl>,
 
     // The actual outermost dec(s)
     //
@@ -23,7 +25,7 @@ pub struct TopDecBody {
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
-pub(crate) struct BodyArenaImpl {
+pub(crate) struct BodyArenaImpl<I> {
     pub(crate) pats: Arena<Pat>,
     pub(crate) exprs: Arena<Expr>,
 
@@ -31,59 +33,73 @@ pub(crate) struct BodyArenaImpl {
     pub(crate) decs: Arena<Dec>,
     pub(crate) tys: Arena<Type>,
 
-    pub(crate) vids: Arena<VId>,
-    pub(crate) strids: Arena<StrId>,
-    pub(crate) tycons: Arena<TyCon>,
-    pub(crate) labels: Arena<Label>,
-    pub(crate) tyvars: Arena<TyVar>,
-
+    pub(crate) name_interner: I,
+    //pub(crate) vids: Arena<VId>,
+    //pub(crate) strids: Arena<StrId>,
+    //pub(crate) tycons: Arena<TyCon>,
+    //pub(crate) labels: Arena<Label>,
+    //pub(crate) tyvars: Arena<TyVar>,
     pub(crate) ast_map: AstIdMap,
 }
 
 pub trait BodyArena: FileArena {
     fn alloc_pat(&mut self, pat: Pat) -> Idx<Pat>;
-    fn get_pat(&self, index: Idx<Pat>) -> Option<&Pat>;
+    fn get_pat(&self, index: Idx<Pat>) -> &Pat;
 
     fn alloc_expr(&mut self, expr: Expr) -> Idx<Expr>;
-    fn get_expr(&self, index: Idx<Expr>) -> Option<&Expr>;
+    fn get_expr(&self, index: Idx<Expr>) -> &Expr;
 
     fn alloc_dec(&mut self, dec: Dec) -> Idx<Dec>;
-    fn get_dec(&self, index: Idx<Dec>) -> Option<&Dec>;
+    fn get_dec(&self, index: Idx<Dec>) -> &Dec;
 
     fn alloc_ty(&mut self, ty: Type) -> Idx<Type>;
-    fn get_ty(&self, index: Idx<Type>) -> Option<&Type>;
+    fn get_ty(&self, index: Idx<Type>) -> &Type;
 
-    fn alloc_label(&mut self, label: Label) -> Idx<Label>;
-    fn get_label(&self, index: Idx<Label>) -> Option<&Label>;
-
-    fn alloc_tyvar(&mut self, tyvar: TyVar) -> Idx<TyVar>;
-    fn get_tyvar(&self, index: Idx<TyVar>) -> Option<&TyVar>;
+    //    fn alloc_label(&mut self, label: Label) -> Idx<Label>;
+    //    fn get_label(&self, index: Idx<Label>) -> Option<&Label>;
+    //
+    //    fn alloc_tyvar(&mut self, tyvar: TyVar) -> Idx<TyVar>;
+    //    fn get_tyvar(&self, index: Idx<TyVar>) -> Option<&TyVar>;
 }
 
-impl FileArena for BodyArenaImpl {
-    fn alloc_vid(&mut self, vid: VId) -> Idx<VId> {
-        self.vids.alloc(vid)
+impl<I: NameInterner> NameInterner for BodyArenaImpl<I> {
+    fn fresh(&mut self) -> u32 {
+        self.name_interner.fresh()
     }
 
-    fn get_vid(&self, index: Idx<VId>) -> Option<&VId> {
-        self.vids.get(index)
+    fn alloc(&mut self, s: &str) -> Idx<String> {
+        self.name_interner.alloc(s)
     }
 
-    fn alloc_strid(&mut self, strid: StrId) -> Idx<StrId> {
-        self.strids.alloc(strid)
+    fn get(&self, index: Idx<String>) -> &str {
+        self.name_interner.get(index)
     }
+}
 
-    fn get_strid(&self, index: Idx<StrId>) -> Option<&StrId> {
-        self.strids.get(index)
-    }
-
-    fn alloc_tycon(&mut self, tycon: TyCon) -> Idx<TyCon> {
-        self.tycons.alloc(tycon)
-    }
-
-    fn get_tycon(&self, index: Idx<TyCon>) -> Option<&TyCon> {
-        self.tycons.get(index)
-    }
+impl<I: NameInterner> FileArena for BodyArenaImpl<I> {
+    //    fn alloc_vid(&mut self, vid: VId) -> Idx<VId> {
+    //        self.vids.alloc(vid)
+    //    }
+    //
+    //    fn get_vid(&self, index: Idx<VId>) -> Option<&VId> {
+    //        self.vids.get(index)
+    //    }
+    //
+    //    fn alloc_strid(&mut self, strid: StrId) -> Idx<StrId> {
+    //        self.strids.alloc(strid)
+    //    }
+    //
+    //    fn get_strid(&self, index: Idx<StrId>) -> Option<&StrId> {
+    //        self.strids.get(index)
+    //    }
+    //
+    //    fn alloc_tycon(&mut self, tycon: TyCon) -> Idx<TyCon> {
+    //        self.tycons.alloc(tycon)
+    //    }
+    //
+    //    fn get_tycon(&self, index: Idx<TyCon>) -> Option<&TyCon> {
+    //        self.tycons.get(index)
+    //    }
 
     fn alloc_ast_id<N>(&mut self, ast: &N) -> FileAstIdx<N>
     where
@@ -100,12 +116,12 @@ impl FileArena for BodyArenaImpl {
     }
 }
 
-impl BodyArena for BodyArenaImpl {
+impl<I: NameInterner> BodyArena for BodyArenaImpl<I> {
     fn alloc_pat(&mut self, pat: Pat) -> Idx<Pat> {
         self.pats.alloc(pat)
     }
 
-    fn get_pat(&self, index: Idx<Pat>) -> Option<&Pat> {
+    fn get_pat(&self, index: Idx<Pat>) -> &Pat {
         self.pats.get(index)
     }
 
@@ -113,7 +129,7 @@ impl BodyArena for BodyArenaImpl {
         self.exprs.alloc(expr)
     }
 
-    fn get_expr(&self, index: Idx<Expr>) -> Option<&Expr> {
+    fn get_expr(&self, index: Idx<Expr>) -> &Expr {
         self.exprs.get(index)
     }
 
@@ -121,33 +137,33 @@ impl BodyArena for BodyArenaImpl {
         self.decs.alloc(dec)
     }
 
-    fn get_dec(&self, index: Idx<Dec>) -> Option<&Dec> {
+    fn get_dec(&self, index: Idx<Dec>) -> &Dec {
         self.decs.get(index)
     }
 
-    fn alloc_label(&mut self, label: Label) -> Idx<Label> {
-        self.labels.alloc(label)
-    }
-
-    fn get_label(&self, index: Idx<Label>) -> Option<&Label> {
-        self.labels.get(index)
-    }
+    //    fn alloc_label(&mut self, label: Label) -> Idx<Label> {
+    //        self.labels.alloc(label)
+    //    }
+    //
+    //    fn get_label(&self, index: Idx<Label>) -> Option<&Label> {
+    //        self.labels.get(index)
+    //    }
 
     fn alloc_ty(&mut self, ty: Type) -> Idx<Type> {
         self.tys.alloc(ty)
     }
 
-    fn get_ty(&self, index: Idx<Type>) -> Option<&Type> {
+    fn get_ty(&self, index: Idx<Type>) -> &Type {
         self.tys.get(index)
     }
 
-    fn alloc_tyvar(&mut self, tyvar: TyVar) -> Idx<TyVar> {
-        self.tyvars.alloc(tyvar)
-    }
-
-    fn get_tyvar(&self, index: Idx<TyVar>) -> Option<&TyVar> {
-        self.tyvars.get(index)
-    }
+    //    fn alloc_tyvar(&mut self, tyvar: TyVar) -> Idx<TyVar> {
+    //        self.tyvars.alloc(tyvar)
+    //    }
+    //
+    //    fn get_tyvar(&self, index: Idx<TyVar>) -> Option<&TyVar> {
+    //        self.tyvars.get(index)
+    //    }
 }
 
 /// Used as a pointer from the HIR node back to its corresponding AST node.
@@ -201,20 +217,20 @@ pub enum DecKind {
     },
     Val {
         rec: bool,
-        tyvarseq: Box<[Idx<TyVar>]>,
+        tyvarseq: Box<[TyVar]>,
         pat: Idx<Pat>,
         expr: Idx<Expr>,
     },
     Ty {
-        tyvarseq: Box<[Idx<TyVar>]>,
-        tycon: Idx<TyCon>,
+        tyvarseq: Box<[TyVar]>,
+        tycon: TyCon,
         ty: Idx<Type>,
     },
     Datatype {
         databind: DataBind,
     },
     Replication {
-        lhs: Idx<TyCon>,
+        lhs: TyCon,
         rhs: LongTyCon,
     },
     Abstype {
@@ -233,21 +249,21 @@ pub enum DecKind {
     },
     Fixity {
         fixity: Fixity,
-        vids: Box<[Idx<VId>]>,
+        vids: Box<[VId]>,
     },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DataBind {
-    tyvarseq: Box<[Idx<TyVar>]>,
-    tycon: Idx<TyCon>,
+    tyvarseq: Box<[TyVar]>,
+    tycon: TyCon,
     conbinds: Box<[ConBind]>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ConBind {
     op: bool,
-    vid: Idx<VId>,
+    vid: VId,
     ty: Option<Idx<Type>>,
 }
 
@@ -255,12 +271,12 @@ pub struct ConBind {
 pub enum ExBind {
     Name {
         op: bool,
-        vid: Idx<VId>,
+        vid: VId,
         ty: Option<Idx<Type>>,
     },
     Assignment {
         op_lhs: bool,
-        lhs: Idx<VId>,
+        lhs: VId,
         op_rhs: bool,
         rhs: LongVId,
     },
@@ -303,7 +319,7 @@ pub enum ExprKind {
     },
     Infix {
         lhs: ExprIdx,
-        vid: Idx<VId>,
+        vid: VId,
         rhs: ExprIdx,
     },
     Typed {
@@ -352,7 +368,7 @@ impl std::fmt::Display for FloatWrapper {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExpRow {
-    label: LabelIdx,
+    label: Label,
     expr: ExprIdx,
 }
 
@@ -381,7 +397,7 @@ pub enum PatKind {
     },
     Infix {
         lhs: PatIdx,
-        vid: Idx<VId>,
+        vid: VId,
         rhs: PatIdx,
     },
     Typed {
@@ -390,8 +406,8 @@ pub enum PatKind {
     },
     Layered {
         op: bool,
-        vid: Idx<VId>,
-        ty: Option<TyRefIdx>,
+        vid: VId,
+        ty: Option<Idx<Type>>,
         pat: PatIdx,
     },
 }
@@ -401,7 +417,7 @@ pub type PatIdx = Idx<Pat>;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PatRow {
     Wildcard,
-    Pattern { label: LabelIdx, pat: PatIdx },
+    Pattern { label: Label, pat: PatIdx },
 }
 
 pub type LabelIdx = Idx<Label>;
@@ -416,7 +432,7 @@ pub struct Type {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TyKind {
     Missing,
-    Var(Idx<TyVar>),
+    Var(TyVar),
     Record {
         tyrows: Box<[TyRow]>,
     },
@@ -434,7 +450,7 @@ pub type TyRefIdx = Idx<Type>;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TyRow {
-    label: LabelIdx,
+    label: Label,
     ty: Idx<Type>,
 }
 

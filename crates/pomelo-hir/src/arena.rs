@@ -69,11 +69,14 @@ impl<T> Arena<T> {
         self.inner.iter_mut()
     }
 
-    pub fn get(&self, idx: Idx<T>) -> Option<&T> {
-        self.inner.get(idx.as_inner())
+    /// This does not return an [`Option`] because we assume the index is valid.
+    /// This should be alright, because we don't provide a way to construct
+    /// an `Idx` on its own.
+    pub fn get(&self, idx: Idx<T>) -> &T {
+        self.inner.get(idx.as_inner()).expect("index is valid")
     }
 
-    pub fn get_mut(&mut self, idx: Idx<T>) -> Option<&mut T> {
-        self.inner.get_mut(idx.as_inner())
+    pub fn get_mut(&mut self, idx: Idx<T>) -> &mut T {
+        self.inner.get_mut(idx.as_inner()).expect("index is valid")
     }
 }
