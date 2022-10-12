@@ -18,9 +18,6 @@ pub struct File {
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct FileData<I> {
     pub interner: I,
-    // pub vids: Arena<VId>,
-    // pub strids: Arena<StrId>,
-    // pub tycons: Arena<TyCon>,
     pub sources: AstIdMap,
 }
 
@@ -52,15 +49,6 @@ impl AstIdMap {
 }
 
 pub trait FileArena: NameInterner {
-    //    fn alloc_vid(&mut self, vid: VId) -> Idx<VId>;
-    //    fn get_vid(&self, index: Idx<VId>) -> Option<&VId>;
-    //
-    //    fn alloc_strid(&mut self, strid: StrId) -> Idx<StrId>;
-    //    fn get_strid(&self, index: Idx<StrId>) -> Option<&StrId>;
-    //
-    //    fn alloc_tycon(&mut self, tycon: TyCon) -> Idx<TyCon>;
-    //    fn get_tycon(&self, index: Idx<TyCon>) -> Option<&TyCon>;
-
     fn alloc_ast_id<N>(&mut self, ast: &N) -> FileAstIdx<N>
     where
         N: AstNode<Language = SML>;
@@ -84,30 +72,6 @@ impl<I: NameInterner> NameInterner for FileData<I> {
 }
 
 impl<I: NameInterner> FileArena for FileData<I> {
-    //    fn alloc_vid(&mut self, vid: VId) -> Idx<VId> {
-    //        self.vids.alloc(vid)
-    //    }
-    //
-    //    fn get_vid(&self, index: Idx<VId>) -> Option<&VId> {
-    //        self.vids.get(index)
-    //    }
-    //
-    //    fn alloc_strid(&mut self, strid: StrId) -> Idx<StrId> {
-    //        self.strids.alloc(strid)
-    //    }
-    //
-    //    fn get_strid(&self, index: Idx<StrId>) -> Option<&StrId> {
-    //        self.strids.get(index)
-    //    }
-    //
-    //    fn alloc_tycon(&mut self, tycon: TyCon) -> Idx<TyCon> {
-    //        self.tycons.alloc(tycon)
-    //    }
-    //
-    //    fn get_tycon(&self, index: Idx<TyCon>) -> Option<&TyCon> {
-    //        self.tycons.get(index)
-    //    }
-
     fn alloc_ast_id<N>(&mut self, ast: &N) -> FileAstIdx<N>
     where
         N: AstNode<Language = SML>,

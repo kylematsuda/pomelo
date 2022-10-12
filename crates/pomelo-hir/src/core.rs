@@ -34,11 +34,6 @@ pub(crate) struct BodyArenaImpl<I> {
     pub(crate) tys: Arena<Type>,
 
     pub(crate) name_interner: I,
-    //pub(crate) vids: Arena<VId>,
-    //pub(crate) strids: Arena<StrId>,
-    //pub(crate) tycons: Arena<TyCon>,
-    //pub(crate) labels: Arena<Label>,
-    //pub(crate) tyvars: Arena<TyVar>,
     pub(crate) ast_map: AstIdMap,
 }
 
@@ -54,12 +49,6 @@ pub trait BodyArena: FileArena {
 
     fn alloc_ty(&mut self, ty: Type) -> Idx<Type>;
     fn get_ty(&self, index: Idx<Type>) -> &Type;
-
-    //    fn alloc_label(&mut self, label: Label) -> Idx<Label>;
-    //    fn get_label(&self, index: Idx<Label>) -> Option<&Label>;
-    //
-    //    fn alloc_tyvar(&mut self, tyvar: TyVar) -> Idx<TyVar>;
-    //    fn get_tyvar(&self, index: Idx<TyVar>) -> Option<&TyVar>;
 }
 
 impl<I: NameInterner> NameInterner for BodyArenaImpl<I> {
@@ -77,30 +66,6 @@ impl<I: NameInterner> NameInterner for BodyArenaImpl<I> {
 }
 
 impl<I: NameInterner> FileArena for BodyArenaImpl<I> {
-    //    fn alloc_vid(&mut self, vid: VId) -> Idx<VId> {
-    //        self.vids.alloc(vid)
-    //    }
-    //
-    //    fn get_vid(&self, index: Idx<VId>) -> Option<&VId> {
-    //        self.vids.get(index)
-    //    }
-    //
-    //    fn alloc_strid(&mut self, strid: StrId) -> Idx<StrId> {
-    //        self.strids.alloc(strid)
-    //    }
-    //
-    //    fn get_strid(&self, index: Idx<StrId>) -> Option<&StrId> {
-    //        self.strids.get(index)
-    //    }
-    //
-    //    fn alloc_tycon(&mut self, tycon: TyCon) -> Idx<TyCon> {
-    //        self.tycons.alloc(tycon)
-    //    }
-    //
-    //    fn get_tycon(&self, index: Idx<TyCon>) -> Option<&TyCon> {
-    //        self.tycons.get(index)
-    //    }
-
     fn alloc_ast_id<N>(&mut self, ast: &N) -> FileAstIdx<N>
     where
         N: AstNode<Language = SML>,
@@ -141,14 +106,6 @@ impl<I: NameInterner> BodyArena for BodyArenaImpl<I> {
         self.decs.get(index)
     }
 
-    //    fn alloc_label(&mut self, label: Label) -> Idx<Label> {
-    //        self.labels.alloc(label)
-    //    }
-    //
-    //    fn get_label(&self, index: Idx<Label>) -> Option<&Label> {
-    //        self.labels.get(index)
-    //    }
-
     fn alloc_ty(&mut self, ty: Type) -> Idx<Type> {
         self.tys.alloc(ty)
     }
@@ -156,14 +113,6 @@ impl<I: NameInterner> BodyArena for BodyArenaImpl<I> {
     fn get_ty(&self, index: Idx<Type>) -> &Type {
         self.tys.get(index)
     }
-
-    //    fn alloc_tyvar(&mut self, tyvar: TyVar) -> Idx<TyVar> {
-    //        self.tyvars.alloc(tyvar)
-    //    }
-    //
-    //    fn get_tyvar(&self, index: Idx<TyVar>) -> Option<&TyVar> {
-    //        self.tyvars.get(index)
-    //    }
 }
 
 /// Used as a pointer from the HIR node back to its corresponding AST node.
