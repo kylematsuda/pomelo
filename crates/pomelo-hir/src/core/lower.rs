@@ -3,7 +3,7 @@ use crate::core::{
     AstId, BodyArena, Dec, DecKind, ExpRow, Expr, ExprKind, FloatWrapper, MRule, Pat, PatKind,
     PatRow, Scon, TyKind, TyRow, Type,
 };
-use crate::identifiers::{Label, LongTyCon, LongVId, TyVar, VId};
+use crate::identifiers::{BuiltIn, Label, LongTyCon, LongVId, TyVar, VId};
 use pomelo_parse::{ast, AstNode, AstPtr};
 
 impl Dec {
@@ -219,9 +219,7 @@ impl Expr {
         if rev_expr_indexes.len() == 0 {
             ExprKind::Nil
         } else {
-            // Alloc "::" in arena
-            // FIXME: Intern built-in identifiers (just make a big enum with an as_str method?)
-            let cons = VId::from_str("::", arena);
+            let cons = VId::from_builtin(BuiltIn::Cons, arena);
 
             // Remember our AST position, since lowering will generate new nodes
             let node = ast::Expr::cast(expr.syntax().clone()).expect("this conversion never fails");
@@ -568,9 +566,7 @@ impl Pat {
         if rev_pat_indexes.len() == 0 {
             PatKind::Nil
         } else {
-            // Alloc "::" in arena
-            // FIXME: Intern built-in identifiers (just make a big enum with an as_str method?)
-            let cons = VId::from_str("::", arena);
+            let cons = VId::from_builtin(BuiltIn::Cons, arena);
 
             // Remember our AST position, since lowering will generate new nodes
             let node = ast::Pat::cast(pat.syntax().clone()).expect("ListPat is a Pat");

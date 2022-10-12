@@ -19,6 +19,15 @@ impl BuiltIn {
             Self::Cons => "::",
         }
     }
+
+    pub fn from_str(s: &str) -> Option<Self> {
+        match s {
+            "true" => Some(Self::True),
+            "false" => Some(Self::False),
+            "::" => Some(Self::Cons),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -43,6 +52,13 @@ impl Name {
 
     pub fn from_builtin(b: BuiltIn) -> Self {
         Self::BuiltIn(b)
+    }
+
+    pub fn try_builtin(s: &str) -> Self {
+        match BuiltIn::from_str(s) {
+            Some(b) => Self::BuiltIn(b),
+            None => Self::from_str(s),
+        }
     }
 }
 
@@ -94,7 +110,7 @@ pub enum VId {
 impl VId {
     pub fn from_token<A: FileArena>(opt_vid: Option<ast::VId>, arena: &mut A) -> Idx<Self> {
         match opt_vid {
-            Some(vid) => Self::from_str(vid.syntax().text(), arena),
+            Some(vid) => Self::try_builtin(vid.syntax().text(), arena),
             None => Self::missing(arena),
         }
     }
@@ -103,8 +119,19 @@ impl VId {
         arena.alloc_vid(Self::Name(Name::from_str(name)))
     }
 
+    pub fn from_builtin<A: FileArena>(name: BuiltIn, arena: &mut A) -> Idx<Self> {
+        arena.alloc_vid(Self::Name(Name::from_builtin(name)))
+    }
+
     pub fn missing<A: FileArena>(arena: &mut A) -> Idx<Self> {
         arena.alloc_vid(Self::Missing)
+    }
+
+    fn try_builtin<A: FileArena>(name: &str, arena: &mut A) -> Idx<Self> {
+        match BuiltIn::from_str(name) {
+            Some(b) => Self::from_builtin(b, arena),
+            None => Self::from_str(name, arena),
+        }
     }
 }
 
@@ -138,7 +165,7 @@ pub enum StrId {
 impl StrId {
     pub fn from_token<A: FileArena>(opt_strid: Option<ast::StrId>, arena: &mut A) -> Idx<Self> {
         match opt_strid {
-            Some(strid) => Self::from_str(strid.syntax().text(), arena),
+            Some(strid) => Self::try_builtin(strid.syntax().text(), arena),
             None => Self::missing(arena),
         }
     }
@@ -147,8 +174,19 @@ impl StrId {
         arena.alloc_strid(Self::Name(Name::from_str(name)))
     }
 
+    pub fn from_builtin<A: FileArena>(name: BuiltIn, arena: &mut A) -> Idx<Self> {
+        arena.alloc_strid(Self::Name(Name::from_builtin(name)))
+    }
+
     pub fn missing<A: FileArena>(arena: &mut A) -> Idx<Self> {
         arena.alloc_strid(Self::Missing)
+    }
+
+    fn try_builtin<A: FileArena>(name: &str, arena: &mut A) -> Idx<Self> {
+        match BuiltIn::from_str(name) {
+            Some(b) => Self::from_builtin(b, arena),
+            None => Self::from_str(name, arena),
+        }
     }
 }
 
@@ -218,7 +256,7 @@ impl TyCon {
     pub fn from_token<A: FileArena>(opt_tycon: Option<ast::TyCon>, arena: &mut A) -> Idx<Self> {
         match opt_tycon {
             None => Self::missing(arena),
-            Some(t) => Self::from_str(t.syntax().text(), arena),
+            Some(t) => Self::try_builtin(t.syntax().text(), arena),
         }
     }
 
@@ -226,8 +264,19 @@ impl TyCon {
         arena.alloc_tycon(Self::Name(Name::from_str(name)))
     }
 
+    pub fn from_builtin<A: FileArena>(name: BuiltIn, arena: &mut A) -> Idx<Self> {
+        arena.alloc_tycon(Self::Name(Name::from_builtin(name)))
+    }
+
     pub fn missing<A: FileArena>(arena: &mut A) -> Idx<Self> {
         arena.alloc_tycon(Self::Missing)
+    }
+
+    fn try_builtin<A: FileArena>(name: &str, arena: &mut A) -> Idx<Self> {
+        match BuiltIn::from_str(name) {
+            Some(b) => Self::from_builtin(b, arena),
+            None => Self::from_str(name, arena),
+        }
     }
 }
 
