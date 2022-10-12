@@ -9,5 +9,5 @@ edition = "2021"
 salsa = "0.16"
 pomelo-parse = { path = "../pomelo-parse" }
 
-[dev-dependences]
-pomelo-ide = { path = "../pomelo-ide" }
+[dev-dependencies]
+expect-test = "1.4" 

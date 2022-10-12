@@ -358,6 +358,18 @@ impl<'a> Parser<'a> {
             errors: self.errors,
         }
     }
+
+    pub fn parse_expr(self) -> SyntaxTree {
+        self.parse_inner(crate::grammar::expression)
+    }
+
+    pub fn parse_pat(self) -> SyntaxTree {
+        self.parse_inner(crate::grammar::pattern)
+    }
+
+    pub fn parse_type(self) -> SyntaxTree {
+        self.parse_inner(crate::grammar::ty)
+    }
 }
 
 #[derive(Debug, Clone)]

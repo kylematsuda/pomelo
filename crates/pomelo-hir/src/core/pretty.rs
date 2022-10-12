@@ -410,7 +410,12 @@ impl HirPrettyPrint for VId {
 impl HirPrettyPrint for LongVId {
     fn pretty<A: BodyArena>(&self, arena: &A) -> String {
         let mut s = boxed_seq(&self.strids, arena, ".");
-        s.push('.');
+
+        // FIXME: ugly
+        if s.len() > 0 {
+            s.push('.');
+        }
+
         s.push_str(&self.vid.pretty(arena));
         s
     }
@@ -437,7 +442,12 @@ impl HirPrettyPrint for StrId {
 impl HirPrettyPrint for LongStrId {
     fn pretty<A: BodyArena>(&self, arena: &A) -> String {
         let mut s = boxed_seq(&self.strid_path, arena, ".");
-        s.push('.');
+
+        // FIXME: ugly
+        if s.len() > 0 {
+            s.push('.');
+        }
+
         s.push_str(&self.strid.pretty(arena));
         s
     }
@@ -482,7 +492,11 @@ impl HirPrettyPrint for TyCon {
 impl HirPrettyPrint for LongTyCon {
     fn pretty<A: BodyArena>(&self, arena: &A) -> String {
         let mut s = boxed_seq(&self.strids, arena, ".");
-        s.push('.');
+
+        // FIXME: ugly
+        if s.len() > 0 {
+            s.push('.');
+        }
         s.push_str(&self.tycon.pretty(arena));
         s
     }

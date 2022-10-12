@@ -7,7 +7,9 @@ use pomelo_parse::{ast, language::SML, AstNode, AstPtr};
 
 pub mod lower;
 pub mod pretty;
-mod test;
+
+#[cfg(test)]
+mod tests;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TopDecBody {
