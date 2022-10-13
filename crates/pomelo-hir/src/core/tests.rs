@@ -1,12 +1,12 @@
-use pomelo_parse::{AstNode, Parser, SyntaxTree};
 use pomelo_parse::language::SML;
+use pomelo_parse::{AstNode, Parser, SyntaxTree};
 
 use expect_test::{expect, Expect};
 
-use crate::core::pretty::HirPrettyPrint;
-use crate::core::{Expr, BodyArenaImpl, lower::HirLower};
-use crate::identifiers::NameInternerImpl;
 use crate::arena::Idx;
+use crate::core::pretty::HirPrettyPrint;
+use crate::core::{lower::HirLower, BodyArenaImpl, Expr};
+use crate::identifiers::NameInternerImpl;
 
 pub(crate) fn check<H, F>(src: &str, parse_with: F, expect: Expect)
 where
@@ -30,7 +30,7 @@ fn lower_list_expr() {
     let src = "[1, 2, 3]";
     check::<Expr, _>(
         src,
-        |p| p.parse_expr(), 
-        expect![[r##"1 :: 2 :: 3 :: nil"##]]
+        |p| p.parse_expr(),
+        expect![[r##"1 :: 2 :: 3 :: nil"##]],
     )
 }

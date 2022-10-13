@@ -1,4 +1,4 @@
-use crate::arena::{Arena, Idx};
+use crate::arena::Idx;
 use crate::core::{lower::HirLower, BodyArena, BodyArenaImpl, Pat, PatKind};
 use crate::identifiers::{LongVId, Name, NameInterner, NameInternerImpl, StrId, TyCon, VId};
 use crate::topdecs::{CoreDec, File, FileArena, FileData, TopDec};
@@ -38,7 +38,7 @@ impl<I: NameInterner> NameOnlyArena<I> {
                 let s = other_arena.get(index);
                 VId::Name(Name::String(self.interner.alloc(s)))
             }
-            _ => vid
+            _ => vid,
         }
     }
 
@@ -48,17 +48,17 @@ impl<I: NameInterner> NameOnlyArena<I> {
                 let s = other_arena.get(index);
                 StrId::Name(Name::String(self.interner.alloc(s)))
             }
-            _ => strid 
+            _ => strid,
         }
     }
 
-    fn map_tycon<A: NameInterner>(&mut self, tycon: TyCon, other_arena: &mut A) -> TyCon {
+    fn _map_tycon<A: NameInterner>(&mut self, tycon: TyCon, other_arena: &mut A) -> TyCon {
         match tycon {
             TyCon::Name(Name::String(index)) => {
                 let s = other_arena.get(index);
                 TyCon::Name(Name::String(self.interner.alloc(s)))
             }
-            _ => tycon
+            _ => tycon,
         }
     }
 
