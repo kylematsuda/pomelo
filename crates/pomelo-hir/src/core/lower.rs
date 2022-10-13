@@ -265,7 +265,8 @@ impl Expr {
         let mut rows = vec![];
         for (i, e) in expr.exprs().enumerate() {
             let exp = Self::lower(e, arena);
-            let exprow = ExpRow::new_from_expr(exp, Label::Numeric(i as u32));
+            let label = (i + 1) as u32;
+            let exprow = ExpRow::new_from_expr(exp, Label::Numeric(label));
             rows.push(exprow);
         }
         ExprKind::Record {
@@ -597,8 +598,8 @@ impl Pat {
 
         for (i, p) in tuple.pats().enumerate() {
             let pat = Pat::lower(p, arena);
-            let label = Label::Numeric(i as u32);
-            rows.push(PatRow::new_from_pat(pat, label, arena));
+            let label = (i + 1) as u32;
+            rows.push(PatRow::new_from_pat(pat, Label::Numeric(label), arena));
         }
 
         PatKind::Record {
@@ -715,7 +716,8 @@ impl Type {
     fn lower_tuple<A: BodyArena>(ty: &ast::TupleTy, arena: &mut A) -> TyKind {
         let mut tyrows = vec![];
         for (i, t) in ty.tys().enumerate() {
-            let tyrow = TyRow::new_from_ty(Self::lower(t, arena), Label::Numeric(i as u32));
+            let label = (i + 1) as u32;
+            let tyrow = TyRow::new_from_ty(Self::lower(t, arena), Label::Numeric(label));
             tyrows.push(tyrow);
         }
         TyKind::Record {

@@ -244,7 +244,7 @@ impl HirPrettyPrint for PatRow {
         match &self {
             PatRow::Wildcard => "..".to_owned(),
             PatRow::Pattern { label, pat } => {
-                format!("{}: {}", label.pretty(arena), pat.pretty(arena))
+                format!("{}={}", label.pretty(arena), pat.pretty(arena))
             }
         }
     }
@@ -347,7 +347,7 @@ impl HirPrettyPrint for Idx<Expr> {
 
 impl HirPrettyPrint for ExpRow {
     fn pretty<A: BodyArena>(&self, arena: &A) -> String {
-        format!("{}: {}", self.label.pretty(arena), self.expr.pretty(arena))
+        format!("{}={}", self.label.pretty(arena), self.expr.pretty(arena))
     }
 }
 
