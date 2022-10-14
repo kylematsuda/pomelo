@@ -255,13 +255,7 @@ impl HirPrettyPrint for Type {
         match &self.kind {
             TyKind::Missing => MISSING.to_owned(),
             TyKind::Var(v) => v.pretty(arena),
-            TyKind::Record { tyrows } => {
-                let mut s = String::new();
-                s.push_str("{ ");
-                s.push_str(&boxed_seq(tyrows, arena, ", "));
-                s.push_str(" }");
-                s
-            }
+            TyKind::Record { tyrows } => format!("{{ {} }}", boxed_seq(tyrows, arena, ", ")),
             TyKind::Function { domain, range } => {
                 format!("{} -> {}", domain.pretty(arena), range.pretty(arena))
             }
@@ -292,7 +286,7 @@ impl HirPrettyPrint for Expr {
     fn pretty<A: BodyArena>(&self, arena: &A) -> String {
         match &self.kind {
             ExprKind::Missing => MISSING.to_owned(),
-            ExprKind::Seq { exprs } => boxed_seq(exprs, arena, "; "),
+            ExprKind::Seq { exprs } => format!("({})", boxed_seq(exprs, arena, "; ")),
             ExprKind::Scon(s) => s.pretty(arena),
             ExprKind::VId { op, longvid } => {
                 format!("{}{}", op_str(*op), longvid.pretty(arena))
@@ -306,7 +300,7 @@ impl HirPrettyPrint for Expr {
             }
             ExprKind::Fn { match_ } => {
                 let matches = boxed_seq(match_, arena, " | ");
-                format!("fn {}", matches)
+                format!("(fn {})", matches)
             }
             ExprKind::Let { dec, expr } => {
                 format!("let {} in {} end", dec.pretty(arena), expr.pretty(arena))
