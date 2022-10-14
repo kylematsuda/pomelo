@@ -26,7 +26,7 @@ impl AstNode for Ty {
         let out = match node.kind() {
             FUN_TY => Self::Fun(FunTy { syntax: node }),
             TUPLE_TY_EXP => Self::Tuple(TupleTy { syntax: node }),
-            TY_CON => Self::Cons(ConsTy { syntax: node }),
+            CON_TY => Self::Cons(ConsTy { syntax: node }),
             RECORD_TY => Self::Record(RecordTy { syntax: node }),
             TYVAR_TY => Self::TyVar(TyVarTy { syntax: node }),
             _ => return None,
