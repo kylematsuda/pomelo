@@ -109,8 +109,9 @@ val part_two = simulate 256 initial_timers
                         WHITESPACE@64..65
                         COLON@65..66 ":"
                         WHITESPACE@66..67
-                        LONG_TY_CON@67..73
-                          TY_CON@67..73 "string"
+                        CON_TY@67..73
+                          LONG_TY_CON@67..73
+                            TY_CON@67..73 "string"
                       R_PAREN@73..74 ")"
                       WHITESPACE@74..75
                       EQ@75..76 "="

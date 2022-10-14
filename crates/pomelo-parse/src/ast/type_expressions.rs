@@ -16,7 +16,7 @@ impl AstNode for Ty {
     type Language = crate::language::SML;
 
     fn can_cast(kind: SyntaxKind) -> bool {
-        matches!(kind, FUN_TY | TUPLE_TY_EXP | TY_CON | RECORD_TY | TYVAR_TY)
+        matches!(kind, FUN_TY | TUPLE_TY_EXP | CON_TY | RECORD_TY | TYVAR_TY)
     }
 
     fn cast(node: SyntaxNode) -> Option<Self>
@@ -92,7 +92,7 @@ pub struct ConsTy {
     syntax: SyntaxNode,
 }
 
-impl_ast_node!(ConsTy, TY_CON);
+impl_ast_node!(ConsTy, CON_TY);
 
 impl ConsTy {
     pub fn tys(&self) -> impl Iterator<Item = ast::Ty> {

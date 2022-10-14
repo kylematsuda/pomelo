@@ -976,15 +976,18 @@ mod tests {
                   WHITESPACE@25..26
                   COLON@26..27 ":"
                   WHITESPACE@27..28
-                  TY_CON@28..41
-                    LONG_TY_CON@28..31
-                      TY_CON@28..31 "int"
+                  CON_TY@28..41
+                    CON_TY@28..31
+                      LONG_TY_CON@28..31
+                        TY_CON@28..31 "int"
                     WHITESPACE@31..32
-                    LONG_TY_CON@32..36
-                      TY_CON@32..36 "list"
+                    CON_TY@32..36
+                      LONG_TY_CON@32..36
+                        TY_CON@32..36 "list"
                     WHITESPACE@36..37
-                    LONG_TY_CON@37..41
-                      TY_CON@37..41 "list"
+                    CON_TY@37..41
+                      LONG_TY_CON@37..41
+                        TY_CON@37..41 "list"
             "#]],
         )
     }

@@ -45,7 +45,7 @@ fn star_ident(p: &Parser) -> bool {
 fn tycon_seq(p: &mut Parser) {
     grammar::descend_flat(
         p,
-        TY_CON,
+        CON_TY,
         ty_atom_or_longtycon,
         |p| non_star_ident(p),
         ty_atom_or_longtycon,
@@ -70,6 +70,7 @@ fn ty_atom_or_longtycon(p: &mut Parser) {
         p.eat_trivia();
         ty_atom(p);
     } else if p.peek() == IDENT {
+        let _ng = p.start_node(CON_TY);
         p.eat_trivia();
         longtycon(p);
     }
@@ -201,16 +202,18 @@ mod tests {
                     LAB@16..17 "c"
                     COLON@17..18 ":"
                     WHITESPACE@18..19
-                    LONG_TY_CON@19..22
-                      TY_CON@19..22 "int"
+                    CON_TY@19..22
+                      LONG_TY_CON@19..22
+                        TY_CON@19..22 "int"
                   COMMA@22..23 ","
                   WHITESPACE@23..24
                   TY_ROW@24..38
                     LAB@24..30 "apples"
                     COLON@30..31 ":"
                     WHITESPACE@31..32
-                    LONG_TY_CON@32..38
-                      TY_CON@32..38 "orange"
+                    CON_TY@32..38
+                      LONG_TY_CON@32..38
+                        TY_CON@32..38 "orange"
                   WHITESPACE@38..39
                   R_BRACE@39..40 "}"
             "#]],
@@ -224,27 +227,32 @@ mod tests {
             super::ty,
             "'a list list list 'b test int",
             expect![[r#"
-                TY_CON@0..29
+                CON_TY@0..29
                   TYVAR_TY@0..2
                     TYVAR@0..2 "'a"
                   WHITESPACE@2..3
-                  LONG_TY_CON@3..7
-                    TY_CON@3..7 "list"
+                  CON_TY@3..7
+                    LONG_TY_CON@3..7
+                      TY_CON@3..7 "list"
                   WHITESPACE@7..8
-                  LONG_TY_CON@8..12
-                    TY_CON@8..12 "list"
+                  CON_TY@8..12
+                    LONG_TY_CON@8..12
+                      TY_CON@8..12 "list"
                   WHITESPACE@12..13
-                  LONG_TY_CON@13..17
-                    TY_CON@13..17 "list"
+                  CON_TY@13..17
+                    LONG_TY_CON@13..17
+                      TY_CON@13..17 "list"
                   WHITESPACE@17..18
                   TYVAR_TY@18..20
                     TYVAR@18..20 "'b"
                   WHITESPACE@20..21
-                  LONG_TY_CON@21..25
-                    TY_CON@21..25 "test"
+                  CON_TY@21..25
+                    LONG_TY_CON@21..25
+                      TY_CON@21..25 "test"
                   WHITESPACE@25..26
-                  LONG_TY_CON@26..29
-                    TY_CON@26..29 "int"
+                  CON_TY@26..29
+                    LONG_TY_CON@26..29
+                      TY_CON@26..29 "int"
             "#]],
         )
     }
@@ -262,13 +270,15 @@ mod tests {
                   WHITESPACE@2..3
                   STAR@3..4 "*"
                   WHITESPACE@4..5
-                  LONG_TY_CON@5..8
-                    TY_CON@5..8 "int"
+                  CON_TY@5..8
+                    LONG_TY_CON@5..8
+                      TY_CON@5..8 "int"
                   WHITESPACE@8..9
                   STAR@9..10 "*"
                   WHITESPACE@10..11
-                  LONG_TY_CON@11..15
-                    TY_CON@11..15 "real"
+                  CON_TY@11..15
+                    LONG_TY_CON@11..15
+                      TY_CON@11..15 "real"
                   WHITESPACE@15..16
                   STAR@16..17 "*"
                   WHITESPACE@17..18
@@ -277,17 +287,19 @@ mod tests {
                   WHITESPACE@20..21
                   STAR@21..22 "*"
                   WHITESPACE@22..23
-                  TY_CON@23..30
+                  CON_TY@23..30
                     TYVAR_TY@23..25
                       TYVAR@23..25 "'c"
                     WHITESPACE@25..26
-                    LONG_TY_CON@26..30
-                      TY_CON@26..30 "list"
+                    CON_TY@26..30
+                      LONG_TY_CON@26..30
+                        TY_CON@26..30 "list"
                   WHITESPACE@30..31
                   STAR@31..32 "*"
                   WHITESPACE@32..33
-                  LONG_TY_CON@33..39
-                    TY_CON@33..39 "string"
+                  CON_TY@33..39
+                    LONG_TY_CON@33..39
+                      TY_CON@33..39 "string"
             "#]],
         )
     }
@@ -300,20 +312,23 @@ mod tests {
             "int -> real -> int -> 'a",
             expect![[r#"
                 FUN_TY@0..24
-                  LONG_TY_CON@0..3
-                    TY_CON@0..3 "int"
+                  CON_TY@0..3
+                    LONG_TY_CON@0..3
+                      TY_CON@0..3 "int"
                   WHITESPACE@3..4
                   THIN_ARROW@4..6 "->"
                   WHITESPACE@6..7
                   FUN_TY@7..24
-                    LONG_TY_CON@7..11
-                      TY_CON@7..11 "real"
+                    CON_TY@7..11
+                      LONG_TY_CON@7..11
+                        TY_CON@7..11 "real"
                     WHITESPACE@11..12
                     THIN_ARROW@12..14 "->"
                     WHITESPACE@14..15
                     FUN_TY@15..24
-                      LONG_TY_CON@15..18
-                        TY_CON@15..18 "int"
+                      CON_TY@15..18
+                        LONG_TY_CON@15..18
+                          TY_CON@15..18 "int"
                       WHITESPACE@18..19
                       THIN_ARROW@19..21 "->"
                       WHITESPACE@21..22
@@ -333,20 +348,23 @@ mod tests {
                 FUN_TY@0..26
                   L_PAREN@0..1 "("
                   FUN_TY@1..12
-                    LONG_TY_CON@1..4
-                      TY_CON@1..4 "int"
+                    CON_TY@1..4
+                      LONG_TY_CON@1..4
+                        TY_CON@1..4 "int"
                     WHITESPACE@4..5
                     THIN_ARROW@5..7 "->"
                     WHITESPACE@7..8
-                    LONG_TY_CON@8..12
-                      TY_CON@8..12 "real"
+                    CON_TY@8..12
+                      LONG_TY_CON@8..12
+                        TY_CON@8..12 "real"
                   R_PAREN@12..13 ")"
                   WHITESPACE@13..14
                   THIN_ARROW@14..16 "->"
                   WHITESPACE@16..17
                   FUN_TY@17..26
-                    LONG_TY_CON@17..20
-                      TY_CON@17..20 "int"
+                    CON_TY@17..20
+                      LONG_TY_CON@17..20
+                        TY_CON@17..20 "int"
                     WHITESPACE@20..21
                     THIN_ARROW@21..23 "->"
                     WHITESPACE@23..24

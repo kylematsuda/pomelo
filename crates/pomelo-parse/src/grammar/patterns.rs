@@ -773,12 +773,13 @@ mod tests {
                     WHITESPACE@7..8
                     COLON@8..9 ":"
                     WHITESPACE@9..10
-                    TY_CON@10..17
+                    CON_TY@10..17
                       TYVAR_TY@10..12
                         TYVAR@10..12 "'a"
                       WHITESPACE@12..13
-                      LONG_TY_CON@13..17
-                        TY_CON@13..17 "list"
+                      CON_TY@13..17
+                        LONG_TY_CON@13..17
+                          TY_CON@13..17 "list"
                   WHITESPACE@17..18
                   AS_KW@18..20 "as"
                   WHITESPACE@20..21
@@ -826,8 +827,9 @@ mod tests {
                   WHITESPACE@9..10
                   COLON@10..11 ":"
                   WHITESPACE@11..12
-                  LONG_TY_CON@12..20
-                    TY_CON@12..20 "myrecord"
+                  CON_TY@12..20
+                    LONG_TY_CON@12..20
+                      TY_CON@12..20 "myrecord"
             "#]],
         )
     }
