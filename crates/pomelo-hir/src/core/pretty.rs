@@ -17,12 +17,16 @@ fn op_str(op: bool) -> &'static str {
     }
 }
 
-fn boxed_seq<N: HirPrettyPrint, A: BodyArena>(nodes: &Box<[N]>, arena: &A, joiner: &str) -> String {
-    nodes
-        .into_iter()
-        .map(|n| n.pretty(arena))
-        .collect::<Vec<_>>()
-        .join(joiner)
+// fn boxed_seq<N: HirPrettyPrint, A: BodyArena>(nodes: &Box<[N]>, arena: &A, joiner: &str) -> String {
+//     nodes
+//         .into_iter()
+//         .map(|n| n.pretty(arena))
+//         .collect::<Vec<_>>()
+//         .join(joiner)
+// }
+
+fn boxed_seq<N: HirPrettyPrint, A: BodyArena>(nodes: &Box<[N]>, arena: &A) -> Vec<String> {
+    nodes.into_iter().map(|n| n.pretty(arena)).collect()
 }
 
 pub(crate) trait HirPrettyPrint {
@@ -43,7 +47,7 @@ impl HirPrettyPrint for Dec {
     fn pretty<A: BodyArena>(&self, arena: &A) -> String {
         match &self.kind {
             DecKind::Missing => MISSING.to_owned(),
-            DecKind::Seq { decs } => boxed_seq(decs, arena, "; "),
+            DecKind::Seq { decs } => boxed_seq(decs, arena).join("; "),
             DecKind::Val {
                 rec,
                 tyvarseq,
@@ -53,7 +57,7 @@ impl HirPrettyPrint for Dec {
                 let rec = if *rec { "rec " } else { "" };
                 format!(
                     "val {} {}{} = {}",
-                    boxed_seq(tyvarseq, arena, " "),
+                    boxed_seq(tyvarseq, arena).join(" "),
                     rec,
                     pat.pretty(arena),
                     expr.pretty(arena)
@@ -66,7 +70,7 @@ impl HirPrettyPrint for Dec {
             } => {
                 format!(
                     "type {} {} = {}",
-                    boxed_seq(tyvarseq, arena, " "),
+                    boxed_seq(tyvarseq, arena).join(" "),
                     tycon.pretty(arena),
                     ty.pretty(arena),
                 )
@@ -84,8 +88,8 @@ impl HirPrettyPrint for Dec {
             DecKind::Abstype { databinds, decs } => {
                 format!(
                     "abstype {} with {} end",
-                    boxed_seq(databinds, arena, " and "),
-                    boxed_seq(decs, arena, "; "),
+                    boxed_seq(databinds, arena).join(" and "),
+                    boxed_seq(decs, arena).join("; "),
                 )
             }
             DecKind::Local {
@@ -94,15 +98,15 @@ impl HirPrettyPrint for Dec {
             } => {
                 format!(
                     "local {} in {} end",
-                    boxed_seq(inner_decs, arena, "; "),
-                    boxed_seq(outer_decs, arena, "; ")
+                    boxed_seq(inner_decs, arena).join("; "),
+                    boxed_seq(outer_decs, arena).join("; ")
                 )
             }
             DecKind::Exception { exbind } => {
                 format!("exception {}", exbind.pretty(arena))
             }
             DecKind::Open { longstrids } => {
-                format!("open {}", boxed_seq(longstrids, arena, " "))
+                format!("open {}", boxed_seq(longstrids, arena).join(" "))
             }
             DecKind::Fixity { fixity, vids } => {
                 let (dec_str, val_str) = match fixity {
@@ -118,7 +122,7 @@ impl HirPrettyPrint for Dec {
                     }
                     Fixity::Nonfix => ("nonfix", "".to_owned()),
                 };
-                format!("{} {} {}", dec_str, val_str, boxed_seq(vids, arena, " "))
+                format!("{} {} {}", dec_str, val_str, boxed_seq(vids, arena).join(" "))
             }
         }
     }
@@ -134,9 +138,9 @@ impl HirPrettyPrint for DataBind {
     fn pretty<A: BodyArena>(&self, arena: &A) -> String {
         format!(
             "{} {} = {}",
-            boxed_seq(&self.tyvarseq, arena, " "),
+            boxed_seq(&self.tyvarseq, arena).join(" "),
             self.tycon.pretty(arena),
-            boxed_seq(&self.conbinds, arena, " | ")
+            boxed_seq(&self.conbinds, arena).join(" | ")
         )
     }
 }
@@ -190,13 +194,7 @@ impl HirPrettyPrint for Pat {
             PatKind::VId { op, longvid } => {
                 format!("{}{}", op_str(*op), longvid.pretty(arena))
             }
-            PatKind::Record { rows } => {
-                let mut s = String::new();
-                s.push_str("{ ");
-                s.push_str(&boxed_seq(rows, arena, ", "));
-                s.push_str(" }");
-                s
-            }
+            PatKind::Record { rows } => format!("{{ {} }}", boxed_seq(rows, arena).join(", ")),
             PatKind::Typed { pat, ty } => {
                 format!("{} : {}", pat.pretty(arena), ty.pretty(arena))
             }
@@ -255,16 +253,14 @@ impl HirPrettyPrint for Type {
         match &self.kind {
             TyKind::Missing => MISSING.to_owned(),
             TyKind::Var(v) => v.pretty(arena),
-            TyKind::Record { tyrows } => format!("{{ {} }}", boxed_seq(tyrows, arena, ", ")),
+            TyKind::Record { tyrows } => format!("{{ {} }}", boxed_seq(tyrows, arena).join(", ")),
             TyKind::Function { domain, range } => {
                 format!("{} -> {}", domain.pretty(arena), range.pretty(arena))
             }
             TyKind::Constructed { tyseq, longtycon } => {
-                let mut s = String::new();
-                s.push_str(&boxed_seq(tyseq, arena, " "));
-                s.push(' ');
-                s.push_str(&longtycon.pretty(arena));
-                s
+                let mut tys = boxed_seq(tyseq, arena);
+                tys.push(longtycon.pretty(arena));
+                tys.join(" ")
             }
         }
     }
@@ -278,7 +274,7 @@ impl HirPrettyPrint for Idx<Type> {
 
 impl HirPrettyPrint for TyRow {
     fn pretty<A: BodyArena>(&self, arena: &A) -> String {
-        format!("{}: {}", self.label.pretty(arena), self.ty.pretty(arena))
+        format!("{}:{}", self.label.pretty(arena), self.ty.pretty(arena))
     }
 }
 
@@ -286,20 +282,16 @@ impl HirPrettyPrint for Expr {
     fn pretty<A: BodyArena>(&self, arena: &A) -> String {
         match &self.kind {
             ExprKind::Missing => MISSING.to_owned(),
-            ExprKind::Seq { exprs } => format!("({})", boxed_seq(exprs, arena, "; ")),
+            ExprKind::Seq { exprs } => format!("({})", boxed_seq(exprs, arena).join("; ")),
             ExprKind::Scon(s) => s.pretty(arena),
             ExprKind::VId { op, longvid } => {
                 format!("{}{}", op_str(*op), longvid.pretty(arena))
             }
             ExprKind::Record { rows } => {
-                let mut s = String::new();
-                s.push_str("{ ");
-                s.push_str(&boxed_seq(rows, arena, ", "));
-                s.push_str(" }");
-                s
+                format!("{{ {} }}", boxed_seq(rows, arena).join(", "))
             }
             ExprKind::Fn { match_ } => {
-                let matches = boxed_seq(match_, arena, " | ");
+                let matches = boxed_seq(match_, arena).join(" | ");
                 format!("(fn {})", matches)
             }
             ExprKind::Let { dec, expr } => {
@@ -323,7 +315,7 @@ impl HirPrettyPrint for Expr {
                 format!(
                     "{} handle {}",
                     expr.pretty(arena),
-                    boxed_seq(match_, arena, " | ")
+                    boxed_seq(match_, arena).join(" | ")
                 )
             }
             ExprKind::Raise { expr } => {
@@ -403,15 +395,9 @@ impl HirPrettyPrint for VId {
 
 impl HirPrettyPrint for LongVId {
     fn pretty<A: BodyArena>(&self, arena: &A) -> String {
-        let mut s = boxed_seq(&self.strids, arena, ".");
-
-        // FIXME: ugly
-        if s.len() > 0 {
-            s.push('.');
-        }
-
-        s.push_str(&self.vid.pretty(arena));
-        s
+        let mut s = boxed_seq(&self.strids, arena);
+        s.push(self.vid.pretty(arena));
+        s.join(".")
     }
 }
 
@@ -435,15 +421,9 @@ impl HirPrettyPrint for StrId {
 
 impl HirPrettyPrint for LongStrId {
     fn pretty<A: BodyArena>(&self, arena: &A) -> String {
-        let mut s = boxed_seq(&self.strid_path, arena, ".");
-
-        // FIXME: ugly
-        if s.len() > 0 {
-            s.push('.');
-        }
-
-        s.push_str(&self.strid.pretty(arena));
-        s
+        let mut s = boxed_seq(&self.strid_path, arena);
+        s.push(self.strid.pretty(arena));
+        s.join(".")
     }
 }
 
@@ -485,13 +465,8 @@ impl HirPrettyPrint for TyCon {
 
 impl HirPrettyPrint for LongTyCon {
     fn pretty<A: BodyArena>(&self, arena: &A) -> String {
-        let mut s = boxed_seq(&self.strids, arena, ".");
-
-        // FIXME: ugly
-        if s.len() > 0 {
-            s.push('.');
-        }
-        s.push_str(&self.tycon.pretty(arena));
-        s
+        let mut s = boxed_seq(&self.strids, arena);
+        s.push(self.tycon.pretty(arena));
+        s.join(".")
     }
 }
