@@ -17,14 +17,6 @@ fn op_str(op: bool) -> &'static str {
     }
 }
 
-// fn boxed_seq<N: HirPrettyPrint, A: BodyArena>(nodes: &Box<[N]>, arena: &A, joiner: &str) -> String {
-//     nodes
-//         .into_iter()
-//         .map(|n| n.pretty(arena))
-//         .collect::<Vec<_>>()
-//         .join(joiner)
-// }
-
 fn boxed_seq<N: HirPrettyPrint, A: BodyArena>(nodes: &Box<[N]>, arena: &A) -> Vec<String> {
     nodes.into_iter().map(|n| n.pretty(arena)).collect()
 }
@@ -366,15 +358,6 @@ impl HirPrettyPrint for Label {
     }
 }
 
-// impl HirPrettyPrint for Idx<Label> {
-//     fn pretty<A: BodyArena>(&self, arena: &A) -> String {
-//         arena
-//             .get_label(*self)
-//             .map(|l| l.pretty(arena))
-//             .expect("index is valid")
-//     }
-// }
-
 impl HirPrettyPrint for VId {
     fn pretty<A: BodyArena>(&self, arena: &A) -> String {
         match self {
@@ -383,15 +366,6 @@ impl HirPrettyPrint for VId {
         }
     }
 }
-
-// impl HirPrettyPrint for Idx<VId> {
-//     fn pretty<A: BodyArena>(&self, arena: &A) -> String {
-//         arena
-//             .get_vid(*self)
-//             .map(|v| v.pretty(arena))
-//             .expect("index is valid")
-//     }
-// }
 
 impl HirPrettyPrint for LongVId {
     fn pretty<A: BodyArena>(&self, arena: &A) -> String {
@@ -410,15 +384,6 @@ impl HirPrettyPrint for StrId {
     }
 }
 
-// impl HirPrettyPrint for Idx<StrId> {
-//     fn pretty<A: BodyArena>(&self, arena: &A) -> String {
-//         arena
-//             .get_strid(*self)
-//             .map(|s| s.pretty(arena))
-//             .expect("index is valid")
-//     }
-// }
-
 impl HirPrettyPrint for LongStrId {
     fn pretty<A: BodyArena>(&self, arena: &A) -> String {
         let mut s = boxed_seq(&self.strid_path, arena);
@@ -436,15 +401,6 @@ impl HirPrettyPrint for TyVar {
     }
 }
 
-// impl HirPrettyPrint for Idx<TyVar> {
-//     fn pretty<A: BodyArena>(&self, arena: &A) -> String {
-//         arena
-//             .get_tyvar(*self)
-//             .map(|t| t.pretty(arena))
-//             .expect("index is valid")
-//     }
-// }
-
 impl HirPrettyPrint for TyCon {
     fn pretty<A: BodyArena>(&self, arena: &A) -> String {
         match self {
@@ -453,15 +409,6 @@ impl HirPrettyPrint for TyCon {
         }
     }
 }
-
-// impl HirPrettyPrint for Idx<TyCon> {
-//     fn pretty<A: BodyArena>(&self, arena: &A) -> String {
-//         arena
-//             .get_tycon(*self)
-//             .map(|t| t.pretty(arena))
-//             .expect("index is valid")
-//     }
-// }
 
 impl HirPrettyPrint for LongTyCon {
     fn pretty<A: BodyArena>(&self, arena: &A) -> String {
