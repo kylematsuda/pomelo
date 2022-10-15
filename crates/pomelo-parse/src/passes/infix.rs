@@ -142,19 +142,18 @@ fn rearrange_infix(tree: SyntaxTree, node: SyntaxNode, ctx: &mut Context) -> Syn
     tree
 }
 
-// Panics if called on the root node.
 fn switch_tree(node: &SyntaxNode, new_tree: &SyntaxTree) -> SyntaxNode {
-    let parent_ptr = SyntaxNodePtr::new(
-        &node
-            .parent()
-            .expect("an expression cannot be the root of the tree"),
-    );
-    let index = node.index();
-    let parent_node = parent_ptr.to_node(&new_tree.syntax());
+    if let Some(parent_node) = node.parent() {
+        let parent_ptr = SyntaxNodePtr::new(&parent_node);
+        let index = node.index();
+        let parent_node = parent_ptr.to_node(&new_tree.syntax());
 
-    match parent_node.children_with_tokens().nth(index) {
-        Some(NodeOrToken::Node(node)) => node,
-        _ => panic!("number of children hasn't changed"),
+        match parent_node.children_with_tokens().nth(index) {
+            Some(NodeOrToken::Node(node)) => node,
+            _ => panic!("number of children hasn't changed"),
+        }
+    } else {
+        new_tree.syntax()
     }
 }
 
@@ -163,18 +162,19 @@ fn fix_infix(tree: SyntaxTree, expr: SyntaxNode, ctx: &Context) -> SyntaxTree {
     let mut new_errors = vec![];
     let new_green = fix_infix_bp(&mut peek, ctx, &mut new_errors, 0).unwrap();
 
-    let old_parent = expr.parent().unwrap();
-    let new_parent = old_parent
-        .green()
-        .into_owned()
-        .replace_child(expr.index(), new_green.into());
-
-    let new_tree = old_parent.replace_with(new_parent);
-
     let (_, mut errors) = tree.into_parts();
     errors.append(&mut new_errors);
 
-    SyntaxTree::new(new_tree, errors)
+    let new_node = if let Some(old_parent) = expr.parent() {
+        let new_parent = old_parent
+            .green()
+            .into_owned()
+            .replace_child(expr.index(), new_green.into());
+        old_parent.replace_with(new_parent)
+    } else {
+        new_green
+    };
+    SyntaxTree::new(new_node, errors)
 }
 
 // Pratt parsing
