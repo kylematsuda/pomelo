@@ -295,7 +295,7 @@ mod tests {
     }
 
     #[test]
-    fn valbind_rec_while_desugar() {
+    fn desugared_while_val_rec() {
         check_with_f(
             false,
             crate::grammar::declaration,
