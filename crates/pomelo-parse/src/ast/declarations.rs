@@ -197,6 +197,12 @@ pub struct OpenDec {
 
 impl_ast_node!(OpenDec, OPEN_DEC);
 
+impl OpenDec {
+    pub fn longstrids(&self) -> impl Iterator<Item = ast::LongStrId> {
+        support::children(self.syntax())
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SeqDec {
     syntax: SyntaxNode,

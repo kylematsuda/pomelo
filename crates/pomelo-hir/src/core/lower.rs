@@ -1,9 +1,9 @@
 use crate::arena::Idx;
 use crate::core::{
-    AstId, BodyArena, Dec, DecKind, ExpRow, Expr, ExprKind, FloatWrapper, MRule, NodeParent, Pat,
-    PatKind, PatRow, Scon, TyKind, TyRow, Type,
+    AstId, BodyArena, Dec, DecKind, ExpRow, Expr, ExprKind, Fixity, FloatWrapper, MRule,
+    NodeParent, Pat, PatKind, PatRow, Scon, TyKind, TyRow, Type,
 };
-use crate::identifiers::{BuiltIn, Label, LongTyCon, LongVId, TyVar, VId};
+use crate::identifiers::{BuiltIn, Label, LongStrId, LongTyCon, LongVId, TyCon, TyVar, VId};
 use pomelo_parse::{ast, AstNode};
 
 pub(crate) trait HirLower: Sized {
@@ -95,7 +95,7 @@ impl HirLower for Dec {
 
         let dec = Self {
             kind,
-            ast_id: AstId::Node(arena.alloc_ast_id(&ast)) 
+            ast_id: AstId::Node(arena.alloc_ast_id(&ast)),
         };
         arena.alloc_dec(dec)
     }
@@ -122,16 +122,76 @@ impl HirLowerGenerated for Dec {
 }
 
 impl Dec {
-    fn lower_val<A: BodyArena>(_dec: &ast::ValDec, _arena: &mut A) -> DecKind {
-        todo!()
+    fn make_seq<A: BodyArena>(parent: NodeParent, kinds: Vec<DecKind>, arena: &mut A) -> DecKind {
+        let decs = kinds
+            .into_iter()
+            .map(|kind| Dec::generated(parent.clone(), kind, arena))
+            .collect();
+        DecKind::Seq { decs }
+    }
+
+    fn lower_val<A: BodyArena>(dec: &ast::ValDec, arena: &mut A) -> DecKind {
+        let rec = dec.rec();
+        let tyvarseq: Box<[TyVar]> = dec
+            .tyvarseq()
+            .map(|t| TyVar::from_token(Some(t), arena))
+            .collect();
+
+        let bindings = dec
+            .bindings()
+            .map(|b| {
+                let pat = Pat::lower_opt(b.pat(), arena);
+                let expr = Expr::lower_opt(b.expr(), arena);
+                DecKind::Val {
+                    rec,
+                    tyvarseq: tyvarseq.clone(),
+                    pat,
+                    expr,
+                }
+            })
+            .collect::<Vec<_>>();
+
+        if bindings.len() == 1 {
+            bindings.into_iter().next().unwrap()
+        } else {
+            let origin = NodeParent::from_dec(&ast::Dec::from(dec.clone()), arena);
+            Self::make_seq(origin, bindings, arena)
+        }
     }
 
     fn lower_fun<A: BodyArena>(_dec: &ast::FunDec, _arena: &mut A) -> DecKind {
         todo!()
     }
 
-    fn lower_type<A: BodyArena>(_dec: &ast::TypeDec, _arena: &mut A) -> DecKind {
+    fn _lower_fvalbind<A: BodyArena>(_fvalbind: &ast::FvalBind, _arena: &mut A) -> DecKind {
+        // FIXME: 
         todo!()
+    }
+
+    fn lower_type<A: BodyArena>(dec: &ast::TypeDec, arena: &mut A) -> DecKind {
+        let bindings = dec
+            .bindings()
+            .map(|b| {
+                let tyvarseq = b
+                    .tyvarseq()
+                    .map(|t| TyVar::from_token(Some(t), arena))
+                    .collect();
+                let tycon = TyCon::from_token(b.tycon(), arena);
+                let ty = Type::lower_opt(b.ty(), arena);
+                DecKind::Ty {
+                    tyvarseq,
+                    tycon,
+                    ty,
+                }
+            })
+            .collect::<Vec<_>>();
+
+        if bindings.len() == 1 {
+            bindings.into_iter().next().unwrap()
+        } else {
+            let origin = NodeParent::from_dec(&ast::Dec::from(dec.clone()), arena);
+            Self::make_seq(origin, bindings, arena)
+        }
     }
 
     fn lower_datatype<A: BodyArena>(_dec: &ast::DatatypeDec, _arena: &mut A) -> DecKind {
@@ -154,24 +214,52 @@ impl Dec {
         todo!()
     }
 
-    fn lower_open<A: BodyArena>(_dec: &ast::OpenDec, _arena: &mut A) -> DecKind {
-        todo!()
+    fn lower_open<A: BodyArena>(dec: &ast::OpenDec, arena: &mut A) -> DecKind {
+        let longstrids = dec
+            .longstrids()
+            .map(|s| LongStrId::from_node(&s, arena))
+            .collect();
+        DecKind::Open { longstrids }
     }
 
-    fn lower_infix<A: BodyArena>(_dec: &ast::InfixDec, _arena: &mut A) -> DecKind {
-        todo!()
+    fn lower_infix<A: BodyArena>(dec: &ast::InfixDec, arena: &mut A) -> DecKind {
+        let vids = dec
+            .vids()
+            .map(|v| VId::from_token(Some(v), arena))
+            .collect();
+        let d = dec.fixity().map(|f| f.value());
+        DecKind::Fixity {
+            fixity: Fixity::Left(d),
+            vids,
+        }
     }
 
-    fn lower_infixr<A: BodyArena>(_dec: &ast::InfixrDec, _arena: &mut A) -> DecKind {
-        todo!()
+    fn lower_infixr<A: BodyArena>(dec: &ast::InfixrDec, arena: &mut A) -> DecKind {
+        let vids = dec
+            .vids()
+            .map(|v| VId::from_token(Some(v), arena))
+            .collect();
+        let d = dec.fixity().map(|f| f.value());
+        DecKind::Fixity {
+            fixity: Fixity::Right(d),
+            vids,
+        }
     }
 
-    fn lower_nonfix<A: BodyArena>(_dec: &ast::NonfixDec, _arena: &mut A) -> DecKind {
-        todo!()
+    fn lower_nonfix<A: BodyArena>(dec: &ast::NonfixDec, arena: &mut A) -> DecKind {
+        let vids = dec
+            .vids()
+            .map(|v| VId::from_token(Some(v), arena))
+            .collect();
+        DecKind::Fixity {
+            fixity: Fixity::Nonfix,
+            vids,
+        }
     }
 
-    fn lower_seq<A: BodyArena>(_dec: &ast::SeqDec, _arena: &mut A) -> DecKind {
-        todo!()
+    fn lower_seq<A: BodyArena>(dec: &ast::SeqDec, arena: &mut A) -> DecKind {
+        let decs = dec.declarations().map(|d| Self::lower(d, arena)).collect();
+        DecKind::Seq { decs }
     }
 }
 
