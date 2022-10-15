@@ -370,6 +370,10 @@ impl<'a> Parser<'a> {
     pub fn parse_type(self) -> SyntaxTree {
         self.parse_inner(crate::grammar::ty)
     }
+
+    pub fn parse_dec(self) -> SyntaxTree {
+        self.parse_inner(crate::grammar::declaration)
+    }
 }
 
 #[derive(Debug, Clone)]

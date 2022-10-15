@@ -15,6 +15,10 @@ impl ValBind {
     pub fn expr(&self) -> Option<ast::Expr> {
         support::child(self.syntax())
     }
+
+    pub fn rec(&self) -> bool {
+        support::token(self.syntax(), SyntaxKind::REC_KW).is_some()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

@@ -295,6 +295,70 @@ mod tests {
     }
 
     #[test]
+    fn valbind_rec_while_desugar() {
+        check_with_f(
+            false,
+            crate::grammar::declaration,
+            "val rec x = fn () => if exp1 then (exp2; x()) else ()",
+            expect![[r#"
+                VAL_DEC@0..53
+                  VAL_KW@0..3 "val"
+                  WHITESPACE@3..4
+                  VAL_BIND@4..53
+                    REC_KW@4..7 "rec"
+                    WHITESPACE@7..8
+                    VID_PAT@8..9
+                      LONG_VID@8..9
+                        VID@8..9 "x"
+                    WHITESPACE@9..10
+                    EQ@10..11 "="
+                    WHITESPACE@11..12
+                    FN_EXP@12..53
+                      FN_KW@12..14 "fn"
+                      WHITESPACE@14..15
+                      MATCH@15..53
+                        MRULE@15..53
+                          UNIT_PAT@15..17
+                            L_PAREN@15..16 "("
+                            R_PAREN@16..17 ")"
+                          WHITESPACE@17..18
+                          THICK_ARROW@18..20 "=>"
+                          WHITESPACE@20..21
+                          IF_EXP@21..53
+                            IF_KW@21..23 "if"
+                            WHITESPACE@23..24
+                            VID_EXP@24..28
+                              LONG_VID@24..28
+                                VID@24..28 "exp1"
+                            WHITESPACE@28..29
+                            THEN_KW@29..33 "then"
+                            WHITESPACE@33..34
+                            SEQ_EXP@34..45
+                              L_PAREN@34..35 "("
+                              VID_EXP@35..39
+                                LONG_VID@35..39
+                                  VID@35..39 "exp2"
+                              SEMICOLON@39..40 ";"
+                              WHITESPACE@40..41
+                              INFIX_OR_APP_EXP@41..44
+                                VID_EXP@41..42
+                                  LONG_VID@41..42
+                                    VID@41..42 "x"
+                                UNIT_EXP@42..44
+                                  L_PAREN@42..43 "("
+                                  R_PAREN@43..44 ")"
+                              R_PAREN@44..45 ")"
+                            WHITESPACE@45..46
+                            ELSE_KW@46..50 "else"
+                            WHITESPACE@50..51
+                            UNIT_EXP@51..53
+                              L_PAREN@51..52 "("
+                              R_PAREN@52..53 ")"
+            "#]],
+        )
+    }
+
+    #[test]
     fn bad_valbind_rec() {
         // val rec can only bind a fn-match exp
         check_with_f(

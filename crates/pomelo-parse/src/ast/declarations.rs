@@ -119,10 +119,6 @@ impl ValDec {
     pub fn bindings(&self) -> impl Iterator<Item = ast::ValBind> {
         support::children(self.syntax())
     }
-
-    pub fn rec(&self) -> bool {
-        support::token(self.syntax(), REC_KW).is_some()
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
