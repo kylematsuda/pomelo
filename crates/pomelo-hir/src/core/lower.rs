@@ -73,30 +73,11 @@ fn lower_list<A: BodyArena, H: HirLowerGenerated>(
     }
 }
 
-impl Dec {
-    pub fn missing<A: BodyArena>(arena: &mut A) -> Idx<Self> {
-        let d = Self {
-            kind: DecKind::Missing,
-            ast_id: AstId::Missing,
-        };
-        arena.alloc_dec(d)
-    }
+impl HirLower for Dec {
+    type AstType = ast::Dec;
 
-    pub fn mapped_at_node<A: BodyArena>(dec: ast::Dec, kind: DecKind, arena: &mut A) -> Idx<Self> {
-        let ast_id = AstId::Node(arena.alloc_ast_id(&dec));
-        let d = Self { kind, ast_id };
-        arena.alloc_dec(d)
-    }
-
-    pub fn lower_opt<A: BodyArena>(opt_dec: Option<ast::Dec>, arena: &mut A) -> Idx<Self> {
-        match opt_dec {
-            Some(dec) => Self::lower(dec, arena),
-            None => Self::missing(arena),
-        }
-    }
-
-    pub fn lower<A: BodyArena>(dec: ast::Dec, arena: &mut A) -> Idx<Self> {
-        match dec {
+    fn lower<A: BodyArena>(ast: Self::AstType, arena: &mut A) -> Idx<Self> {
+        let kind = match &ast {
             ast::Dec::Val(v) => Self::lower_val(v, arena),
             ast::Dec::Fun(f) => Self::lower_fun(f, arena),
             ast::Dec::Type(t) => Self::lower_type(t, arena),
@@ -110,58 +91,86 @@ impl Dec {
             ast::Dec::Infixr(i) => Self::lower_infixr(i, arena),
             ast::Dec::Nonfix(n) => Self::lower_nonfix(n, arena),
             ast::Dec::Seq(s) => Self::lower_seq(s, arena),
-        }
+        };
+
+        let dec = Self {
+            kind,
+            ast_id: AstId::Node(arena.alloc_ast_id(&ast)) 
+        };
+        arena.alloc_dec(dec)
     }
 
-    fn lower_val<A: BodyArena>(_dec: ast::ValDec, _arena: &mut A) -> Idx<Self> {
+    fn missing<A: BodyArena>(arena: &mut A) -> Idx<Self> {
+        let dec = Self {
+            kind: DecKind::Missing,
+            ast_id: AstId::Missing,
+        };
+        arena.alloc_dec(dec)
+    }
+}
+
+impl HirLowerGenerated for Dec {
+    type Kind = DecKind;
+
+    fn generated<A: BodyArena>(origin: NodeParent, kind: Self::Kind, arena: &mut A) -> Idx<Self> {
+        let dec = Self {
+            kind,
+            ast_id: AstId::Generated(origin),
+        };
+        arena.alloc_dec(dec)
+    }
+}
+
+impl Dec {
+    fn lower_val<A: BodyArena>(_dec: &ast::ValDec, _arena: &mut A) -> DecKind {
         todo!()
     }
 
-    fn lower_fun<A: BodyArena>(_dec: ast::FunDec, _arena: &mut A) -> Idx<Self> {
+    fn lower_fun<A: BodyArena>(_dec: &ast::FunDec, _arena: &mut A) -> DecKind {
         todo!()
     }
 
-    fn lower_type<A: BodyArena>(_dec: ast::TypeDec, _arena: &mut A) -> Idx<Self> {
+    fn lower_type<A: BodyArena>(_dec: &ast::TypeDec, _arena: &mut A) -> DecKind {
         todo!()
     }
 
-    fn lower_datatype<A: BodyArena>(_dec: ast::DatatypeDec, _arena: &mut A) -> Idx<Self> {
+    fn lower_datatype<A: BodyArena>(_dec: &ast::DatatypeDec, _arena: &mut A) -> DecKind {
         todo!()
     }
 
-    fn lower_replication<A: BodyArena>(_dec: ast::DatatypeRepDec, _arena: &mut A) -> Idx<Self> {
+    fn lower_replication<A: BodyArena>(_dec: &ast::DatatypeRepDec, _arena: &mut A) -> DecKind {
         todo!()
     }
 
-    fn lower_abstype<A: BodyArena>(_dec: ast::AbstypeDec, _arena: &mut A) -> Idx<Self> {
+    fn lower_abstype<A: BodyArena>(_dec: &ast::AbstypeDec, _arena: &mut A) -> DecKind {
         todo!()
     }
 
-    fn lower_exception<A: BodyArena>(_dec: ast::ExceptionDec, _arena: &mut A) -> Idx<Self> {
+    fn lower_exception<A: BodyArena>(_dec: &ast::ExceptionDec, _arena: &mut A) -> DecKind {
         todo!()
     }
 
-    fn lower_local<A: BodyArena>(_dec: ast::LocalDec, _arena: &mut A) -> Idx<Self> {
+    fn lower_local<A: BodyArena>(_dec: &ast::LocalDec, _arena: &mut A) -> DecKind {
         todo!()
     }
 
-    fn lower_open<A: BodyArena>(_dec: ast::OpenDec, _arena: &mut A) -> Idx<Self> {
+    fn lower_open<A: BodyArena>(_dec: &ast::OpenDec, _arena: &mut A) -> DecKind {
         todo!()
     }
 
-    fn lower_infix<A: BodyArena>(_dec: ast::InfixDec, _arena: &mut A) -> Idx<Self> {
+    fn lower_infix<A: BodyArena>(_dec: &ast::InfixDec, _arena: &mut A) -> DecKind {
         todo!()
     }
 
-    fn lower_infixr<A: BodyArena>(_dec: ast::InfixrDec, _arena: &mut A) -> Idx<Self> {
+    fn lower_infixr<A: BodyArena>(_dec: &ast::InfixrDec, _arena: &mut A) -> DecKind {
         todo!()
     }
 
-    fn lower_nonfix<A: BodyArena>(_dec: ast::NonfixDec, _arena: &mut A) -> Idx<Self> {
+    fn lower_nonfix<A: BodyArena>(_dec: &ast::NonfixDec, _arena: &mut A) -> DecKind {
         todo!()
     }
 
-    fn lower_seq<A: BodyArena>(_dec: ast::SeqDec, _arena: &mut A) -> Idx<Self> {
+    fn lower_seq<A: BodyArena>(_dec: &ast::SeqDec, _arena: &mut A) -> DecKind {
         todo!()
     }
 }
@@ -454,9 +463,86 @@ impl Expr {
         Self::_lower_case(originating_expr, expr1, match_arms, arena)
     }
 
-    fn lower_while<A: BodyArena>(_expr: &ast::WhileExpr, _arena: &mut A) -> ExprKind {
+    fn lower_while<A: BodyArena>(expr: &ast::WhileExpr, arena: &mut A) -> ExprKind {
+        let exp1 = Self::lower_opt(expr.expr_1(), arena);
+        let exp2 = Self::lower_opt(expr.expr_2(), arena);
+
         // Similarly, need to create new patterns out of nowhere...
-        todo!()
+        let origin = ast::Expr::from(expr.clone());
+        let parent = NodeParent::from_expr(&origin, arena);
+        let newvid = LongVId::from_vid(arena.fresh_vid());
+
+        let unitexpr = Self::generated(
+            parent.clone(),
+            ExprKind::Record { rows: Box::new([]) },
+            arena,
+        );
+        let videxpr = Self::generated(
+            parent.clone(),
+            ExprKind::VId {
+                op: false,
+                longvid: newvid.clone(),
+            },
+            arena,
+        );
+        let appexpr = Self::generated(
+            parent.clone(),
+            ExprKind::Application {
+                expr: videxpr,
+                param: unitexpr,
+            },
+            arena,
+        );
+
+        let seqexpr = Self::generated(
+            parent.clone(),
+            ExprKind::Seq {
+                exprs: Box::new([exp2, appexpr.clone()]),
+            },
+            arena,
+        );
+
+        let fn_pat = Pat::generated(
+            parent.clone(),
+            PatKind::Record { rows: Box::new([]) },
+            arena,
+        );
+        let fn_inner_expr = Self::generated(
+            parent.clone(),
+            Self::_lower_if(&origin, exp1, seqexpr, unitexpr, arena),
+            arena,
+        );
+        let match_ = Box::new([MRule {
+            pat: fn_pat,
+            expr: fn_inner_expr,
+        }]);
+
+        let fn_expr = Self::generated(parent.clone(), ExprKind::Fn { match_ }, arena);
+
+        let vidpat = Pat::generated(
+            parent.clone(),
+            PatKind::VId {
+                op: false,
+                longvid: newvid.clone(),
+            },
+            arena,
+        );
+
+        let viddec = Dec::generated(
+            parent.clone(),
+            DecKind::Val {
+                rec: true,
+                tyvarseq: Box::new([]),
+                pat: vidpat,
+                expr: fn_expr,
+            },
+            arena,
+        );
+
+        ExprKind::Let {
+            dec: viddec,
+            expr: appexpr,
+        }
     }
 
     fn lower_case<A: BodyArena>(expr: &ast::CaseExpr, arena: &mut A) -> ExprKind {

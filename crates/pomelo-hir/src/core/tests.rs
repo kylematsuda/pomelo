@@ -124,7 +124,7 @@ fn lower_seq_expr() {
 #[test]
 fn lower_while_expr() {
     let src = "while exp1 do exp2";
-    check::<Expr, _>(src, |p| p.parse_expr(), expect![[r##"TODO"##]])
+    check::<Expr, _>(src, |p| p.parse_expr(), expect!["let val rec _temp0 = (fn {  } => (fn true => (exp2; _temp0 {  }) | false => {  }) exp1) in _temp0 {  } end"])
 }
 
 #[test]

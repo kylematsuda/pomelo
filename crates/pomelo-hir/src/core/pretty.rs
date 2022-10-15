@@ -48,7 +48,7 @@ impl HirPrettyPrint for Dec {
             } => {
                 let rec = if *rec { "rec " } else { "" };
                 format!(
-                    "val {} {}{} = {}",
+                    "val {}{}{} = {}",
                     boxed_seq(tyvarseq, arena).join(" "),
                     rec,
                     pat.pretty(arena),
