@@ -114,7 +114,12 @@ impl HirPrettyPrint for Dec {
                     }
                     Fixity::Nonfix => ("nonfix", "".to_owned()),
                 };
-                format!("{} {} {}", dec_str, val_str, boxed_seq(vids, arena).join(" "))
+                format!(
+                    "{} {} {}",
+                    dec_str,
+                    val_str,
+                    boxed_seq(vids, arena).join(" ")
+                )
             }
         }
     }

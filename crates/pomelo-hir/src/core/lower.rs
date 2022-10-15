@@ -285,8 +285,55 @@ impl Expr {
         )
     }
 
-    fn lower_recsel<A: BodyArena>(_expr: &ast::RecSelExpr, _arena: &mut A) -> ExprKind {
-        todo!()
+    // "# lab" is lowered to "fn {lab=vid, .. } => vid"
+    // where "vid" is a new (fresh) identifier
+    fn lower_recsel<A: BodyArena>(expr: &ast::RecSelExpr, arena: &mut A) -> ExprKind {
+        let origin = ast::Expr::from(ast::AtomicExpr::from(expr.clone()));
+        let parent = NodeParent::from_expr(&origin, arena);
+
+        let label = Label::from_token(expr.label(), arena);
+        let newvid = LongVId::from_vid(arena.fresh_vid());
+
+        // Generate inner pattern for the patrow,
+        // the patrows (vid and wildcard), and the enclosing record pat
+        let vid_pat = Pat::generated(
+            parent.clone(),
+            PatKind::VId {
+                op: false,
+                longvid: newvid.clone(),
+            },
+            arena,
+        );
+        let rows = [
+            PatRow::Pattern {
+                label,
+                pat: vid_pat,
+            },
+            PatRow::Wildcard,
+        ]
+        .into_iter()
+        .collect();
+        let record_pat = Pat::generated(parent.clone(), PatKind::Record { rows }, arena);
+
+        // Generate expr for the rhs of the match
+        let vid_expr = Expr::generated(
+            parent.clone(),
+            ExprKind::VId {
+                op: false,
+                longvid: newvid,
+            },
+            arena,
+        );
+
+        // Generate the match
+        let mrule = [MRule {
+            pat: record_pat,
+            expr: vid_expr,
+        }]
+        .into_iter()
+        .collect();
+
+        ExprKind::Fn { match_: mrule }
     }
 
     fn lower_application<A: BodyArena>(expr: &ast::ApplicationExpr, arena: &mut A) -> ExprKind {
@@ -314,11 +361,11 @@ impl Expr {
     //
     // "exp1 andalso exp2" desugars to "if exp1 then exp2 else false"
     fn lower_andalso<A: BodyArena>(expr: &ast::AndAlsoExpr, arena: &mut A) -> ExprKind {
-        let originating = NodeParent::from_expr(&ast::Expr::from(expr.clone()), arena);
+        let originating = ast::Expr::from(expr.clone());
 
         let vid_false = LongVId::from_vid(VId::from_builtin(BuiltIn::False));
         let false_expr = Self::generated(
-            originating,
+            NodeParent::from_expr(&originating, arena),
             ExprKind::VId {
                 op: false,
                 longvid: vid_false,
@@ -329,16 +376,16 @@ impl Expr {
         let expr_1 = Self::lower_opt(expr.expr_1(), arena);
         let expr_2 = Self::lower_opt(expr.expr_2(), arena);
 
-        Self::_lower_if(originating, expr_1, expr_2, false_expr, arena)
+        Self::_lower_if(&originating, expr_1, expr_2, false_expr, arena)
     }
 
     // "exp1 orelse exp2" desugars to "if exp1 then true else exp2"
     fn lower_orelse<A: BodyArena>(expr: &ast::OrElseExpr, arena: &mut A) -> ExprKind {
-        let originating = NodeParent::from_expr(&ast::Expr::from(expr.clone()), arena);
+        let originating = ast::Expr::from(expr.clone());
 
         let vid_true = LongVId::from_vid(VId::from_builtin(BuiltIn::True));
         let true_expr = Self::generated(
-            originating,
+            NodeParent::from_expr(&originating, arena),
             ExprKind::VId {
                 op: false,
                 longvid: vid_true,
@@ -349,7 +396,7 @@ impl Expr {
         let expr_1 = Self::lower_opt(expr.expr_1(), arena);
         let expr_2 = Self::lower_opt(expr.expr_2(), arena);
 
-        Self::_lower_if(originating, expr_1, true_expr, expr_2, arena)
+        Self::_lower_if(&originating, expr_1, true_expr, expr_2, arena)
     }
 
     fn lower_handle<A: BodyArena>(expr: &ast::HandleExpr, arena: &mut A) -> ExprKind {
@@ -370,36 +417,41 @@ impl Expr {
         let expr1 = Self::lower_opt(expr.expr_1(), arena);
         let expr2 = Self::lower_opt(expr.expr_2(), arena);
         let expr3 = Self::lower_opt(expr.expr_3(), arena);
-        Self::_lower_if(
-            NodeParent::from_expr(&ast::Expr::from(expr.clone()), arena),
-            expr1,
-            expr2,
-            expr3,
-            arena,
-        )
+        Self::_lower_if(&ast::Expr::from(expr.clone()), expr1, expr2, expr3, arena)
     }
 
     fn _lower_if<A: BodyArena>(
-        _originating_expr: NodeParent,
-        _expr1: Idx<Expr>,
-        _expr2: Idx<Expr>,
-        _expr3: Idx<Expr>,
-        _arena: &mut A,
+        originating_expr: &ast::Expr,
+        expr1: Idx<Expr>,
+        expr2: Idx<Expr>,
+        expr3: Idx<Expr>,
+        arena: &mut A,
     ) -> ExprKind {
-        // FIXME: need to let ast_id be a different kind. like here, we need to generate some Pats
-        // from an Expr. How represent this? Maybe make a new type for ast_id,
-        //
-        // enum Source<T> {
-        //     Original(T),
-        //     Generated(GeneratedFrom)
-        // }
-        //
-        // enum GeneratedFrom {
-        //      Dec(..),
-        //      Expr(..),
-        //      Pat(..),
-        // }
-        todo!();
+        let parent = NodeParent::from_expr(originating_expr, arena);
+
+        let true_pat = Pat::generated(
+            parent,
+            PatKind::VId {
+                op: false,
+                longvid: LongVId::from_vid(VId::from_builtin(BuiltIn::True)),
+            },
+            arena,
+        );
+        let false_pat = Pat::generated(
+            parent,
+            PatKind::VId {
+                op: false,
+                longvid: LongVId::from_vid(VId::from_builtin(BuiltIn::False)),
+            },
+            arena,
+        );
+
+        let match_arms = [(true_pat, expr2), (false_pat, expr3)]
+            .into_iter()
+            .map(|(pat, expr)| MRule { pat, expr })
+            .collect();
+
+        Self::_lower_case(originating_expr, expr1, match_arms, arena)
     }
 
     fn lower_while<A: BodyArena>(_expr: &ast::WhileExpr, _arena: &mut A) -> ExprKind {

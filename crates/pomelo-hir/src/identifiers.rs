@@ -5,6 +5,22 @@ pub trait NameInterner {
     fn fresh(&mut self) -> u32;
     fn alloc(&mut self, s: &str) -> Idx<String>;
     fn get(&self, index: Idx<String>) -> &str;
+
+    fn fresh_vid(&mut self) -> VId {
+        VId::Name(Name::Generated(self.fresh()))
+    }
+
+    fn fresh_strid(&mut self) -> StrId {
+        StrId::Name(Name::Generated(self.fresh()))
+    }
+
+    fn fresh_tyvar(&mut self) -> TyVar {
+        TyVar::Name(Name::Generated(self.fresh()))
+    }
+
+    fn fresh_tycon(&mut self) -> TyCon {
+        TyCon::Name(Name::Generated(self.fresh()))
+    }
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Eq)]

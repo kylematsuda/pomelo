@@ -67,7 +67,7 @@ fn lower_recsel_expr() {
     check::<Expr, _>(
         src,
         |p| p.parse_expr(),
-        expect![[r##"fn { x=_temp0, ... } => _temp0"##]],
+        expect![[r##"(fn { x=_temp0, .. } => _temp0)"##]],
     )
 }
 
@@ -97,7 +97,7 @@ fn lower_andalso_expr() {
     check::<Expr, _>(
         src,
         |p| p.parse_expr(),
-        expect![[r##"(fn true => true | false => exp2) exp1"##]],
+        expect![[r##"(fn true => exp2 | false => false) exp1"##]],
     )
 }
 
@@ -107,7 +107,7 @@ fn lower_orelse_expr() {
     check::<Expr, _>(
         src,
         |p| p.parse_expr(),
-        expect![[r##"(fn true => exp2 | false => false) exp1"##]],
+        expect![[r##"(fn true => true | false => exp2) exp1"##]],
     )
 }
 
