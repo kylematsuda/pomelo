@@ -131,7 +131,6 @@ impl Dec {
     }
 
     fn lower_val<A: BodyArena>(dec: &ast::ValDec, arena: &mut A) -> DecKind {
-        let rec = dec.rec();
         let tyvarseq: Box<[TyVar]> = dec
             .tyvarseq()
             .map(|t| TyVar::from_token(Some(t), arena))
@@ -140,6 +139,7 @@ impl Dec {
         let bindings = dec
             .bindings()
             .map(|b| {
+                let rec = b.rec();
                 let pat = Pat::lower_opt(b.pat(), arena);
                 let expr = Expr::lower_opt(b.expr(), arena);
                 DecKind::Val {
@@ -164,7 +164,7 @@ impl Dec {
     }
 
     fn _lower_fvalbind<A: BodyArena>(_fvalbind: &ast::FvalBind, _arena: &mut A) -> DecKind {
-        // FIXME: 
+        // FIXME:
         todo!()
     }
 
@@ -434,9 +434,9 @@ impl Expr {
     }
 
     fn lower_application<A: BodyArena>(expr: &ast::ApplicationExpr, arena: &mut A) -> ExprKind {
-        let param = Self::lower_opt(expr.atomic().map(ast::Expr::from), arena);
-        let expr = Self::lower_opt(expr.application().map(ast::Expr::from), arena);
-        ExprKind::Application { expr, param }
+        let app = Self::lower_opt(expr.application(), arena);
+        let param = Self::lower_opt(expr.atomic(), arena);
+        ExprKind::Application { expr: app, param }
     }
 
     fn lower_infix<A: BodyArena>(expr: &ast::InfixExpr, arena: &mut A) -> ExprKind {
@@ -555,7 +555,6 @@ impl Expr {
         let exp1 = Self::lower_opt(expr.expr_1(), arena);
         let exp2 = Self::lower_opt(expr.expr_2(), arena);
 
-        // Similarly, need to create new patterns out of nowhere...
         let origin = ast::Expr::from(expr.clone());
         let parent = NodeParent::from_expr(&origin, arena);
         let newvid = LongVId::from_vid(arena.fresh_vid());

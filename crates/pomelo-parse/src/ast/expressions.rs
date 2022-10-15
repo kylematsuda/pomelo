@@ -288,12 +288,12 @@ pub struct ApplicationExpr {
 impl_ast_node!(ApplicationExpr, APP_EXP);
 
 impl ApplicationExpr {
-    pub fn application(&self) -> Option<ast::ApplicationExpr> {
-        support::child(self.syntax())
+    pub fn application(&self) -> Option<ast::Expr> {
+        support::children(self.syntax()).next()
     }
 
-    pub fn atomic(&self) -> Option<ast::AtomicExpr> {
-        support::child(self.syntax())
+    pub fn atomic(&self) -> Option<ast::Expr> {
+        support::children(self.syntax()).skip(1).next()
     }
 }
 

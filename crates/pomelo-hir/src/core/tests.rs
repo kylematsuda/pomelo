@@ -1,11 +1,11 @@
 use pomelo_parse::language::SML;
-use pomelo_parse::{AstNode, Parser, SyntaxTree};
+use pomelo_parse::{passes::apply_passes, AstNode, Parser, SyntaxTree};
 
 use expect_test::{expect, Expect};
 
 use crate::arena::Idx;
 use crate::core::pretty::HirPrettyPrint;
-use crate::core::{lower::HirLower, BodyArenaImpl, Expr, Pat, Type};
+use crate::core::{lower::HirLower, BodyArenaImpl, Dec, Expr, Pat, Type};
 use crate::identifiers::NameInternerImpl;
 
 pub(crate) fn check<H, F>(src: &str, parse_with: F, expect: Expect)
@@ -16,17 +16,35 @@ where
     F: Fn(Parser) -> SyntaxTree,
 {
     let parser = Parser::new(src);
-    let tree = parse_with(parser);
+    let tree = apply_passes(parse_with(parser));
 
     for e in tree.errors() {
         eprintln!("{:?}", e);
     }
+
+    eprintln!("{}", tree);
 
     let node = H::AstType::cast(tree.syntax());
 
     let mut arena = BodyArenaImpl::<NameInternerImpl>::default();
     let actual = H::lower_opt(node, &mut arena).pretty(&arena);
     expect.assert_eq(&actual);
+}
+
+#[test]
+fn lower_valdec() {
+    let src = "val x = 3";
+    check::<Dec, _>(src, |p| p.parse_dec(), expect![[r##"val x = 3"##]])
+}
+
+#[test]
+fn lower_valdec_rec() {
+    let src = "val rec x = fn () => if exp1 then (exp2; x()) else ()";
+    check::<Dec, _>(
+        src,
+        |p| p.parse_dec(),
+        expect!["val rec x = (fn {  } => (fn true => (exp2; x {  }) | false => {  }) exp1)"],
+    )
 }
 
 #[test]
@@ -53,6 +71,12 @@ fn lower_list_pat() {
 fn lower_unit_expr() {
     let src = "()";
     check::<Expr, _>(src, |p| p.parse_expr(), expect![[r##"{  }"##]])
+}
+
+#[test]
+fn lower_app_expr() {
+    let src = "a b";
+    check::<Expr, _>(src, |p| p.parse_expr(), expect![[r##"a b"##]])
 }
 
 #[test]
