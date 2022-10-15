@@ -123,7 +123,7 @@ pub enum CoreDec {
         ast_id: FileAstIdx<ast::ValDec>,
     },
     Ty {
-        tycons: Box<[Idx<TyCon>]>,
+        tycons: Box<[TyCon]>,
         ast_id: FileAstIdx<ast::TypeDec>,
     },
     Datatype {
@@ -131,7 +131,7 @@ pub enum CoreDec {
         ast_id: FileAstIdx<ast::DatatypeDec>,
     },
     Replication {
-        tycon: Idx<TyCon>,
+        tycon: TyCon,
         ast_id: FileAstIdx<ast::DatatypeRepDec>,
     },
     Abstype {
@@ -152,32 +152,31 @@ pub enum CoreDec {
         ast_id: FileAstIdx<ast::OpenDec>,
     },
     Infix {
-        vids: Box<[Idx<VId>]>,
+        vids: Box<[VId]>,
         prec: Option<u8>,
         ast_id: FileAstIdx<ast::InfixDec>,
     },
     Infixr {
-        vids: Box<[Idx<VId>]>,
+        vids: Box<[VId]>,
         prec: Option<u8>,
         ast_id: FileAstIdx<ast::InfixrDec>,
     },
     Nonfix {
-        vids: Box<[Idx<VId>]>,
-        prec: Option<u8>,
+        vids: Box<[VId]>,
         ast_id: FileAstIdx<ast::NonfixDec>,
     },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DataBind {
-    pub tycon: Idx<TyCon>,
-    pub cons: Box<[Idx<VId>]>,
+    pub tycon: TyCon,
+    pub cons: Box<[VId]>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ExBind {
-    Name { vid: Idx<VId> },
-    Rebind { lhs: Idx<VId>, rhs: LongVId },
+    Name { vid: VId },
+    Rebind { lhs: VId, rhs: LongVId },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
