@@ -37,7 +37,7 @@ pub(crate) fn declaration_inner(p: &mut Parser) {
         FUN_KW => fun_declaration(p),
         TYPE_KW => type_declaration(p),
         DATATYPE_KW => datatype_declaration(p),
-        ABSTYPE_KW => unimplemented!(),
+        ABSTYPE_KW => abstype_declaration(p),
         EXCEPTION_KW => unimplemented!(),
         LOCAL_KW => local_declaration(p),
         OPEN_KW => open_declaration(p),
@@ -76,6 +76,7 @@ pub(crate) fn datatype_declaration(p: &mut Parser) {
     assert_eq!(p.eat_any(), DATATYPE_KW);
     p.eat_trivia();
 
+    // Replication
     if p.peek_next_nontrivia(2) == DATATYPE_KW {
         let _ng = p.start_node_at(checkpoint, DATATYPE_REP);
 
@@ -98,6 +99,31 @@ pub(crate) fn datatype_declaration(p: &mut Parser) {
             grammar::typbind(p)
         }
     }
+}
+
+pub(crate) fn abstype_declaration(p: &mut Parser) {
+    let _ng = p.start_node(ABSTYPE_DEC);
+    
+    assert!(p.eat(ABSTYPE_KW));
+    p.eat_trivia();
+
+    grammar::databind(p);
+    p.eat_trivia();
+
+    // <withtype typbind>
+    if p.eat(WITHTYPE_KW) {
+        p.eat_trivia();
+        grammar::typbind(p);
+        p.eat_trivia();
+    }
+
+    p.expect(WITH_KW);
+    p.eat_trivia();
+
+    grammar::declaration(p);
+    p.eat_trivia();
+
+    p.expect(END_KW);
 }
 
 fn local_declaration(p: &mut Parser) {
@@ -742,28 +768,28 @@ mod tests {
             crate::grammar::declaration,
             "datatype 'a option = NONE | SOME of 'a",
             expect![[r#"
-                DATATYPE_DEC@0..36
+                DATATYPE_DEC@0..38
                   DATATYPE_KW@0..8 "datatype"
                   WHITESPACE@8..9
-                  DATA_BIND@9..36
+                  DATA_BIND@9..38
                     TYVAR@9..11 "'a"
                     WHITESPACE@11..12
-                    TY_CON@12..16 "tree"
-                    WHITESPACE@16..17
-                    EQ@17..18 "="
+                    TY_CON@12..18 "option"
                     WHITESPACE@18..19
-                    CON_BIND@19..23
-                      VID@19..23 "Node"
-                    WHITESPACE@23..24
-                    PIPE@24..25 "|"
+                    EQ@19..20 "="
+                    WHITESPACE@20..21
+                    CON_BIND@21..25
+                      VID@21..25 "NONE"
                     WHITESPACE@25..26
-                    CON_BIND@26..36
-                      VID@26..30 "Leaf"
-                      WHITESPACE@30..31
-                      OF_KW@31..33 "of"
-                      WHITESPACE@33..34
-                      TYVAR_TY@34..36
-                        TYVAR@34..36 "'a"
+                    PIPE@26..27 "|"
+                    WHITESPACE@27..28
+                    CON_BIND@28..38
+                      VID@28..32 "SOME"
+                      WHITESPACE@32..33
+                      OF_KW@33..35 "of"
+                      WHITESPACE@35..36
+                      TYVAR_TY@36..38
+                        TYVAR@36..38 "'a"
             "#]],
         )
     }
@@ -775,28 +801,79 @@ mod tests {
             crate::grammar::declaration,
             "datatype mytype = datatype SomeStructure.myothertype",
             expect![[r#"
-                DATATYPE_DEC@0..36
+                DATATYPE_REP@0..52
                   DATATYPE_KW@0..8 "datatype"
                   WHITESPACE@8..9
-                  DATA_BIND@9..36
-                    TYVAR@9..11 "'a"
-                    WHITESPACE@11..12
-                    TY_CON@12..16 "tree"
+                  TY_CON@9..15 "mytype"
+                  WHITESPACE@15..16
+                  EQ@16..17 "="
+                  WHITESPACE@17..18
+                  DATATYPE_KW@18..26 "datatype"
+                  WHITESPACE@26..27
+                  LONG_TY_CON@27..52
+                    STRID@27..40 "SomeStructure"
+                    DOT@40..41 "."
+                    TY_CON@41..52 "myothertype"
+            "#]],
+        )
+    }
+
+    #[test]
+    fn abstype() {
+        check_with_f(
+            false,
+            crate::grammar::declaration,
+            // Stack overflow: https://stackoverflow.com/questions/7296795/sml-whats-the-difference-between-using-abstype-and-using-a-signature-to-hide-t
+            // simplified
+"abstype AbsSet = absset of int list with
+    val empty = absset([])
+end",
+            expect![[r#"
+                ABSTYPE_DEC@0..71
+                  ABSTYPE_KW@0..7 "abstype"
+                  WHITESPACE@7..8
+                  DATA_BIND@8..35
+                    TY_CON@8..14 "AbsSet"
+                    WHITESPACE@14..15
+                    EQ@15..16 "="
                     WHITESPACE@16..17
-                    EQ@17..18 "="
-                    WHITESPACE@18..19
-                    CON_BIND@19..23
-                      VID@19..23 "Node"
-                    WHITESPACE@23..24
-                    PIPE@24..25 "|"
-                    WHITESPACE@25..26
-                    CON_BIND@26..36
-                      VID@26..30 "Leaf"
-                      WHITESPACE@30..31
-                      OF_KW@31..33 "of"
-                      WHITESPACE@33..34
-                      TYVAR_TY@34..36
-                        TYVAR@34..36 "'a"
+                    CON_BIND@17..35
+                      VID@17..23 "absset"
+                      WHITESPACE@23..24
+                      OF_KW@24..26 "of"
+                      WHITESPACE@26..27
+                      CON_TY@27..35
+                        CON_TY@27..30
+                          LONG_TY_CON@27..30
+                            TY_CON@27..30 "int"
+                        WHITESPACE@30..31
+                        CON_TY@31..35
+                          LONG_TY_CON@31..35
+                            TY_CON@31..35 "list"
+                  WHITESPACE@35..36
+                  WITH_KW@36..40 "with"
+                  WHITESPACE@40..45
+                  VAL_DEC@45..67
+                    VAL_KW@45..48 "val"
+                    WHITESPACE@48..49
+                    VAL_BIND@49..67
+                      VID_PAT@49..54
+                        LONG_VID@49..54
+                          VID@49..54 "empty"
+                      WHITESPACE@54..55
+                      EQ@55..56 "="
+                      WHITESPACE@56..57
+                      INFIX_OR_APP_EXP@57..67
+                        VID_EXP@57..63
+                          LONG_VID@57..63
+                            VID@57..63 "absset"
+                        L_PAREN@63..64 "("
+                        LIST_EXP@64..66
+                          L_BRACKET@64..65 "["
+                          R_BRACKET@65..66 "]"
+                        R_PAREN@66..67 ")"
+                  WHITESPACE@67..68
+                  END_KW@68..71 "end"
             "#]],
         )
     }
