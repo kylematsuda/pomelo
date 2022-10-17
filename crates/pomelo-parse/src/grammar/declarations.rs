@@ -36,7 +36,7 @@ pub(crate) fn declaration_inner(p: &mut Parser) {
         VAL_KW => val_declaration(p),
         FUN_KW => fun_declaration(p),
         TYPE_KW => type_declaration(p),
-        DATATYPE_KW => unimplemented!(),
+        DATATYPE_KW => datatype_declaration(p),
         ABSTYPE_KW => unimplemented!(),
         EXCEPTION_KW => unimplemented!(),
         LOCAL_KW => local_declaration(p),
@@ -69,6 +69,35 @@ pub(crate) fn type_declaration(p: &mut Parser) {
     assert_eq!(p.eat_any(), TYPE_KW);
     p.eat_trivia();
     grammar::sequential(p, grammar::typbind, AND_KW);
+}
+
+pub(crate) fn datatype_declaration(p: &mut Parser) {
+    let checkpoint = p.checkpoint();
+    assert_eq!(p.eat_any(), DATATYPE_KW);
+    p.eat_trivia();
+
+    if p.peek_next_nontrivia(2) == DATATYPE_KW {
+        let _ng = p.start_node_at(checkpoint, DATATYPE_REP);
+
+        grammar::tycon(p);
+        p.eat_trivia();
+
+        p.expect(EQ);
+        p.eat_trivia();
+
+        assert!(p.eat(DATATYPE_KW));
+        p.eat_trivia();
+
+        grammar::longtycon(p);
+    } else { // Datatype dec
+        let _ng = p.start_node_at(checkpoint, DATATYPE_DEC);
+        grammar::sequential(p, grammar::databind, AND_KW);
+
+        if p.eat_through_trivia(WITHTYPE_KW) {
+            p.eat_trivia();
+            grammar::typbind(p)
+        }
+    }
 }
 
 fn local_declaration(p: &mut Parser) {
@@ -542,6 +571,7 @@ mod tests {
             "#]],
         )
     }
+
     #[test]
     fn tydec() {
         check_with_f(
@@ -668,6 +698,105 @@ mod tests {
                     NONFIX_KW@202..208 "nonfix"
                     WHITESPACE@208..209
                     VID@209..216 "myinfix"
+            "#]],
+        )
+    }
+
+    #[test]
+    fn datatype_dec() {
+        check_with_f(
+            false,
+            crate::grammar::declaration,
+            "datatype 'a tree = Node | Leaf of 'a",
+            expect![[r#"
+                DATATYPE_DEC@0..36
+                  DATATYPE_KW@0..8 "datatype"
+                  WHITESPACE@8..9
+                  DATA_BIND@9..36
+                    TYVAR@9..11 "'a"
+                    WHITESPACE@11..12
+                    TY_CON@12..16 "tree"
+                    WHITESPACE@16..17
+                    EQ@17..18 "="
+                    WHITESPACE@18..19
+                    CON_BIND@19..23
+                      VID@19..23 "Node"
+                    WHITESPACE@23..24
+                    PIPE@24..25 "|"
+                    WHITESPACE@25..26
+                    CON_BIND@26..36
+                      VID@26..30 "Leaf"
+                      WHITESPACE@30..31
+                      OF_KW@31..33 "of"
+                      WHITESPACE@33..34
+                      TYVAR_TY@34..36
+                        TYVAR@34..36 "'a"
+            "#]],
+        )
+    }
+
+    #[test]
+    fn option() {
+        check_with_f(
+            false,
+            crate::grammar::declaration,
+            "datatype 'a option = NONE | SOME of 'a",
+            expect![[r#"
+                DATATYPE_DEC@0..36
+                  DATATYPE_KW@0..8 "datatype"
+                  WHITESPACE@8..9
+                  DATA_BIND@9..36
+                    TYVAR@9..11 "'a"
+                    WHITESPACE@11..12
+                    TY_CON@12..16 "tree"
+                    WHITESPACE@16..17
+                    EQ@17..18 "="
+                    WHITESPACE@18..19
+                    CON_BIND@19..23
+                      VID@19..23 "Node"
+                    WHITESPACE@23..24
+                    PIPE@24..25 "|"
+                    WHITESPACE@25..26
+                    CON_BIND@26..36
+                      VID@26..30 "Leaf"
+                      WHITESPACE@30..31
+                      OF_KW@31..33 "of"
+                      WHITESPACE@33..34
+                      TYVAR_TY@34..36
+                        TYVAR@34..36 "'a"
+            "#]],
+        )
+    }
+
+    #[test]
+    fn datarep() {
+        check_with_f(
+            false,
+            crate::grammar::declaration,
+            "datatype mytype = datatype SomeStructure.myothertype",
+            expect![[r#"
+                DATATYPE_DEC@0..36
+                  DATATYPE_KW@0..8 "datatype"
+                  WHITESPACE@8..9
+                  DATA_BIND@9..36
+                    TYVAR@9..11 "'a"
+                    WHITESPACE@11..12
+                    TY_CON@12..16 "tree"
+                    WHITESPACE@16..17
+                    EQ@17..18 "="
+                    WHITESPACE@18..19
+                    CON_BIND@19..23
+                      VID@19..23 "Node"
+                    WHITESPACE@23..24
+                    PIPE@24..25 "|"
+                    WHITESPACE@25..26
+                    CON_BIND@26..36
+                      VID@26..30 "Leaf"
+                      WHITESPACE@30..31
+                      OF_KW@31..33 "of"
+                      WHITESPACE@33..34
+                      TYVAR_TY@34..36
+                        TYVAR@34..36 "'a"
             "#]],
         )
     }

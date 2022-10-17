@@ -106,7 +106,7 @@ pub enum SyntaxKind {
     VAL_BIND,
 
     TY_BIND,
-    DAT_BIND,
+    DATA_BIND,
     CON_BIND,
 
     EX_BIND,

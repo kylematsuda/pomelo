@@ -112,7 +112,7 @@ pub(crate) fn tycon(p: &mut Parser) {
     }
 }
 
-fn longtycon(p: &mut Parser) {
+pub(crate) fn longtycon(p: &mut Parser) {
     let _ng = p.start_node(LONG_TY_CON);
 
     // A longtycon is a sequence of strids separated by DOTs,

@@ -104,6 +104,39 @@ pub(crate) fn typbind(p: &mut Parser) {
     grammar::ty(p);
 }
 
+pub(crate) fn databind(p: &mut Parser) {
+    let _ng = p.start_node(DATA_BIND);
+    grammar::tyvarseq(p);
+    p.eat_trivia();
+    grammar::tycon(p);
+    p.eat_trivia();
+    p.expect(EQ);
+    p.eat_trivia();
+    grammar::conbind(p);
+}
+
+pub(crate) fn conbind(p: &mut Parser) { 
+    grammar::sequential(p, conbind_inner, PIPE)
+}
+
+fn conbind_inner(p: &mut Parser) {
+    let _ng = p.start_node(CON_BIND);
+
+    // <op>
+    p.eat(OP_KW);
+    p.eat_trivia();
+    
+    // vid
+    grammar::vid(p);
+
+    // <of ty>
+    if p.eat_through_trivia(OF_KW) {
+        p.eat_trivia();
+        grammar::ty(p);
+    }
+}
+
+
 #[cfg(test)]
 mod tests {
     use crate::tests::check_with_f;
