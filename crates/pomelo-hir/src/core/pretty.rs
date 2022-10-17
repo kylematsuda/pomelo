@@ -77,21 +77,18 @@ impl HirPrettyPrint for Dec {
                     rhs.pretty(arena)
                 )
             }
-            DecKind::Abstype { databinds, decs } => {
+            DecKind::Abstype { databinds, dec } => {
                 format!(
                     "abstype {} with {} end",
                     boxed_seq(databinds, arena).join(" and "),
-                    boxed_seq(decs, arena).join("; "),
+                    dec.pretty(arena),
                 )
             }
-            DecKind::Local {
-                inner_decs,
-                outer_decs,
-            } => {
+            DecKind::Local { inner, outer } => {
                 format!(
                     "local {} in {} end",
-                    boxed_seq(inner_decs, arena).join("; "),
-                    boxed_seq(outer_decs, arena).join("; ")
+                    inner.pretty(arena),
+                    outer.pretty(arena),
                 )
             }
             DecKind::Exception { exbind } => {
@@ -147,10 +144,10 @@ impl HirPrettyPrint for ConBind {
         let ty = self
             .ty
             .map(|t| t.pretty(arena))
-            .map(|ty| format!("of {}", ty))
+            .map(|ty| format!(" of {}", ty))
             .unwrap_or_else(|| "".to_owned());
 
-        format!("{}{} {}", op_str(self.op), self.vid.pretty(arena), ty)
+        format!("{}{}{}", op_str(self.op), self.vid.pretty(arena), ty)
     }
 }
 

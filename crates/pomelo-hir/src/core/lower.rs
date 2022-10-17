@@ -1,7 +1,7 @@
 use crate::arena::Idx;
 use crate::core::{
-    AstId, BodyArena, Dec, DecKind, ExpRow, Expr, ExprKind, Fixity, FloatWrapper, MRule,
-    NodeParent, Pat, PatKind, PatRow, Scon, TyKind, TyRow, Type,
+    AstId, BodyArena, ConBind, DataBind, Dec, DecKind, ExBind, ExpRow, Expr, ExprKind, Fixity,
+    FloatWrapper, MRule, NodeParent, Pat, PatKind, PatRow, Scon, TyKind, TyRow, Type,
 };
 use crate::identifiers::{BuiltIn, Label, LongStrId, LongTyCon, LongVId, TyCon, TyVar, VId};
 use pomelo_parse::{ast, AstNode};
@@ -194,24 +194,49 @@ impl Dec {
         }
     }
 
-    fn lower_datatype<A: BodyArena>(_dec: &ast::DatatypeDec, _arena: &mut A) -> DecKind {
-        todo!()
+    // FIXME: Handle "withtype"
+    fn lower_datatype<A: BodyArena>(dec: &ast::DatatypeDec, arena: &mut A) -> DecKind {
+        let databinds = dec
+            .databinds()
+            .map(|b| DecKind::Datatype {
+                databind: DataBind::lower(&b, arena),
+            })
+            .collect::<Vec<_>>();
+        if databinds.len() == 1 {
+            databinds.into_iter().next().unwrap()
+        } else {
+            let origin = NodeParent::from_dec(&ast::Dec::from(dec.clone()), arena);
+            Self::make_seq(origin, databinds, arena)
+        }
     }
 
-    fn lower_replication<A: BodyArena>(_dec: &ast::DatatypeRepDec, _arena: &mut A) -> DecKind {
-        todo!()
+    fn lower_replication<A: BodyArena>(dec: &ast::DatatypeRepDec, arena: &mut A) -> DecKind {
+        let lhs = TyCon::from_token(dec.tycon(), arena);
+        let rhs = LongTyCon::from_opt_node(dec.longtycon().as_ref(), arena);
+        DecKind::Replication { lhs, rhs }
     }
 
-    fn lower_abstype<A: BodyArena>(_dec: &ast::AbstypeDec, _arena: &mut A) -> DecKind {
-        todo!()
+    // FIXME: Handle "withtype"
+    fn lower_abstype<A: BodyArena>(dec: &ast::AbstypeDec, arena: &mut A) -> DecKind {
+        let databinds = dec
+            .databinds()
+            .map(|d| DataBind::lower(&d, arena))
+            .collect();
+        let dec = Self::lower_opt(dec.dec(), arena);
+        DecKind::Abstype { databinds, dec }
     }
 
     fn lower_exception<A: BodyArena>(_dec: &ast::ExceptionDec, _arena: &mut A) -> DecKind {
         todo!()
     }
 
-    fn lower_local<A: BodyArena>(_dec: &ast::LocalDec, _arena: &mut A) -> DecKind {
-        todo!()
+    fn lower_local<A: BodyArena>(dec: &ast::LocalDec, arena: &mut A) -> DecKind {
+        let dec1 = Self::lower_opt(dec.dec1(), arena);
+        let dec2 = Self::lower_opt(dec.dec2(), arena);
+        DecKind::Local {
+            inner: dec1,
+            outer: dec2,
+        }
     }
 
     fn lower_open<A: BodyArena>(dec: &ast::OpenDec, arena: &mut A) -> DecKind {
@@ -260,6 +285,42 @@ impl Dec {
     fn lower_seq<A: BodyArena>(dec: &ast::SeqDec, arena: &mut A) -> DecKind {
         let decs = dec.declarations().map(|d| Self::lower(d, arena)).collect();
         DecKind::Seq { decs }
+    }
+}
+
+impl DataBind {
+    pub fn lower<A: BodyArena>(databind: &ast::DataBind, arena: &mut A) -> Self {
+        let tyvarseq = databind
+            .tyvarseq()
+            .map(|t| TyVar::from_token(Some(t), arena))
+            .collect();
+        let tycon = TyCon::from_token(databind.tycon(), arena);
+
+        let conbinds = databind
+            .conbinds()
+            .map(|c| ConBind::lower(&c, arena))
+            .collect();
+
+        DataBind {
+            tyvarseq,
+            tycon,
+            conbinds,
+        }
+    }
+}
+
+impl ConBind {
+    pub fn lower<A: BodyArena>(conbind: &ast::ConBind, arena: &mut A) -> Self {
+        let op = conbind.op();
+        let vid = VId::from_token(conbind.vid(), arena);
+        let ty = conbind.ty().map(|t| Type::lower(t, arena));
+        ConBind { op, vid, ty }
+    }
+}
+
+impl ExBind {
+    pub fn lower<A: BodyArena>(exbind: &ast::ExBind, arena: &mut A) -> Self {
+        todo!()
     }
 }
 

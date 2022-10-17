@@ -48,6 +48,34 @@ fn lower_valdec_rec() {
 }
 
 #[test]
+fn lower_datatype_option() {
+    let src = "datatype 'a option = NONE | SOME of 'a";
+    check::<Dec, _>(
+        src,
+        |p| p.parse_dec(),
+        expect![[r##"datatype 'a option = NONE | SOME of 'a"##]],
+    )
+}
+
+#[test]
+fn lower_datarep() {
+    let src = "datatype mytype = datatype MyModule.myothertype";
+    check::<Dec, _>(
+        src,
+        |p| p.parse_dec(),
+        expect![[r##"datatype mytype = datatype MyModule.myothertype"##]],
+    )
+}
+
+#[test]
+fn lower_abstype() {
+    let src = "abstype AbsSet = absset of int list with
+    val empty = absset([])
+end";
+    check::<Dec, _>(src, |p| p.parse_dec(), expect![[r##"val x = 3"##]])
+}
+
+#[test]
 fn lower_unit_pat() {
     let src = "()";
     check::<Pat, _>(src, |p| p.parse_pat(), expect![[r##"{  }"##]])

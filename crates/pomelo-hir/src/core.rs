@@ -186,14 +186,14 @@ pub enum DecKind {
     },
     Abstype {
         databinds: Box<[DataBind]>,
-        decs: Box<[Idx<Dec>]>,
+        dec: Idx<Dec>,
     },
     Exception {
         exbind: ExBind,
     },
     Local {
-        inner_decs: Box<[Idx<Dec>]>,
-        outer_decs: Box<[Idx<Dec>]>,
+        inner: Idx<Dec>,
+        outer: Idx<Dec>,
     },
     Open {
         longstrids: Box<[LongStrId]>,

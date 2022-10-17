@@ -115,7 +115,7 @@ pub(crate) fn databind(p: &mut Parser) {
     grammar::conbind(p);
 }
 
-pub(crate) fn conbind(p: &mut Parser) { 
+pub(crate) fn conbind(p: &mut Parser) {
     grammar::sequential(p, conbind_inner, PIPE)
 }
 
@@ -125,7 +125,7 @@ fn conbind_inner(p: &mut Parser) {
     // <op>
     p.eat(OP_KW);
     p.eat_trivia();
-    
+
     // vid
     grammar::vid(p);
 
@@ -136,7 +136,7 @@ fn conbind_inner(p: &mut Parser) {
     }
 }
 
-pub(crate) fn exbind(p: &mut Parser) { 
+pub(crate) fn exbind(p: &mut Parser) {
     let _ng = p.start_node(EX_BIND);
 
     // <op>

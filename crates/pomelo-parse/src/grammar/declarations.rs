@@ -38,7 +38,7 @@ pub(crate) fn declaration_inner(p: &mut Parser) {
         TYPE_KW => type_declaration(p),
         DATATYPE_KW => datatype_declaration(p),
         ABSTYPE_KW => abstype_declaration(p),
-        EXCEPTION_KW => exception_declaration(p), 
+        EXCEPTION_KW => exception_declaration(p),
         LOCAL_KW => local_declaration(p),
         OPEN_KW => open_declaration(p),
         // Sequential decs are handled in `declaration()`
@@ -90,7 +90,8 @@ pub(crate) fn datatype_declaration(p: &mut Parser) {
         p.eat_trivia();
 
         grammar::longtycon(p);
-    } else { // Datatype dec
+    } else {
+        // Datatype dec
         let _ng = p.start_node_at(checkpoint, DATATYPE_DEC);
         grammar::sequential(p, grammar::databind, AND_KW);
 
@@ -103,11 +104,12 @@ pub(crate) fn datatype_declaration(p: &mut Parser) {
 
 pub(crate) fn abstype_declaration(p: &mut Parser) {
     let _ng = p.start_node(ABSTYPE_DEC);
-    
+
     assert!(p.eat(ABSTYPE_KW));
     p.eat_trivia();
 
-    grammar::databind(p);
+    // Databind(s)
+    grammar::sequential(p, grammar::databind, AND_KW);
     p.eat_trivia();
 
     // <withtype typbind>
@@ -128,7 +130,7 @@ pub(crate) fn abstype_declaration(p: &mut Parser) {
 
 pub(crate) fn exception_declaration(p: &mut Parser) {
     let _ng = p.start_node(EXCEPT_DEC);
-    
+
     assert!(p.eat(EXCEPTION_KW));
     p.eat_trivia();
 
@@ -834,7 +836,7 @@ mod tests {
             crate::grammar::declaration,
             // Stack overflow: https://stackoverflow.com/questions/7296795/sml-whats-the-difference-between-using-abstype-and-using-a-signature-to-hide-t
             // simplified
-"abstype AbsSet = absset of int list with
+            "abstype AbsSet = absset of int list with
     val empty = absset([])
 end",
             expect![[r#"

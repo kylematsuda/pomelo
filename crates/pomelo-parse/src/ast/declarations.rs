@@ -158,6 +158,12 @@ pub struct DatatypeDec {
 
 impl_ast_node!(DatatypeDec, DATATYPE_DEC);
 
+impl DatatypeDec {
+    pub fn databinds(&self) -> impl Iterator<Item = ast::DataBind> {
+        support::children(self.syntax())
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DatatypeRepDec {
     syntax: SyntaxNode,
@@ -165,12 +171,32 @@ pub struct DatatypeRepDec {
 
 impl_ast_node!(DatatypeRepDec, DATATYPE_REP);
 
+impl DatatypeRepDec {
+    pub fn tycon(&self) -> Option<ast::TyCon> {
+        support::tokens(self.syntax()).next()
+    }
+
+    pub fn longtycon(&self) -> Option<ast::LongTyCon> {
+        support::child(self.syntax())
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct AbstypeDec {
     syntax: SyntaxNode,
 }
 
 impl_ast_node!(AbstypeDec, ABSTYPE_DEC);
+
+impl AbstypeDec {
+    pub fn databinds(&self) -> impl Iterator<Item = ast::DataBind> {
+        support::children(self.syntax())
+    }
+
+    pub fn dec(&self) -> Option<ast::Dec> {
+        support::child(self.syntax())
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ExceptionDec {
@@ -185,6 +211,16 @@ pub struct LocalDec {
 }
 
 impl_ast_node!(LocalDec, LOCAL_DEC);
+
+impl LocalDec {
+    pub fn dec1(&self) -> Option<ast::Dec> {
+        support::children(self.syntax()).next()
+    }
+
+    pub fn dec2(&self) -> Option<ast::Dec> {
+        support::children(self.syntax()).skip(1).next()
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct OpenDec {
