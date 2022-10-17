@@ -163,10 +163,7 @@ pub enum SyntaxKind {
     // Derived function-value bindings and declarations
     FVAL_BIND,
     FVAL_BIND_ROW,
-
     FUN_DEC,
-    DATATYPE_WITHTYPE_DEC,
-    ABSTYPE_WITHTYPE_DEC,
 
     // Special constant types
     INT,
