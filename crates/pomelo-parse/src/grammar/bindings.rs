@@ -136,6 +136,31 @@ fn conbind_inner(p: &mut Parser) {
     }
 }
 
+pub(crate) fn exbind(p: &mut Parser) { 
+    let _ng = p.start_node(EX_BIND);
+
+    // <op>
+    p.eat(OP_KW);
+    p.eat_trivia();
+
+    grammar::vid(p);
+    p.eat_trivia();
+
+    // <of ty>
+    if p.eat_through_trivia(OF_KW) {
+        p.eat_trivia();
+
+        grammar::ty(p);
+    // = <op> longvid
+    } else if p.eat_through_trivia(EQ) {
+        p.eat_trivia();
+
+        p.eat(OP_KW);
+        p.eat_trivia();
+
+        grammar::longvid(p);
+    }
+}
 
 #[cfg(test)]
 mod tests {

@@ -38,7 +38,7 @@ pub(crate) fn declaration_inner(p: &mut Parser) {
         TYPE_KW => type_declaration(p),
         DATATYPE_KW => datatype_declaration(p),
         ABSTYPE_KW => abstype_declaration(p),
-        EXCEPTION_KW => unimplemented!(),
+        EXCEPTION_KW => exception_declaration(p), 
         LOCAL_KW => local_declaration(p),
         OPEN_KW => open_declaration(p),
         // Sequential decs are handled in `declaration()`
@@ -124,6 +124,15 @@ pub(crate) fn abstype_declaration(p: &mut Parser) {
     p.eat_trivia();
 
     p.expect(END_KW);
+}
+
+pub(crate) fn exception_declaration(p: &mut Parser) {
+    let _ng = p.start_node(EXCEPT_DEC);
+    
+    assert!(p.eat(EXCEPTION_KW));
+    p.eat_trivia();
+
+    grammar::sequential(p, grammar::exbind, AND_KW)
 }
 
 fn local_declaration(p: &mut Parser) {
@@ -874,6 +883,40 @@ end",
                         R_PAREN@66..67 ")"
                   WHITESPACE@67..68
                   END_KW@68..71 "end"
+            "#]],
+        )
+    }
+
+    #[test]
+    fn exception_dec() {
+        check_with_f(
+            false,
+            crate::grammar::declaration,
+            "exception MyException of string and MyOtherException = MyModule.MyOtherException",
+            expect![[r#"
+                EXCEPT_DEC@0..80
+                  EXCEPTION_KW@0..9 "exception"
+                  WHITESPACE@9..10
+                  EX_BIND@10..31
+                    VID@10..21 "MyException"
+                    WHITESPACE@21..22
+                    OF_KW@22..24 "of"
+                    WHITESPACE@24..25
+                    CON_TY@25..31
+                      LONG_TY_CON@25..31
+                        TY_CON@25..31 "string"
+                  WHITESPACE@31..32
+                  AND_KW@32..35 "and"
+                  WHITESPACE@35..36
+                  EX_BIND@36..80
+                    VID@36..52 "MyOtherException"
+                    WHITESPACE@52..53
+                    EQ@53..54 "="
+                    WHITESPACE@54..55
+                    LONG_VID@55..80
+                      STRID@55..63 "MyModule"
+                      DOT@63..64 "."
+                      VID@64..80 "MyOtherException"
             "#]],
         )
     }
