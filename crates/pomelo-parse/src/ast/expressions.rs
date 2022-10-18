@@ -308,6 +308,7 @@ pub enum AtomicExpr {
     List(ListExpr),
     Seq(SeqExpr),
     Let(LetExpr),
+    Paren(ParenExpr),
 }
 
 impl AstNode for AtomicExpr {
@@ -325,6 +326,7 @@ impl AstNode for AtomicExpr {
                 | LIST_EXP
                 | SEQ_EXP
                 | LET_EXP
+                | PAREN_EXP
         )
     }
 
@@ -342,6 +344,7 @@ impl AstNode for AtomicExpr {
             LIST_EXP => Self::List(ListExpr::cast(node)?),
             SEQ_EXP => Self::Seq(SeqExpr::cast(node)?),
             LET_EXP => Self::Let(LetExpr::cast(node)?),
+            PAREN_EXP => Self::Paren(ParenExpr::cast(node)?),
             _ => return None,
         };
         Some(out)
@@ -358,6 +361,7 @@ impl AstNode for AtomicExpr {
             Self::List(inner) => inner.syntax(),
             Self::Seq(inner) => inner.syntax(),
             Self::Let(inner) => inner.syntax(),
+            Self::Paren(inner) => inner.syntax(),
         }
     }
 }
@@ -377,6 +381,7 @@ impl_from!(AtomicExpr, Tuple, TupleExpr);
 impl_from!(AtomicExpr, List, ListExpr);
 impl_from!(AtomicExpr, Seq, SeqExpr);
 impl_from!(AtomicExpr, Let, LetExpr);
+impl_from!(AtomicExpr, Paren, ParenExpr);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SConExpr {
@@ -531,5 +536,18 @@ impl LetExpr {
 
     pub fn exprs(&self) -> impl Iterator<Item = ast::Expr> {
         support::children(self.syntax())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ParenExpr {
+    syntax: SyntaxNode,
+}
+
+impl_ast_node!(ParenExpr, PAREN_EXP);
+
+impl ParenExpr {
+    pub fn expr(&self) -> Option<ast::Expr> {
+        support::child(self.syntax())
     }
 }

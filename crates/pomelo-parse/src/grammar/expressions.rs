@@ -329,8 +329,8 @@ fn other_parenthesized(p: &mut Parser) {
 
     match p.peek() {
         R_PAREN => {
+            let _ng = p.start_node_at(checkpoint, PAREN_EXP);
             p.expect(R_PAREN);
-            return;
         }
         COMMA => {
             p.expect(COMMA);

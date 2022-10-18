@@ -204,8 +204,14 @@ fn fix_infix_bp(
             let mut trivia = collect_trivia(children);
 
             let vid = children
+                .skip_while(|c| {
+                    match c {
+                        NodeOrToken::Token(_) => true,
+                        _ => false
+                    }
+                })
                 .next()
-                .map(unwrap_syntax_node)
+                .and_then(unwrap_syntax_node)
                 .expect("this is the same node as next");
             assert_eq!(vid, next);
             let vid_green = unwrap_vid_or_err_node(vid.clone(), errors);
@@ -243,8 +249,14 @@ fn fix_infix_bp(
             let mut trivia = collect_trivia(children);
 
             let rhs = children
+                .skip_while(|c| {
+                    match c {
+                        NodeOrToken::Token(_) => true,
+                        _ => false
+                    }
+                })
                 .next()
-                .map(unwrap_syntax_node)
+                .and_then(unwrap_syntax_node)
                 .expect("this is the same node as next");
             assert_eq!(rhs, next);
             let rhs_green = rhs.green().into_owned();
@@ -271,7 +283,7 @@ fn next_syntax_node(children: &Peekable<SyntaxElementChildren>) -> Option<Syntax
             _ => false,
         })
         .next()
-        .map(unwrap_syntax_node)
+        .and_then(unwrap_syntax_node)
 }
 
 fn collect_trivia(children: &mut Peekable<SyntaxElementChildren>) -> Vec<GreenElement> {
@@ -307,10 +319,10 @@ fn unwrap_vid_or_err_node(node: SyntaxNode, errors: &mut Vec<Error>) -> GreenEle
         })
 }
 
-fn unwrap_syntax_node(elt: SyntaxElement) -> SyntaxNode {
+fn unwrap_syntax_node(elt: SyntaxElement) -> Option<SyntaxNode> {
     match elt {
-        NodeOrToken::Node(n) => n,
-        _ => panic!(),
+        NodeOrToken::Node(n) => Some(n),
+        _ => None, 
     }
 }
 
@@ -774,4 +786,37 @@ val b = x f y + 1",
             "#]],
         )
     }
+
+    #[test]
+    fn application_issue() {
+        check(
+            pass_rearrange_infix,
+            false,
+            "val a = sometype([])",
+            expect![[r#"
+                FILE@0..20
+                  VAL_DEC@0..20
+                    VAL_KW@0..3 "val"
+                    WHITESPACE@3..4
+                    VAL_BIND@4..20
+                      VID_PAT@4..5
+                        LONG_VID@4..5
+                          VID@4..5 "a"
+                      WHITESPACE@5..6
+                      EQ@6..7 "="
+                      WHITESPACE@7..8
+                      APP_EXP@8..20
+                        VID_EXP@8..16
+                          LONG_VID@8..16
+                            VID@8..16 "sometype"
+                        PAREN_EXP@16..20
+                          L_PAREN@16..17 "("
+                          LIST_EXP@17..19
+                            L_BRACKET@17..18 "["
+                            R_BRACKET@18..19 "]"
+                          R_PAREN@19..20 ")"
+            "#]],
+        )
+    }
+
 }
