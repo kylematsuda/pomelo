@@ -1,3 +1,6 @@
+//! FIXME: Should this actually happen on the HIR???
+//! This may end up being a sketchy dup of the semantic analysis.
+
 use crate::{
     ast, AstNode, AstToken, Error, SyntaxElement, SyntaxElementChildren, SyntaxKind, SyntaxNode,
     SyntaxNodePtr, SyntaxTree,
@@ -204,11 +207,9 @@ fn fix_infix_bp(
             let mut trivia = collect_trivia(children);
 
             let vid = children
-                .skip_while(|c| {
-                    match c {
-                        NodeOrToken::Token(_) => true,
-                        _ => false
-                    }
+                .skip_while(|c| match c {
+                    NodeOrToken::Token(_) => true,
+                    _ => false,
                 })
                 .next()
                 .and_then(unwrap_syntax_node)
@@ -249,11 +250,9 @@ fn fix_infix_bp(
             let mut trivia = collect_trivia(children);
 
             let rhs = children
-                .skip_while(|c| {
-                    match c {
-                        NodeOrToken::Token(_) => true,
-                        _ => false
-                    }
+                .skip_while(|c| match c {
+                    NodeOrToken::Token(_) => true,
+                    _ => false,
                 })
                 .next()
                 .and_then(unwrap_syntax_node)
@@ -322,7 +321,7 @@ fn unwrap_vid_or_err_node(node: SyntaxNode, errors: &mut Vec<Error>) -> GreenEle
 fn unwrap_syntax_node(elt: SyntaxElement) -> Option<SyntaxNode> {
     match elt {
         NodeOrToken::Node(n) => Some(n),
-        _ => None, 
+        _ => None,
     }
 }
 
@@ -818,5 +817,4 @@ val b = x f y + 1",
             "#]],
         )
     }
-
 }
