@@ -878,11 +878,12 @@ end",
                         VID_EXP@57..63
                           LONG_VID@57..63
                             VID@57..63 "absset"
-                        L_PAREN@63..64 "("
-                        LIST_EXP@64..66
-                          L_BRACKET@64..65 "["
-                          R_BRACKET@65..66 "]"
-                        R_PAREN@66..67 ")"
+                        PAREN_EXP@63..67
+                          L_PAREN@63..64 "("
+                          LIST_EXP@64..66
+                            L_BRACKET@64..65 "["
+                            R_BRACKET@65..66 "]"
+                          R_PAREN@66..67 ")"
                   WHITESPACE@67..68
                   END_KW@68..71 "end"
             "#]],

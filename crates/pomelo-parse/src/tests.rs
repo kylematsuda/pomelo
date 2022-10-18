@@ -192,16 +192,17 @@ val part_two = simulate 256 initial_timers
                                           LONG_VID@193..195
                                             VID@193..195 "::"
                                         WHITESPACE@195..196
-                                        L_PAREN@196..197 "("
-                                        INFIX_OR_APP_EXP@197..205
-                                          VID_EXP@197..201
-                                            LONG_VID@197..201
-                                              VID@197..201 "loop"
-                                          WHITESPACE@201..202
-                                          VID_EXP@202..205
-                                            LONG_VID@202..205
-                                              VID@202..205 "ins"
-                                        R_PAREN@205..206 ")"
+                                        PAREN_EXP@196..206
+                                          L_PAREN@196..197 "("
+                                          INFIX_OR_APP_EXP@197..205
+                                            VID_EXP@197..201
+                                              LONG_VID@197..201
+                                                VID@197..201 "loop"
+                                            WHITESPACE@201..202
+                                            VID_EXP@202..205
+                                              LONG_VID@202..205
+                                                VID@202..205 "ins"
+                                          R_PAREN@205..206 ")"
                                     WHITESPACE@206..214
                                     PIPE@214..215 "|"
                                     WHITESPACE@215..216
@@ -266,57 +267,61 @@ val part_two = simulate 256 initial_timers
                           DOT@318..319 "."
                           VID@319..329 "fromString"
                       WHITESPACE@329..332
-                      L_PAREN@332..333 "("
-                      INFIX_OR_APP_EXP@333..388
-                        VID_EXP@333..346
-                          LONG_VID@333..346
-                            STRID@333..339 "String"
-                            DOT@339..340 "."
-                            VID@340..346 "tokens"
-                        WHITESPACE@346..347
-                        L_PAREN@347..348 "("
-                        FN_EXP@348..364
-                          FN_KW@348..350 "fn"
-                          WHITESPACE@350..351
-                          MATCH@351..364
-                            MRULE@351..364
-                              VID_PAT@351..352
-                                LONG_VID@351..352
-                                  VID@351..352 "c"
-                              WHITESPACE@352..353
-                              THICK_ARROW@353..355 "=>"
-                              WHITESPACE@355..356
-                              INFIX_OR_APP_EXP@356..364
-                                VID_EXP@356..357
-                                  LONG_VID@356..357
-                                    VID@356..357 "c"
-                                WHITESPACE@357..358
-                                VID_EXP@358..359
-                                  LONG_VID@358..359
-                                    VID@358..359 "="
-                                WHITESPACE@359..360
-                                SCON_EXP@360..364
-                                  CHAR@360..364 "#\",\""
-                        R_PAREN@364..365 ")"
-                        WHITESPACE@365..366
-                        L_PAREN@366..367 "("
-                        INFIX_OR_APP_EXP@367..387
-                          VID_EXP@367..369
-                            LONG_VID@367..369
-                              VID@367..369 "hd"
-                          WHITESPACE@369..370
-                          L_PAREN@370..371 "("
-                          INFIX_OR_APP_EXP@371..386
-                            VID_EXP@371..380
-                              LONG_VID@371..380
-                                VID@371..380 "readlines"
-                            WHITESPACE@380..381
-                            VID_EXP@381..386
-                              LONG_VID@381..386
-                                VID@381..386 "input"
-                          R_PAREN@386..387 ")"
-                        R_PAREN@387..388 ")"
-                      R_PAREN@388..389 ")"
+                      PAREN_EXP@332..389
+                        L_PAREN@332..333 "("
+                        INFIX_OR_APP_EXP@333..388
+                          VID_EXP@333..346
+                            LONG_VID@333..346
+                              STRID@333..339 "String"
+                              DOT@339..340 "."
+                              VID@340..346 "tokens"
+                          WHITESPACE@346..347
+                          PAREN_EXP@347..365
+                            L_PAREN@347..348 "("
+                            FN_EXP@348..364
+                              FN_KW@348..350 "fn"
+                              WHITESPACE@350..351
+                              MATCH@351..364
+                                MRULE@351..364
+                                  VID_PAT@351..352
+                                    LONG_VID@351..352
+                                      VID@351..352 "c"
+                                  WHITESPACE@352..353
+                                  THICK_ARROW@353..355 "=>"
+                                  WHITESPACE@355..356
+                                  INFIX_OR_APP_EXP@356..364
+                                    VID_EXP@356..357
+                                      LONG_VID@356..357
+                                        VID@356..357 "c"
+                                    WHITESPACE@357..358
+                                    VID_EXP@358..359
+                                      LONG_VID@358..359
+                                        VID@358..359 "="
+                                    WHITESPACE@359..360
+                                    SCON_EXP@360..364
+                                      CHAR@360..364 "#\",\""
+                            R_PAREN@364..365 ")"
+                          WHITESPACE@365..366
+                          PAREN_EXP@366..388
+                            L_PAREN@366..367 "("
+                            INFIX_OR_APP_EXP@367..387
+                              VID_EXP@367..369
+                                LONG_VID@367..369
+                                  VID@367..369 "hd"
+                              WHITESPACE@369..370
+                              PAREN_EXP@370..387
+                                L_PAREN@370..371 "("
+                                INFIX_OR_APP_EXP@371..386
+                                  VID_EXP@371..380
+                                    LONG_VID@371..380
+                                      VID@371..380 "readlines"
+                                  WHITESPACE@380..381
+                                  VID_EXP@381..386
+                                    LONG_VID@381..386
+                                      VID@381..386 "input"
+                                R_PAREN@386..387 ")"
+                            R_PAREN@387..388 ")"
+                        R_PAREN@388..389 ")"
                 WHITESPACE@389..391
                 VAL_DEC@391..469
                   VAL_KW@391..394 "val"
@@ -328,69 +333,73 @@ val part_two = simulate 256 initial_timers
                     WHITESPACE@405..406
                     EQ@406..407 "="
                     WHITESPACE@407..411
-                    L_PAREN@411..412 "("
-                    FN_EXP@412..468
-                      FN_KW@412..414 "fn"
-                      WHITESPACE@414..415
-                      MATCH@415..468
-                        MRULE@415..468
-                          VID_PAT@415..416
-                            LONG_VID@415..416
-                              VID@415..416 "t"
-                          WHITESPACE@416..417
-                          THICK_ARROW@417..419 "=>"
-                          WHITESPACE@419..420
-                          INFIX_OR_APP_EXP@420..468
-                            L_PAREN@420..421 "("
-                            INFIX_OR_APP_EXP@421..459
-                              VID_EXP@421..427
-                                LONG_VID@421..427
-                                  VID@421..427 "length"
-                              WHITESPACE@427..428
-                              VID_EXP@428..429
-                                LONG_VID@428..429
-                                  VID@428..429 "o"
-                              WHITESPACE@429..430
-                              L_PAREN@430..431 "("
-                              INFIX_OR_APP_EXP@431..458
-                                VID_EXP@431..442
-                                  LONG_VID@431..442
-                                    STRID@431..435 "List"
-                                    DOT@435..436 "."
-                                    VID@436..442 "filter"
-                                WHITESPACE@442..443
-                                L_PAREN@443..444 "("
-                                FN_EXP@444..457
-                                  FN_KW@444..446 "fn"
-                                  WHITESPACE@446..447
-                                  MATCH@447..457
-                                    MRULE@447..457
-                                      VID_PAT@447..448
-                                        LONG_VID@447..448
-                                          VID@447..448 "x"
-                                      WHITESPACE@448..449
-                                      THICK_ARROW@449..451 "=>"
-                                      WHITESPACE@451..452
-                                      INFIX_OR_APP_EXP@452..457
-                                        VID_EXP@452..453
-                                          LONG_VID@452..453
-                                            VID@452..453 "x"
-                                        WHITESPACE@453..454
-                                        VID_EXP@454..455
-                                          LONG_VID@454..455
-                                            VID@454..455 "="
-                                        WHITESPACE@455..456
-                                        VID_EXP@456..457
-                                          LONG_VID@456..457
-                                            VID@456..457 "t"
-                                R_PAREN@457..458 ")"
-                              R_PAREN@458..459 ")"
-                            R_PAREN@459..460 ")"
-                            WHITESPACE@460..461
-                            VID_EXP@461..468
-                              LONG_VID@461..468
-                                VID@461..468 "initial"
-                    R_PAREN@468..469 ")"
+                    PAREN_EXP@411..469
+                      L_PAREN@411..412 "("
+                      FN_EXP@412..468
+                        FN_KW@412..414 "fn"
+                        WHITESPACE@414..415
+                        MATCH@415..468
+                          MRULE@415..468
+                            VID_PAT@415..416
+                              LONG_VID@415..416
+                                VID@415..416 "t"
+                            WHITESPACE@416..417
+                            THICK_ARROW@417..419 "=>"
+                            WHITESPACE@419..420
+                            INFIX_OR_APP_EXP@420..468
+                              PAREN_EXP@420..460
+                                L_PAREN@420..421 "("
+                                INFIX_OR_APP_EXP@421..459
+                                  VID_EXP@421..427
+                                    LONG_VID@421..427
+                                      VID@421..427 "length"
+                                  WHITESPACE@427..428
+                                  VID_EXP@428..429
+                                    LONG_VID@428..429
+                                      VID@428..429 "o"
+                                  WHITESPACE@429..430
+                                  PAREN_EXP@430..459
+                                    L_PAREN@430..431 "("
+                                    INFIX_OR_APP_EXP@431..458
+                                      VID_EXP@431..442
+                                        LONG_VID@431..442
+                                          STRID@431..435 "List"
+                                          DOT@435..436 "."
+                                          VID@436..442 "filter"
+                                      WHITESPACE@442..443
+                                      PAREN_EXP@443..458
+                                        L_PAREN@443..444 "("
+                                        FN_EXP@444..457
+                                          FN_KW@444..446 "fn"
+                                          WHITESPACE@446..447
+                                          MATCH@447..457
+                                            MRULE@447..457
+                                              VID_PAT@447..448
+                                                LONG_VID@447..448
+                                                  VID@447..448 "x"
+                                              WHITESPACE@448..449
+                                              THICK_ARROW@449..451 "=>"
+                                              WHITESPACE@451..452
+                                              INFIX_OR_APP_EXP@452..457
+                                                VID_EXP@452..453
+                                                  LONG_VID@452..453
+                                                    VID@452..453 "x"
+                                                WHITESPACE@453..454
+                                                VID_EXP@454..455
+                                                  LONG_VID@454..455
+                                                    VID@454..455 "="
+                                                WHITESPACE@455..456
+                                                VID_EXP@456..457
+                                                  LONG_VID@456..457
+                                                    VID@456..457 "t"
+                                        R_PAREN@457..458 ")"
+                                    R_PAREN@458..459 ")"
+                                R_PAREN@459..460 ")"
+                              WHITESPACE@460..461
+                              VID_EXP@461..468
+                                LONG_VID@461..468
+                                  VID@461..468 "initial"
+                      R_PAREN@468..469 ")"
                 WHITESPACE@469..471
                 VAL_DEC@471..520
                   VAL_KW@471..474 "val"
@@ -638,30 +647,32 @@ val part_two = simulate 256 initial_timers
                                     LONG_VID@877..881
                                       VID@877..881 "loop"
                                   WHITESPACE@881..882
-                                  L_PAREN@882..883 "("
-                                  INFIX_OR_APP_EXP@883..892
-                                    VID_EXP@883..888
-                                      LONG_VID@883..888
-                                        VID@883..888 "count"
-                                    WHITESPACE@888..889
-                                    VID_EXP@889..890
-                                      LONG_VID@889..890
-                                        VID@889..890 "+"
-                                    WHITESPACE@890..891
-                                    SCON_EXP@891..892
-                                      INT@891..892 "1"
-                                  R_PAREN@892..893 ")"
+                                  PAREN_EXP@882..893
+                                    L_PAREN@882..883 "("
+                                    INFIX_OR_APP_EXP@883..892
+                                      VID_EXP@883..888
+                                        LONG_VID@883..888
+                                          VID@883..888 "count"
+                                      WHITESPACE@888..889
+                                      VID_EXP@889..890
+                                        LONG_VID@889..890
+                                          VID@889..890 "+"
+                                      WHITESPACE@890..891
+                                      SCON_EXP@891..892
+                                        INT@891..892 "1"
+                                    R_PAREN@892..893 ")"
                                   WHITESPACE@893..894
-                                  L_PAREN@894..895 "("
-                                  INFIX_OR_APP_EXP@895..905
-                                    VID_EXP@895..902
-                                      LONG_VID@895..902
-                                        VID@895..902 "advance"
-                                    WHITESPACE@902..903
-                                    VID_EXP@903..905
-                                      LONG_VID@903..905
-                                        VID@903..905 "ts"
-                                  R_PAREN@905..906 ")"
+                                  PAREN_EXP@894..906
+                                    L_PAREN@894..895 "("
+                                    INFIX_OR_APP_EXP@895..905
+                                      VID_EXP@895..902
+                                        LONG_VID@895..902
+                                          VID@895..902 "advance"
+                                      WHITESPACE@902..903
+                                      VID_EXP@903..905
+                                        LONG_VID@903..905
+                                          VID@903..905 "ts"
+                                    R_PAREN@905..906 ")"
                             WHITESPACE@906..909
                         IN_KW@909..911 "in"
                         WHITESPACE@911..917
@@ -670,30 +681,32 @@ val part_two = simulate 256 initial_timers
                             LONG_VID@917..922
                               VID@917..922 "foldl"
                           WHITESPACE@922..923
-                          L_PAREN@923..924 "("
-                          VID_EXP@924..928
-                            OP_KW@924..926 "op"
-                            WHITESPACE@926..927
-                            LONG_VID@927..928
-                              VID@927..928 "+"
-                          R_PAREN@928..929 ")"
+                          PAREN_EXP@923..929
+                            L_PAREN@923..924 "("
+                            VID_EXP@924..928
+                              OP_KW@924..926 "op"
+                              WHITESPACE@926..927
+                              LONG_VID@927..928
+                                VID@927..928 "+"
+                            R_PAREN@928..929 ")"
                           WHITESPACE@929..930
                           SCON_EXP@930..931
                             INT@930..931 "0"
                           WHITESPACE@931..932
-                          L_PAREN@932..933 "("
-                          INFIX_OR_APP_EXP@933..954
-                            VID_EXP@933..937
-                              LONG_VID@933..937
-                                VID@933..937 "loop"
-                            WHITESPACE@937..938
-                            SCON_EXP@938..939
-                              INT@938..939 "0"
-                            WHITESPACE@939..940
-                            VID_EXP@940..954
-                              LONG_VID@940..954
-                                VID@940..954 "initial_timers"
-                          R_PAREN@954..955 ")"
+                          PAREN_EXP@932..955
+                            L_PAREN@932..933 "("
+                            INFIX_OR_APP_EXP@933..954
+                              VID_EXP@933..937
+                                LONG_VID@933..937
+                                  VID@933..937 "loop"
+                              WHITESPACE@937..938
+                              SCON_EXP@938..939
+                                INT@938..939 "0"
+                              WHITESPACE@939..940
+                              VID_EXP@940..954
+                                LONG_VID@940..954
+                                  VID@940..954 "initial_timers"
+                            R_PAREN@954..955 ")"
                         WHITESPACE@955..958
                         END_KW@958..961 "end"
                     WHITESPACE@961..963

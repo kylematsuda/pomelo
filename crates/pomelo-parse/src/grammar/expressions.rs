@@ -813,10 +813,11 @@ mod tests {
                   WHITESPACE@3..4
                   IN_KW@4..6 "in"
                   WHITESPACE@6..7
-                  L_PAREN@7..8 "("
-                  SCON_EXP@8..36
-                    STRING@8..36 "\"a single parenthesiz ..."
-                  R_PAREN@36..37 ")"
+                  PAREN_EXP@7..37
+                    L_PAREN@7..8 "("
+                    SCON_EXP@8..36
+                      STRING@8..36 "\"a single parenthesiz ..."
+                    R_PAREN@36..37 ")"
                   WHITESPACE@37..38
                   END_KW@38..41 "end"
             "#]],
@@ -1085,39 +1086,41 @@ mod tests {
             "(fn x => x) (fn y => y) 1",
             expect![[r#"
                 INFIX_OR_APP_EXP@0..25
-                  L_PAREN@0..1 "("
-                  FN_EXP@1..10
-                    FN_KW@1..3 "fn"
-                    WHITESPACE@3..4
-                    MATCH@4..10
-                      MRULE@4..10
-                        VID_PAT@4..5
-                          LONG_VID@4..5
-                            VID@4..5 "x"
-                        WHITESPACE@5..6
-                        THICK_ARROW@6..8 "=>"
-                        WHITESPACE@8..9
-                        VID_EXP@9..10
-                          LONG_VID@9..10
-                            VID@9..10 "x"
-                  R_PAREN@10..11 ")"
+                  PAREN_EXP@0..11
+                    L_PAREN@0..1 "("
+                    FN_EXP@1..10
+                      FN_KW@1..3 "fn"
+                      WHITESPACE@3..4
+                      MATCH@4..10
+                        MRULE@4..10
+                          VID_PAT@4..5
+                            LONG_VID@4..5
+                              VID@4..5 "x"
+                          WHITESPACE@5..6
+                          THICK_ARROW@6..8 "=>"
+                          WHITESPACE@8..9
+                          VID_EXP@9..10
+                            LONG_VID@9..10
+                              VID@9..10 "x"
+                    R_PAREN@10..11 ")"
                   WHITESPACE@11..12
-                  L_PAREN@12..13 "("
-                  FN_EXP@13..22
-                    FN_KW@13..15 "fn"
-                    WHITESPACE@15..16
-                    MATCH@16..22
-                      MRULE@16..22
-                        VID_PAT@16..17
-                          LONG_VID@16..17
-                            VID@16..17 "y"
-                        WHITESPACE@17..18
-                        THICK_ARROW@18..20 "=>"
-                        WHITESPACE@20..21
-                        VID_EXP@21..22
-                          LONG_VID@21..22
-                            VID@21..22 "y"
-                  R_PAREN@22..23 ")"
+                  PAREN_EXP@12..23
+                    L_PAREN@12..13 "("
+                    FN_EXP@13..22
+                      FN_KW@13..15 "fn"
+                      WHITESPACE@15..16
+                      MATCH@16..22
+                        MRULE@16..22
+                          VID_PAT@16..17
+                            LONG_VID@16..17
+                              VID@16..17 "y"
+                          WHITESPACE@17..18
+                          THICK_ARROW@18..20 "=>"
+                          WHITESPACE@20..21
+                          VID_EXP@21..22
+                            LONG_VID@21..22
+                              VID@21..22 "y"
+                    R_PAREN@22..23 ")"
                   WHITESPACE@23..24
                   SCON_EXP@24..25
                     INT@24..25 "1"
