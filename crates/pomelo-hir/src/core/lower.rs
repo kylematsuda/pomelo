@@ -336,20 +336,7 @@ impl HirLower for Expr {
     }
 
     fn lower<A: BodyArena>(ast: Self::AstType, arena: &mut A) -> Idx<Self> {
-        let kind = match &ast {
-            ast::Expr::Atomic(e) => Self::lower_atomic(e, arena),
-            ast::Expr::Application(e) => Self::lower_application(e, arena),
-            ast::Expr::Infix(e) => Self::lower_infix(e, arena),
-            ast::Expr::Typed(e) => Self::lower_typed(e, arena),
-            ast::Expr::AndAlso(e) => Self::lower_andalso(e, arena),
-            ast::Expr::OrElse(e) => Self::lower_orelse(e, arena),
-            ast::Expr::Handle(e) => Self::lower_handle(e, arena),
-            ast::Expr::Raise(e) => Self::lower_raise(e, arena),
-            ast::Expr::If(e) => Self::lower_if(e, arena),
-            ast::Expr::While(e) => Self::lower_while(e, arena),
-            ast::Expr::Case(e) => Self::lower_case(e, arena),
-            ast::Expr::Fn(e) => Self::lower_fn(e, arena),
-        };
+        let kind = Self::to_kind(&ast, arena);
         let ast_id = AstId::Node(arena.alloc_ast_id(&ast));
         arena.alloc_expr(Self { kind, ast_id })
     }
@@ -368,6 +355,23 @@ impl HirLowerGenerated for Expr {
 }
 
 impl Expr {
+    fn to_kind<A: BodyArena>(expr: &ast::Expr, arena: &mut A) -> ExprKind {
+        match &expr {
+            ast::Expr::Atomic(e) => Self::lower_atomic(e, arena),
+            ast::Expr::Application(e) => Self::lower_application(e, arena),
+            ast::Expr::Infix(e) => Self::lower_infix(e, arena),
+            ast::Expr::Typed(e) => Self::lower_typed(e, arena),
+            ast::Expr::AndAlso(e) => Self::lower_andalso(e, arena),
+            ast::Expr::OrElse(e) => Self::lower_orelse(e, arena),
+            ast::Expr::Handle(e) => Self::lower_handle(e, arena),
+            ast::Expr::Raise(e) => Self::lower_raise(e, arena),
+            ast::Expr::If(e) => Self::lower_if(e, arena),
+            ast::Expr::While(e) => Self::lower_while(e, arena),
+            ast::Expr::Case(e) => Self::lower_case(e, arena),
+            ast::Expr::Fn(e) => Self::lower_fn(e, arena),
+        }
+    }
+
     fn lower_atomic<A: BodyArena>(expr: &ast::AtomicExpr, arena: &mut A) -> ExprKind {
         match expr {
             ast::AtomicExpr::SCon(e) => Self::lower_scon(e, arena),
@@ -379,6 +383,7 @@ impl Expr {
             ast::AtomicExpr::Unit(e) => Self::lower_unit(e, arena),
             ast::AtomicExpr::List(e) => Self::lower_list(e, arena),
             ast::AtomicExpr::RecSel(e) => Self::lower_recsel(e, arena),
+            ast::AtomicExpr::Paren(e) => Self::lower_paren(e, arena),
         }
     }
 
@@ -492,6 +497,14 @@ impl Expr {
         .collect();
 
         ExprKind::Fn { match_: mrule }
+    }
+
+    // FIXME: this is a bit gross, maybe need to rethink the traits??
+    fn lower_paren<A: BodyArena>(expr: &ast::ParenExpr, arena: &mut A) -> ExprKind {
+        match expr.expr() {
+            Some(e) => Self::to_kind(&e, arena),
+            None => ExprKind::Missing,
+        }
     }
 
     fn lower_application<A: BodyArena>(expr: &ast::ApplicationExpr, arena: &mut A) -> ExprKind {
