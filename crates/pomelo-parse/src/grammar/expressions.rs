@@ -986,9 +986,8 @@ mod tests {
                       LONG_TY_CON@32..36
                         TY_CON@32..36 "list"
                     WHITESPACE@36..37
-                    CON_TY@37..41
-                      LONG_TY_CON@37..41
-                        TY_CON@37..41 "list"
+                    LONG_TY_CON@37..41
+                      TY_CON@37..41 "list"
             "#]],
         )
     }

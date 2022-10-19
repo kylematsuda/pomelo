@@ -43,13 +43,40 @@ fn star_ident(p: &Parser) -> bool {
 }
 
 fn tycon_seq(p: &mut Parser) {
-    grammar::descend_flat(
-        p,
-        CON_TY,
-        ty_atom_or_longtycon,
-        |p| non_star_ident(p),
-        ty_atom_or_longtycon,
-    )
+    let outer = p.checkpoint();
+
+    if p.peek_next_nontrivia(0).is_ty_atom() {
+        p.eat_trivia();
+        ty_atom(p);
+
+        // If there's just a single ty atom, 
+        // then this is an AtomicTy
+        if !non_star_ident(p) {
+            return;
+        } 
+    }
+
+    let _ng = p.start_node_at(outer, CON_TY);
+
+    // Consume types in a flat sequence
+    while non_star_ident(p) {
+        p.eat_trivia();
+
+        if p.peek().is_ty_atom() {
+            ty_atom(p);
+        } else if p.peek() == IDENT {
+            let checkpoint = p.checkpoint();
+            longtycon(p);
+
+            // If this is not the final longtycon, turn it into a 
+            // constructed type node
+            if non_star_ident(p) {
+                let _ng = p.start_node_at(checkpoint, CON_TY);
+            }
+        } else {
+            p.error("Expected type constructor.");
+        }
+    }
 }
 
 fn non_star_ident(p: &Parser) -> bool {
@@ -62,17 +89,6 @@ fn non_star_ident(p: &Parser) -> bool {
         t.map(Token::text) != Some("*")
     } else {
         false
-    }
-}
-
-fn ty_atom_or_longtycon(p: &mut Parser) {
-    if p.peek().is_ty_atom() {
-        p.eat_trivia();
-        ty_atom(p);
-    } else if p.peek() == IDENT {
-        let _ng = p.start_node(CON_TY);
-        p.eat_trivia();
-        longtycon(p);
     }
 }
 
@@ -250,9 +266,8 @@ mod tests {
                     LONG_TY_CON@21..25
                       TY_CON@21..25 "test"
                   WHITESPACE@25..26
-                  CON_TY@26..29
-                    LONG_TY_CON@26..29
-                      TY_CON@26..29 "int"
+                  LONG_TY_CON@26..29
+                    TY_CON@26..29 "int"
             "#]],
         )
     }
@@ -291,9 +306,8 @@ mod tests {
                     TYVAR_TY@23..25
                       TYVAR@23..25 "'c"
                     WHITESPACE@25..26
-                    CON_TY@26..30
-                      LONG_TY_CON@26..30
-                        TY_CON@26..30 "list"
+                    LONG_TY_CON@26..30
+                      TY_CON@26..30 "list"
                   WHITESPACE@30..31
                   STAR@31..32 "*"
                   WHITESPACE@32..33
@@ -370,6 +384,27 @@ mod tests {
                     WHITESPACE@23..24
                     TYVAR_TY@24..26
                       TYVAR@24..26 "'a"
+            "#]],
+        )
+    }
+
+    #[test]
+    fn funky_constructed_type() {
+        check_with_f(
+            false,
+            super::ty,
+            "'a int tree",
+            expect![[r#"
+                CON_TY@0..11
+                  TYVAR_TY@0..2
+                    TYVAR@0..2 "'a"
+                  WHITESPACE@2..3
+                  CON_TY@3..6
+                    LONG_TY_CON@3..6
+                      TY_CON@3..6 "int"
+                  WHITESPACE@6..7
+                  LONG_TY_CON@7..11
+                    TY_CON@7..11 "tree"
             "#]],
         )
     }

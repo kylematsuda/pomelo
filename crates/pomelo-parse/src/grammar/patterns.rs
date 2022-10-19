@@ -777,9 +777,8 @@ mod tests {
                       TYVAR_TY@10..12
                         TYVAR@10..12 "'a"
                       WHITESPACE@12..13
-                      CON_TY@13..17
-                        LONG_TY_CON@13..17
-                          TY_CON@13..17 "list"
+                      LONG_TY_CON@13..17
+                        TY_CON@13..17 "list"
                   WHITESPACE@17..18
                   AS_KW@18..20 "as"
                   WHITESPACE@20..21

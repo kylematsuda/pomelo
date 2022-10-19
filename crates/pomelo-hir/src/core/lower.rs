@@ -289,7 +289,7 @@ impl Dec {
 }
 
 impl DataBind {
-    pub fn lower<A: BodyArena>(databind: &ast::DataBind, arena: &mut A) -> Self {
+    fn lower<A: BodyArena>(databind: &ast::DataBind, arena: &mut A) -> Self {
         let tyvarseq = databind
             .tyvarseq()
             .map(|t| TyVar::from_token(Some(t), arena))
@@ -310,7 +310,7 @@ impl DataBind {
 }
 
 impl ConBind {
-    pub fn lower<A: BodyArena>(conbind: &ast::ConBind, arena: &mut A) -> Self {
+    fn lower<A: BodyArena>(conbind: &ast::ConBind, arena: &mut A) -> Self {
         let op = conbind.op();
         let vid = VId::from_token(conbind.vid(), arena);
         let ty = conbind.ty().map(|t| Type::lower(t, arena));
@@ -319,7 +319,7 @@ impl ConBind {
 }
 
 impl ExBind {
-    pub fn lower<A: BodyArena>(exbind: &ast::ExBind, arena: &mut A) -> Self {
+    fn _lower<A: BodyArena>(_exbind: &ast::ExBind, _arena: &mut A) -> Self {
         todo!()
     }
 }
@@ -758,13 +758,13 @@ impl ExpRow {
 }
 
 impl MRule {
-    pub fn lower<A: BodyArena>(mrule: &ast::Mrule, arena: &mut A) -> Self {
+    fn lower<A: BodyArena>(mrule: &ast::Mrule, arena: &mut A) -> Self {
         let pat = Pat::lower_opt(mrule.pat(), arena);
         let expr = Expr::lower_opt(mrule.expr(), arena);
         Self { pat, expr }
     }
 
-    pub fn lower_from_match<A: BodyArena>(match_expr: &ast::Match, arena: &mut A) -> Box<[Self]> {
+    fn lower_from_match<A: BodyArena>(match_expr: &ast::Match, arena: &mut A) -> Box<[Self]> {
         match_expr
             .mrules()
             .map(|m| Self::lower(&m, arena))
@@ -773,7 +773,7 @@ impl MRule {
 }
 
 impl Scon {
-    pub fn lower(node: ast::Scon) -> Self {
+    fn lower(node: ast::Scon) -> Self {
         match node {
             ast::Scon::Int(s) => {
                 let s = s.text();
@@ -942,7 +942,7 @@ impl Pat {
 }
 
 impl PatRow {
-    pub fn lower<A: BodyArena>(patrow: ast::PatRow, arena: &mut A) -> Self {
+    fn lower<A: BodyArena>(patrow: ast::PatRow, arena: &mut A) -> Self {
         let pat = patrow
             .pat()
             .map(|node| Pat::lower(node, arena))
@@ -951,7 +951,7 @@ impl PatRow {
         Self::new_from_pat(pat, label, arena)
     }
 
-    pub fn new_from_pat<A: BodyArena>(pat: Idx<Pat>, label: Label, arena: &mut A) -> Self {
+    fn new_from_pat<A: BodyArena>(pat: Idx<Pat>, label: Label, arena: &mut A) -> Self {
         if let PatKind::Wildcard = arena.get_pat(pat).kind {
             Self::Wildcard
         } else {
@@ -1036,13 +1036,13 @@ impl Type {
 }
 
 impl TyRow {
-    pub fn lower<A: BodyArena>(tyrow: ast::TyRow, arena: &mut A) -> Self {
+    fn lower<A: BodyArena>(tyrow: ast::TyRow, arena: &mut A) -> Self {
         let ty = Type::lower_opt(tyrow.ty(), arena);
         let label = Label::from_token(tyrow.label(), arena);
         Self { label, ty }
     }
 
-    pub fn new_from_ty(ty: Idx<Type>, label: Label) -> Self {
+    fn new_from_ty(ty: Idx<Type>, label: Label) -> Self {
         Self { label, ty }
     }
 }

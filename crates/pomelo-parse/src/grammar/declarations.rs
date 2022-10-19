@@ -858,9 +858,8 @@ end",
                           LONG_TY_CON@27..30
                             TY_CON@27..30 "int"
                         WHITESPACE@30..31
-                        CON_TY@31..35
-                          LONG_TY_CON@31..35
-                            TY_CON@31..35 "list"
+                        LONG_TY_CON@31..35
+                          TY_CON@31..35 "list"
                   WHITESPACE@35..36
                   WITH_KW@36..40 "with"
                   WHITESPACE@40..45
