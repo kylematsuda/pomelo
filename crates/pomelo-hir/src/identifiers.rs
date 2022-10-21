@@ -1,6 +1,8 @@
 use crate::arena::{Arena, Idx};
 use pomelo_parse::{ast, AstToken};
 
+use std::collections::HashMap;
+
 pub trait NameInterner {
     fn fresh(&mut self) -> u32;
     fn alloc(&mut self, s: &str) -> Idx<String>;
@@ -26,6 +28,7 @@ pub trait NameInterner {
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct NameInternerImpl {
     names: Arena<String>,
+    mapping: HashMap<String, Idx<String>>,
     generated: u32,
 }
 
@@ -37,7 +40,13 @@ impl NameInterner for NameInternerImpl {
     }
 
     fn alloc(&mut self, s: &str) -> Idx<String> {
-        self.names.alloc(s.to_owned())
+        if let Some(idx) = self.mapping.get(s) {
+            *idx
+        } else { 
+            let idx = self.names.alloc(s.to_owned());
+            self.mapping.insert(s.to_owned(), idx);
+            idx
+        }
     }
 
     fn get(&self, index: Idx<String>) -> &str {
