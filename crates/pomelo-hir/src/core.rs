@@ -27,7 +27,7 @@ pub struct TopDecBody {
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
-pub(crate) struct BodyArenaImpl<I> {
+pub(crate) struct BodyArenaImpl<NameInterner> {
     pub(crate) pats: Arena<Pat>,
     pub(crate) exprs: Arena<Expr>,
 
@@ -35,7 +35,7 @@ pub(crate) struct BodyArenaImpl<I> {
     pub(crate) decs: Arena<Dec>,
     pub(crate) tys: Arena<Type>,
 
-    pub(crate) name_interner: I,
+    pub(crate) name_interner: NameInterner,
     pub(crate) ast_map: AstIdMap,
 }
 
