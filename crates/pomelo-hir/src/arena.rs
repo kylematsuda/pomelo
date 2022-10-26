@@ -1,3 +1,4 @@
+use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
 
 /// Index into [`Arena`]
@@ -17,6 +18,12 @@ impl<T> Clone for Idx<T> {
 }
 
 impl<T> Copy for Idx<T> {}
+
+impl<T> Hash for Idx<T> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.inner.hash(state);
+    }
+}
 
 impl<T> Idx<T> {
     pub fn as_inner(&self) -> usize {

@@ -72,7 +72,11 @@ fn lower_abstype() {
     let src = "abstype AbsSet = absset of int list with
     val empty = absset([])
 end";
-    check::<Dec, _>(src, |p| p.parse_dec(), expect!["abstype  AbsSet = absset of int list with val empty = absset nil end"])
+    check::<Dec, _>(
+        src,
+        |p| p.parse_dec(),
+        expect!["abstype  AbsSet = absset of int list with val empty = absset nil end"],
+    )
 }
 
 #[test]

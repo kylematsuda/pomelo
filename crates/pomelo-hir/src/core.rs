@@ -8,6 +8,8 @@ use pomelo_parse::{ast, language::SML, AstNode, AstPtr};
 pub mod lower;
 pub mod pretty;
 
+use crate::core::lower::HirLower;
+
 #[cfg(test)]
 mod tests;
 
@@ -23,7 +25,23 @@ pub struct TopDecBody {
     // semantic declarations into their own `Dec` instances.
     // For example, "val a = b and c = d" represents a single `TopDec`, but two
     // `Dec`s.
-    dec: Box<[Idx<Dec>]>,
+    dec: Idx<Dec>,
+}
+
+impl TopDecBody {
+    pub fn from_syntax(dec: ast::Dec) -> Self {
+        let mut arenas = BodyArenaImpl::default();
+        let dec = Dec::lower(dec, &mut arenas);
+        Self { arenas, dec }
+    }
+
+    pub fn arena(&self) -> &impl BodyArena {
+        &self.arenas
+    }
+
+    pub fn dec(&self) -> Idx<Dec> {
+        self.dec
+    }
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
@@ -75,7 +93,7 @@ impl<I: NameInterner> FileArena for BodyArenaImpl<I> {
         self.ast_map.alloc(ast)
     }
 
-    fn get_ast_id<N>(&mut self, index: FileAstIdx<N>) -> Option<AstPtr<N>>
+    fn get_ast_id<N>(&self, index: FileAstIdx<N>) -> Option<AstPtr<N>>
     where
         N: AstNode<Language = SML>,
     {
@@ -129,6 +147,30 @@ pub enum AstId<N> {
     Generated(NodeParent),
 }
 
+impl<N: AstNode<Language = SML>> AstId<N> {
+    pub fn is_generated(&self) -> bool {
+        match self {
+            Self::Generated(_) => true,
+            Self::Missing | Self::Node(_) => false,
+        }
+    }
+
+    pub fn get_node(&self) -> Option<FileAstIdx<N>> {
+        match self {
+            Self::Node(n) => Some(*n),
+            Self::Missing | Self::Generated(_) => None,
+        }
+    }
+
+    pub fn as_span<A: FileArena>(&self, arena: &A) -> Option<(usize, usize)> {
+        match self {
+            Self::Missing => None,
+            Self::Node(n) => arena.get_ast_span(*n),
+            Self::Generated(parent) => parent.as_span(arena),
+        }
+    }
+}
+
 /// Used to find the parent span of nodes that were generated during lowering.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NodeParent {
@@ -151,6 +193,14 @@ impl NodeParent {
     pub fn from_dec<A: BodyArena>(dec: &ast::Dec, arena: &mut A) -> Self {
         let id = arena.alloc_ast_id(dec);
         Self::Dec(id)
+    }
+
+    pub fn as_span<A: FileArena>(&self, arena: &A) -> Option<(usize, usize)> {
+        match self {
+            Self::Dec(d) => arena.get_ast_span(*d),
+            Self::Expr(e) => arena.get_ast_span(*e),
+            Self::Pat(p) => arena.get_ast_span(*p),
+        }
     }
 }
 
@@ -319,8 +369,8 @@ impl std::fmt::Display for FloatWrapper {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExpRow {
-    label: Label,
-    expr: ExprIdx,
+    pub label: Label,
+    pub expr: ExprIdx,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -407,6 +457,6 @@ pub struct TyRow {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MRule {
-    pat: PatIdx,
-    expr: ExprIdx,
+    pub pat: PatIdx,
+    pub expr: ExprIdx,
 }

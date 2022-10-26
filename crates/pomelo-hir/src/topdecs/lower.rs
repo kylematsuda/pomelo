@@ -106,6 +106,7 @@ impl CoreDec {
         Self::Val {
             names: vids.into_boxed_slice(),
             ast_id,
+            body: None,
         }
     }
 

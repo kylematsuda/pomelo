@@ -42,7 +42,7 @@ impl NameInterner for NameInternerImpl {
     fn alloc(&mut self, s: &str) -> Idx<String> {
         if let Some(idx) = self.mapping.get(s) {
             *idx
-        } else { 
+        } else {
             let idx = self.names.alloc(s.to_owned());
             self.mapping.insert(s.to_owned(), idx);
             idx
@@ -84,7 +84,7 @@ impl BuiltIn {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Name {
     BuiltIn(BuiltIn),
     String(Idx<String>),
@@ -108,7 +108,7 @@ impl Name {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct LongVId {
     pub strids: Box<[StrId]>,
     pub vid: VId,
@@ -147,7 +147,7 @@ impl LongVId {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum VId {
     Missing,
     Name(Name),
@@ -202,7 +202,7 @@ impl LongStrId {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum StrId {
     Missing,
     Name(Name),
