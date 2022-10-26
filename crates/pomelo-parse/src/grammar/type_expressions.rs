@@ -49,11 +49,11 @@ fn tycon_seq(p: &mut Parser) {
         p.eat_trivia();
         ty_atom(p);
 
-        // If there's just a single ty atom, 
+        // If there's just a single ty atom,
         // then this is an AtomicTy
         if !non_star_ident(p) {
             return;
-        } 
+        }
     }
 
     let _ng = p.start_node_at(outer, CON_TY);
@@ -68,7 +68,7 @@ fn tycon_seq(p: &mut Parser) {
             let checkpoint = p.checkpoint();
             longtycon(p);
 
-            // If this is not the final longtycon, turn it into a 
+            // If this is not the final longtycon, turn it into a
             // constructed type node
             if non_star_ident(p) {
                 let _ng = p.start_node_at(checkpoint, CON_TY);
