@@ -1,3 +1,7 @@
+//! HIR definitions for the Core language constructs
+//!
+//! Should [`Body`] be specialized to only [`Expr`]s?
+
 use crate::arena::{Arena, Idx};
 use crate::identifiers::{
     Label, LongStrId, LongTyCon, LongVId, NameInterner, NameInternerImpl, TyCon, TyVar, VId,
@@ -13,8 +17,9 @@ use crate::core::lower::HirLower;
 #[cfg(test)]
 mod tests;
 
+/// Analog of r-a's hir_def::Body
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TopDecBody {
+pub struct Body {
     arenas: BodyArenaImpl<NameInternerImpl>,
 
     // The actual outermost dec(s)
@@ -28,7 +33,7 @@ pub struct TopDecBody {
     dec: Idx<Dec>,
 }
 
-impl TopDecBody {
+impl Body {
     pub fn from_syntax(dec: ast::Dec) -> Self {
         let mut arenas = BodyArenaImpl::default();
         let dec = Dec::lower(dec, &mut arenas);
@@ -41,6 +46,10 @@ impl TopDecBody {
 
     pub fn dec(&self) -> Idx<Dec> {
         self.dec
+    }
+
+    pub fn topdec(&self) -> &Dec {
+        self.arenas.get_dec(self.dec)
     }
 }
 

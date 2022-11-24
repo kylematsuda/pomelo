@@ -2,7 +2,7 @@
 //!
 //! Is this even necessary...?
 use crate::arena::{Arena, Idx};
-use crate::core::TopDecBody;
+use crate::core::Body;
 use crate::identifiers::{LongStrId, LongVId, NameInterner, NameInternerImpl, TyCon, VId};
 use pomelo_parse::{ast, language::SML, AstNode, AstPtr, SyntaxNodePtr};
 use std::collections::HashMap;
@@ -132,60 +132,60 @@ pub enum CoreDec {
     Val {
         names: Box<[LongVId]>,
         ast_id: FileAstIdx<ast::ValDec>,
-        body: Option<TopDecBody>,
+        body: Option<Body>,
     },
     Ty {
         tycons: Box<[TyCon]>,
         ast_id: FileAstIdx<ast::TypeDec>,
-        body: Option<TopDecBody>,
+        body: Option<Body>,
     },
     Datatype {
         databinds: Box<[DataBind]>,
         ast_id: FileAstIdx<ast::DatatypeDec>,
-        body: Option<TopDecBody>,
+        body: Option<Body>,
     },
     Replication {
         tycon: TyCon,
         ast_id: FileAstIdx<ast::DatatypeRepDec>,
-        body: Option<TopDecBody>,
+        body: Option<Body>,
     },
     Abstype {
         databind: DataBind,
         decnames: Box<[CoreDec]>,
         ast_id: FileAstIdx<ast::AbstypeDec>,
-        body: Option<TopDecBody>,
+        body: Option<Body>,
     },
     Exception {
         exbinds: Box<[ExBind]>,
         ast_id: FileAstIdx<ast::ExceptionDec>,
-        body: Option<TopDecBody>,
+        body: Option<Body>,
     },
     Local {
         decnames: Box<[CoreDec]>,
         ast_id: FileAstIdx<ast::LocalDec>,
-        body: Option<TopDecBody>,
+        body: Option<Body>,
     },
     Open {
         strids: Box<[LongStrId]>,
         ast_id: FileAstIdx<ast::OpenDec>,
-        body: Option<TopDecBody>,
+        body: Option<Body>,
     },
     Infix {
         vids: Box<[VId]>,
         prec: Option<u8>,
         ast_id: FileAstIdx<ast::InfixDec>,
-        body: Option<TopDecBody>,
+        body: Option<Body>,
     },
     Infixr {
         vids: Box<[VId]>,
         prec: Option<u8>,
         ast_id: FileAstIdx<ast::InfixrDec>,
-        body: Option<TopDecBody>,
+        body: Option<Body>,
     },
     Nonfix {
         vids: Box<[VId]>,
         ast_id: FileAstIdx<ast::NonfixDec>,
-        body: Option<TopDecBody>,
+        body: Option<Body>,
     },
 }
 

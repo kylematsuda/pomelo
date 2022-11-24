@@ -131,10 +131,7 @@ impl<'hir, A: BodyArena> std::fmt::Display for BodySymbols<'hir, A> {
                 v.def
                     .map(|d| {
                         let ast = &self.arena.get_dec(d).ast_id;
-                        format!(
-                            "Dec@{}",
-                            pretty_span(ast.as_span(self.arena))
-                        )
+                        format!("Dec@{}", pretty_span(ast.as_span(self.arena)))
                     })
                     .unwrap_or("None".to_owned())
             )?;
@@ -272,6 +269,8 @@ impl<'hir, A: BodyArena> BodySymbols<'hir, A> {
         Ok(())
     }
 
+    /// FIXME: Need to generate a name for each match pattern
+    /// A name in a pattern shadows the outer name
     pub fn add_match(&mut self, match_: &[MRule]) -> Result<(), ()> {
         for m in match_ {
             self.add_pat(m.pat, None)?;
@@ -283,7 +282,7 @@ impl<'hir, A: BodyArena> BodySymbols<'hir, A> {
 
 #[cfg(test)]
 mod tests {
-    use crate::core::TopDecBody;
+    use crate::core::Body;
     use crate::semantics::BodySymbols;
     use pomelo_parse::{ast, passes::apply_passes, AstNode, Parser};
 
@@ -297,7 +296,7 @@ mod tests {
         eprintln!("{}", tree);
 
         let node = ast::Dec::cast(tree.syntax()).unwrap();
-        let body = TopDecBody::from_syntax(node);
+        let body = Body::from_syntax(node);
         let mut symbols = BodySymbols::new(body.arena());
         symbols.add_dec(body.dec()).unwrap();
 
@@ -313,6 +312,19 @@ mod tests {
                     val b = 2
                 in 
                     a + b 
+                end 
+            ",
+        )
+    }
+
+    #[test]
+    fn test_symbol_map_shadow() {
+        check(
+            "val x =
+                let 
+                    val a = 1
+                in 
+                    fn x => a
                 end 
             ",
         )
