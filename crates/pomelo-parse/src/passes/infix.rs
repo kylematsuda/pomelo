@@ -1,5 +1,7 @@
-//! FIXME: Should this actually happen on the HIR???
-//! This may end up being a sketchy dup of the semantic analysis.
+//! FIXME: do this during semantic analysis after HIR lowering, not during parsing
+//! 
+//! Took this out of the passes. I think passes should probably just be used for validation,
+//! probably not actually transforming the syntax tree?
 
 use crate::{
     ast, AstNode, AstToken, Error, SyntaxElement, SyntaxElementChildren, SyntaxKind, SyntaxNode,

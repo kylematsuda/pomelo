@@ -2,9 +2,12 @@ pub mod infix;
 
 use crate::SyntaxTree;
 
-pub fn apply_passes(tree: SyntaxTree) -> SyntaxTree {
-    infix::pass_rearrange_infix(tree)
-}
+/// Apply validation passes, etc.
+///
+/// This should output a list of errors or something,
+/// but importantly should take `&SyntaxTree` since we probably want to
+/// defer any semantic analysis to later
+pub fn apply_passes(_tree: &SyntaxTree) {}
 
 #[cfg(test)]
 pub(crate) mod tests {

@@ -25,10 +25,7 @@ where
 }
 
 #[test]
-// #[ignore]
 fn aocprogram() {
-    // This won't work until we figure out how to correctly
-    // glue ":" and ":" into "::". And implement it everywhere!
     let src = r#"
 val input = "../../input/day6/input.txt"
 

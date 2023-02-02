@@ -41,5 +41,7 @@ impl Error {
 }
 
 pub fn parse<'a>(input: &'a str) -> SyntaxTree {
-    passes::apply_passes(Parser::new(input).parse())
+    let tree = Parser::new(input).parse();
+    passes::apply_passes(&tree);
+    tree
 }

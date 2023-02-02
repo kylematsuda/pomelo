@@ -323,6 +323,9 @@ pub enum ExprKind {
         dec: Idx<Dec>,
         expr: ExprIdx,
     },
+    InfixOrApp {
+        exprs: Box<[Idx<Expr>]>,
+    },
     Application {
         expr: ExprIdx,
         param: ExprIdx,

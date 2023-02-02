@@ -360,6 +360,7 @@ impl Expr {
             ast::Expr::Atomic(e) => Self::lower_atomic(e, arena),
             ast::Expr::Application(e) => Self::lower_application(e, arena),
             ast::Expr::Infix(e) => Self::lower_infix(e, arena),
+            ast::Expr::InfixOrApp(e) => Self::lower_infix_or_app(e, arena), 
             ast::Expr::Typed(e) => Self::lower_typed(e, arena),
             ast::Expr::AndAlso(e) => Self::lower_andalso(e, arena),
             ast::Expr::OrElse(e) => Self::lower_orelse(e, arena),
@@ -511,6 +512,11 @@ impl Expr {
         let app = Self::lower_opt(expr.application(), arena);
         let param = Self::lower_opt(expr.atomic(), arena);
         ExprKind::Application { expr: app, param }
+    }
+
+    fn lower_infix_or_app<A: BodyArena>(expr: &ast::InfixOrAppExpr, arena: &mut A) -> ExprKind {
+        let exprs = expr.exprs().map(|e| Expr::lower(e, arena)).collect();
+        ExprKind::InfixOrApp { exprs }
     }
 
     fn lower_infix<A: BodyArena>(expr: &ast::InfixExpr, arena: &mut A) -> ExprKind {

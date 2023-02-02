@@ -4,19 +4,6 @@ use SyntaxKind::*;
 use std::fmt;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct InfixOrAppExpr {
-    syntax: SyntaxNode,
-}
-
-impl_ast_node!(InfixOrAppExpr, INFIX_OR_APP_EXP);
-
-impl InfixOrAppExpr {
-    pub fn exprs(&self) -> impl Iterator<Item = ast::Expr> {
-        support::children(self.syntax())
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Expr {
     Fn(FnExpr),
     Case(CaseExpr),
@@ -28,6 +15,7 @@ pub enum Expr {
     AndAlso(AndAlsoExpr),
     Typed(TypedExpr),
     Infix(InfixExpr),
+    InfixOrApp(InfixOrAppExpr),
     Application(ApplicationExpr),
     Atomic(AtomicExpr),
 }
@@ -48,6 +36,7 @@ impl AstNode for Expr {
                 | ANDALSO_EXP
                 | TY_EXP
                 | INFIX_EXP
+                | INFIX_OR_APP_EXP
                 | APP_EXP
         ) || AtomicExpr::can_cast(kind)
     }
@@ -67,6 +56,7 @@ impl AstNode for Expr {
             ANDALSO_EXP => Self::AndAlso(AndAlsoExpr::cast(node)?),
             TY_EXP => Self::Typed(TypedExpr::cast(node)?),
             INFIX_EXP => Self::Infix(InfixExpr::cast(node)?),
+            INFIX_OR_APP_EXP => Self::InfixOrApp(InfixOrAppExpr::cast(node)?),
             APP_EXP => Self::Application(ApplicationExpr::cast(node)?),
             _ => Self::Atomic(AtomicExpr::cast(node)?),
         };
@@ -85,6 +75,7 @@ impl AstNode for Expr {
             Self::AndAlso(inner) => inner.syntax(),
             Self::Typed(inner) => inner.syntax(),
             Self::Infix(inner) => inner.syntax(),
+            Self::InfixOrApp(inner) => inner.syntax(),
             Self::Application(inner) => inner.syntax(),
             Self::Atomic(inner) => inner.syntax(),
         }
@@ -279,6 +270,20 @@ impl InfixExpr {
         support::children(self.syntax()).skip(1).next()
     }
 }
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct InfixOrAppExpr {
+    syntax: SyntaxNode,
+}
+
+impl_ast_node!(InfixOrAppExpr, INFIX_OR_APP_EXP);
+
+impl InfixOrAppExpr {
+    pub fn exprs(&self) -> impl Iterator<Item = ast::Expr> {
+        support::children(self.syntax())
+    }
+}
+
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ApplicationExpr {

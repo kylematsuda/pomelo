@@ -227,7 +227,7 @@ impl<'hir, A: BodyArena> BodySymbols<'hir, A> {
             ExprKind::Fn { match_ } => {
                 self.add_match(match_)?;
             }
-            ExprKind::Missing | ExprKind::Scon(_) => {}
+            ExprKind::Missing | ExprKind::Scon(_) | ExprKind::InfixOrApp { .. } => {}
         }
         Ok(())
     }
@@ -284,11 +284,11 @@ impl<'hir, A: BodyArena> BodySymbols<'hir, A> {
 mod tests {
     use crate::core::Body;
     use crate::semantics::BodySymbols;
-    use pomelo_parse::{ast, passes::apply_passes, AstNode, Parser};
+    use pomelo_parse::{ast, AstNode, Parser};
 
     fn check(src: &str) {
         let parser = Parser::new(src);
-        let tree = apply_passes(parser.parse_dec());
+        let tree = parser.parse_dec();
 
         for e in tree.errors() {
             eprintln!("{:?}", e);

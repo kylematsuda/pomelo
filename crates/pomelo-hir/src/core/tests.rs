@@ -1,5 +1,5 @@
 use pomelo_parse::language::SML;
-use pomelo_parse::{passes::apply_passes, AstNode, Parser, SyntaxTree};
+use pomelo_parse::{AstNode, Parser, SyntaxTree};
 
 use expect_test::{expect, Expect};
 
@@ -16,7 +16,7 @@ where
     F: Fn(Parser) -> SyntaxTree,
 {
     let parser = Parser::new(src);
-    let tree = apply_passes(parse_with(parser));
+    let tree = parse_with(parser);
 
     for e in tree.errors() {
         eprintln!("{:?}", e);
