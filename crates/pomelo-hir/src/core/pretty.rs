@@ -291,9 +291,7 @@ impl HirPrettyPrint for Expr {
             ExprKind::Let { dec, expr } => {
                 format!("let {} in {} end", dec.pretty(arena), expr.pretty(arena))
             }
-            ExprKind::InfixOrApp { exprs } => {
-                boxed_seq(exprs, arena).join(" ")
-            }
+            ExprKind::InfixOrApp { exprs } => boxed_seq(exprs, arena).join(" "),
             ExprKind::Infix { lhs, vid, rhs } => {
                 format!(
                     "{} {} {}",

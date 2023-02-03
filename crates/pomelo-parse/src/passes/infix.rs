@@ -1,5 +1,5 @@
 //! FIXME: do this during semantic analysis after HIR lowering, not during parsing
-//! 
+//!
 //! Took this out of the passes. I think passes should probably just be used for validation,
 //! probably not actually transforming the syntax tree?
 
@@ -248,7 +248,7 @@ fn fix_infix_bp(
             let mut trivia = collect_trivia(children);
 
             let rhs = children
-                .find(|c| matches!(c, NodeOrToken::Node(_))) 
+                .find(|c| matches!(c, NodeOrToken::Node(_)))
                 .and_then(unwrap_syntax_node)
                 .expect("this is the same node as next");
             assert_eq!(rhs, next);

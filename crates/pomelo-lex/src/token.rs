@@ -205,8 +205,8 @@ impl<'a> Cursor<'a> {
 
         while let Some(c) = self.bump() {
             if c == '*' && self.first() == ')' {
-                        self.bump();
-                        return LexKind::Comment { terminated: true };
+                self.bump();
+                return LexKind::Comment { terminated: true };
             }
         }
         // EOF reached

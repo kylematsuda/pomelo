@@ -49,9 +49,9 @@ impl ExprScopes {
         let _root = scopes.root_scope();
 
         match &body.topdec().kind {
-            DecKind::Val { .. } => {},
-            DecKind::Local { .. } => {},
-            DecKind::Abstype { .. } => {},
+            DecKind::Val { .. } => {}
+            DecKind::Local { .. } => {}
+            DecKind::Abstype { .. } => {}
             DecKind::Open { .. } => todo!(),
             DecKind::Seq { .. } => todo!(), // Don't know how to handle this yet
             // The following don't contain an inner Expr
@@ -84,6 +84,11 @@ impl ExprScopes {
     }
 }
 
-fn _compute_expr_scopes(_expr: Idx<Expr>, _body: &Body, _scopes: &mut ExprScopes, _scope: Idx<Scope>) {
+fn _compute_expr_scopes(
+    _expr: Idx<Expr>,
+    _body: &Body,
+    _scopes: &mut ExprScopes,
+    _scope: Idx<Scope>,
+) {
     todo!()
 }

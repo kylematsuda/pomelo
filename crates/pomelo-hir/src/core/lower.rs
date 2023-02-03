@@ -360,7 +360,7 @@ impl Expr {
             ast::Expr::Atomic(e) => Self::lower_atomic(e, arena),
             ast::Expr::Application(e) => Self::lower_application(e, arena),
             ast::Expr::Infix(e) => Self::lower_infix(e, arena),
-            ast::Expr::InfixOrApp(e) => Self::lower_infix_or_app(e, arena), 
+            ast::Expr::InfixOrApp(e) => Self::lower_infix_or_app(e, arena),
             ast::Expr::Typed(e) => Self::lower_typed(e, arena),
             ast::Expr::AndAlso(e) => Self::lower_andalso(e, arena),
             ast::Expr::OrElse(e) => Self::lower_orelse(e, arena),
@@ -639,11 +639,7 @@ impl Expr {
         let parent = NodeParent::from_expr(&origin, arena);
         let newvid = LongVId::from_vid(arena.fresh_vid());
 
-        let unitexpr = Self::generated(
-            parent,
-            ExprKind::Record { rows: Box::new([]) },
-            arena,
-        );
+        let unitexpr = Self::generated(parent, ExprKind::Record { rows: Box::new([]) }, arena);
         let videxpr = Self::generated(
             parent,
             ExprKind::VId {
@@ -669,11 +665,7 @@ impl Expr {
             arena,
         );
 
-        let fn_pat = Pat::generated(
-            parent,
-            PatKind::Record { rows: Box::new([]) },
-            arena,
-        );
+        let fn_pat = Pat::generated(parent, PatKind::Record { rows: Box::new([]) }, arena);
         let fn_inner_expr = Self::generated(
             parent,
             Self::_lower_if(&origin, exp1, seqexpr, unitexpr, arena),
