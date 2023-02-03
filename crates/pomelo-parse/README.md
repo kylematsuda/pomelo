@@ -13,9 +13,7 @@
     - [x] Labels 
     - [x] TY_CON? 
     - [x] Remove nesting on EXP, TY, PAT, DEC etc.?
-    -     - [x] Can hold the inner variants in an enum when going to AST
-    - [ ] Look for other places where we can do this...
-- [ ] Fix infix operators vs function applications 
+- [ ] Fix infix operators vs function applications (Note: this sort of works but is not currently being used, as it seems like it belongs either in semantic analysis or HIR lowering)
     - [ ] Write more tests!!!
         - [ ] Precedence
         - [ ] L vs R association
@@ -24,10 +22,10 @@
         - [x] Rearrange the syntax tree
         - [x] Keep track of which infix operators are in scope
     - [ ] Add for patterns too: CONS_PAT vs INFIX_CONS_PAT 
-- [ ] AST
+- [x] AST
     - [x] Stub out types
     - [x] Define getters for subparts
-    - [ ] Switch to Rowan-defined AstNode trait
+    - [x] Switch to Rowan-defined AstNode trait
 - [ ] Validation passes
     - [ ] Infix binding strength must be a single digit
     - [ ] Malformed numbers (may need to be more permissive/resilient at lexing stage)
@@ -36,7 +34,4 @@
     - [ ] Smarter strategy for lexing numbers?
     - [ ] Don't glue compound special symbols at lexing stage?
     - [ ] ???
-- [ ] BIG: add support for modules 
-    - [ ] Parsing 
-    - [ ] AST 
-    - [ ] Validation
+- [ ] Stub out parsing for Modules to provide useful error messages while failing
