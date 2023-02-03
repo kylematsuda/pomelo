@@ -234,12 +234,10 @@ impl<'a> Parser<'a> {
     /// If the next nontrivia token matches `kind`, consume it (and any leading trivia) and
     /// return true. Else returns false.
     pub fn eat_through_trivia(&mut self, kind: SyntaxKind) -> bool {
-        // FIXME: the first branch can be removed
-        if self.eat(kind) {
-            true
-        } else if self.peek_next_nontrivia(0) == kind {
+        if self.peek_next_nontrivia(0) == kind {
             self.eat_trivia();
-            self.eat(kind)
+            assert!(self.eat(kind));
+            true
         } else {
             false
         }
