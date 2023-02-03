@@ -1,0 +1,59 @@
+name: Test
+
+on:
+  push:
+    branches:
+    - main 
+  pull_request:
+    paths:
+    - main
+
+jobs:
+  test:
+    name: Test
+    strategy:
+      matrix:
+        rust:
+        - stable
+        - beta
+        experimental:
+        - false
+        include:
+        - rust: nightly
+          experimental: true
+    continue-on-error: ${{ matrix.experimental }}
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Setup Rust toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        toolchain: ${{ matrix.rust }}
+        components: rustfmt, clippy
+        default: true
+    - name: Format
+      uses: actions-rs/cargo@v1
+      with:
+        command: fmt
+        args: -- --check
+    - name: Clippy
+      uses: actions-rs/cargo@v1
+      with:
+        command: clippy
+        args: --all-features --all-targets --all
+    - name: Test
+      uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: --all-features --all-targets --all
+    - name: Test docs
+      uses: actions-rs/cargo@v1
+      with:
+        command: test
+        args: --doc
+    - name: Check (without default features)
+      uses: actions-rs/cargo@v1
+      with:
+        command: check
+        args: --no-default-features
