@@ -57,3 +57,38 @@ jobs:
       with:
         command: check
         args: --workspace --no-default-features
+  docs:
+    name: Documentation on Github Pages
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust:
+        - stable
+      fail-fast: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          components: rustfmt, clippy
+          default: true
+      - name: Build Docs 
+        uses: actions-rs/cargo@v1
+        with:
+          command: doc 
+          args: --workspace --no-deps -p pomelo -p pomelo-*
+          env: RUSTDOCFLAGS=--cfg="docsrs"
+      - name: Fix index
+        run: |
+          rm -rf ./docs
+          echo "<meta http-equiv=\"refresh\" content=\"0; url=pomelo\">" > target/doc/index.html
+          cp -r target/doc ./docs
+      - name: Deploy
+        if: ${{ github.event_name == 'push' }}
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./target/doc
+          force_orphan: true
