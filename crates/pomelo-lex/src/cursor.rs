@@ -2,6 +2,8 @@ use std::str::Chars;
 
 pub(crate) const EOF_CHAR: char = '\0';
 
+/// Handles peeking and consuming characters from the source, while keeping track
+/// of the number of characters consumed.
 #[derive(Debug, Clone)]
 pub struct Cursor<'a> {
     initial_len: usize,
