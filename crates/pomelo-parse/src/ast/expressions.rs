@@ -144,7 +144,7 @@ impl WhileExpr {
     }
 
     pub fn expr_2(&self) -> Option<ast::Expr> {
-        support::children(self.syntax()).skip(1).next()
+        support::children(self.syntax()).nth(1)
     }
 }
 
@@ -161,11 +161,11 @@ impl IfExpr {
     }
 
     pub fn expr_2(&self) -> Option<ast::Expr> {
-        support::children(self.syntax()).skip(1).next()
+        support::children(self.syntax()).nth(1)
     }
 
     pub fn expr_3(&self) -> Option<ast::Expr> {
-        support::children(self.syntax()).skip(2).next()
+        support::children(self.syntax()).nth(2)
     }
 }
 
@@ -212,7 +212,7 @@ impl OrElseExpr {
     }
 
     pub fn expr_2(&self) -> Option<ast::Expr> {
-        support::children(self.syntax()).skip(1).next()
+        support::children(self.syntax()).nth(1)
     }
 }
 
@@ -229,7 +229,7 @@ impl AndAlsoExpr {
     }
 
     pub fn expr_2(&self) -> Option<ast::Expr> {
-        support::children(self.syntax()).skip(1).next()
+        support::children(self.syntax()).nth(1)
     }
 }
 
@@ -267,7 +267,7 @@ impl InfixExpr {
     }
 
     pub fn expr_2(&self) -> Option<ast::Expr> {
-        support::children(self.syntax()).skip(1).next()
+        support::children(self.syntax()).nth(1)
     }
 }
 
@@ -284,7 +284,6 @@ impl InfixOrAppExpr {
     }
 }
 
-
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ApplicationExpr {
     syntax: SyntaxNode,
@@ -298,7 +297,7 @@ impl ApplicationExpr {
     }
 
     pub fn atomic(&self) -> Option<ast::Expr> {
-        support::children(self.syntax()).skip(1).next()
+        support::children(self.syntax()).nth(1)
     }
 }
 

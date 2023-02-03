@@ -2,7 +2,7 @@ use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
 
 /// Index into [`Arena`]
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug)]
 pub struct Idx<T> {
     inner: usize,
     _ph: PhantomData<fn() -> T>,
@@ -18,6 +18,14 @@ impl<T> Clone for Idx<T> {
 }
 
 impl<T> Copy for Idx<T> {}
+
+impl<T> PartialEq for Idx<T> {
+    fn eq(&self, other: &Idx<T>) -> bool {
+        self.inner == other.inner
+    }
+}
+
+impl<T> Eq for Idx<T> {}
 
 impl<T> Hash for Idx<T> {
     fn hash<H: Hasher>(&self, state: &mut H) {

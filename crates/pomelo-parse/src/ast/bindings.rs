@@ -68,15 +68,15 @@ impl_ast_node!(TyBind, TY_BIND);
 
 impl TyBind {
     pub fn tyvarseq(&self) -> impl Iterator<Item = ast::TyVar> {
-        support::tokens(&self.syntax())
+        support::tokens(self.syntax())
     }
 
     pub fn tycon(&self) -> Option<ast::TyCon> {
-        support::tokens(&self.syntax()).next()
+        support::tokens(self.syntax()).next()
     }
 
     pub fn ty(&self) -> Option<ast::Ty> {
-        support::child(&self.syntax())
+        support::child(self.syntax())
     }
 }
 
@@ -89,11 +89,11 @@ impl_ast_node!(DataBind, DATA_BIND);
 
 impl DataBind {
     pub fn tyvarseq(&self) -> impl Iterator<Item = ast::TyVar> {
-        support::tokens(&self.syntax())
+        support::tokens(self.syntax())
     }
 
     pub fn tycon(&self) -> Option<ast::TyCon> {
-        support::tokens(&self.syntax()).next()
+        support::tokens(self.syntax()).next()
     }
 
     pub fn conbinds(&self) -> impl Iterator<Item = ast::ConBind> {

@@ -70,7 +70,7 @@ impl FunTy {
     }
 
     pub fn ty_2(&self) -> Option<ast::Ty> {
-        support::children(self.syntax()).skip(1).next()
+        support::children(self.syntax()).nth(1)
     }
 }
 

@@ -23,7 +23,7 @@ fn tuple_ty(p: &mut Parser) {
         TUPLE_TY_EXP,
         tycon_seq,
         |p| {
-            if star_ident(p) {
+            if peek_star_ident(p) {
                 p.eat_trivia();
                 assert_eq!(p.eat_mapped(STAR), IDENT);
                 true
@@ -35,11 +35,8 @@ fn tuple_ty(p: &mut Parser) {
     )
 }
 
-fn star_ident(p: &Parser) -> bool {
-    match p.peek_token_next_nontrivia(0).map(Token::text) {
-        Some("*") => true,
-        _ => false,
-    }
+fn peek_star_ident(p: &Parser) -> bool {
+    matches!(p.peek_token_next_nontrivia(0).map(Token::text), Some("*"))
 }
 
 fn tycon_seq(p: &mut Parser) {

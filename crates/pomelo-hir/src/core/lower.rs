@@ -48,16 +48,16 @@ fn lower_list<A: BodyArena, H: HirLowerGenerated>(
 
     let nil = LongVId::from_vid(VId::from_builtin(BuiltIn::Nil));
 
-    if rev_indexed.len() == 0 {
-        vid_kind(nil.clone())
+    if rev_indexed.is_empty() {
+        vid_kind(nil)
     } else {
         let cons = VId::from_builtin(BuiltIn::Cons);
 
         // The list ends with a nil pat
-        let nil_expr = H::generated(origin.clone(), vid_kind(nil.clone()), arena);
+        let nil_expr = H::generated(origin, vid_kind(nil.clone()), arena);
 
         let mut last_idx = nil_expr;
-        let mut last = vid_kind(nil.clone());
+        let mut last = vid_kind(nil);
 
         // "::" is right-associative, so we walk the list of pats in reverse.
         // We allocate each generated infix expr in the arena, except for the
@@ -67,7 +67,7 @@ fn lower_list<A: BodyArena, H: HirLowerGenerated>(
             if i == 0 {
                 return last;
             }
-            last_idx = H::generated(origin.clone(), last.clone(), arena);
+            last_idx = H::generated(origin, last.clone(), arena);
         }
         last
     }
@@ -125,7 +125,7 @@ impl Dec {
     fn make_seq<A: BodyArena>(parent: NodeParent, kinds: Vec<DecKind>, arena: &mut A) -> DecKind {
         let decs = kinds
             .into_iter()
-            .map(|kind| Dec::generated(parent.clone(), kind, arena))
+            .map(|kind| Dec::generated(parent, kind, arena))
             .collect();
         DecKind::Seq { decs }
     }
@@ -461,7 +461,7 @@ impl Expr {
         // Generate inner pattern for the patrow,
         // the patrows (vid and wildcard), and the enclosing record pat
         let vid_pat = Pat::generated(
-            parent.clone(),
+            parent,
             PatKind::VId {
                 op: false,
                 longvid: newvid.clone(),
@@ -477,11 +477,11 @@ impl Expr {
         ]
         .into_iter()
         .collect();
-        let record_pat = Pat::generated(parent.clone(), PatKind::Record { rows }, arena);
+        let record_pat = Pat::generated(parent, PatKind::Record { rows }, arena);
 
         // Generate expr for the rhs of the match
         let vid_expr = Expr::generated(
-            parent.clone(),
+            parent,
             ExprKind::VId {
                 op: false,
                 longvid: newvid,
@@ -640,12 +640,12 @@ impl Expr {
         let newvid = LongVId::from_vid(arena.fresh_vid());
 
         let unitexpr = Self::generated(
-            parent.clone(),
+            parent,
             ExprKind::Record { rows: Box::new([]) },
             arena,
         );
         let videxpr = Self::generated(
-            parent.clone(),
+            parent,
             ExprKind::VId {
                 op: false,
                 longvid: newvid.clone(),
@@ -653,7 +653,7 @@ impl Expr {
             arena,
         );
         let appexpr = Self::generated(
-            parent.clone(),
+            parent,
             ExprKind::Application {
                 expr: videxpr,
                 param: unitexpr,
@@ -662,20 +662,20 @@ impl Expr {
         );
 
         let seqexpr = Self::generated(
-            parent.clone(),
+            parent,
             ExprKind::Seq {
-                exprs: Box::new([exp2, appexpr.clone()]),
+                exprs: Box::new([exp2, appexpr]),
             },
             arena,
         );
 
         let fn_pat = Pat::generated(
-            parent.clone(),
+            parent,
             PatKind::Record { rows: Box::new([]) },
             arena,
         );
         let fn_inner_expr = Self::generated(
-            parent.clone(),
+            parent,
             Self::_lower_if(&origin, exp1, seqexpr, unitexpr, arena),
             arena,
         );
@@ -684,19 +684,19 @@ impl Expr {
             expr: fn_inner_expr,
         }]);
 
-        let fn_expr = Self::generated(parent.clone(), ExprKind::Fn { match_ }, arena);
+        let fn_expr = Self::generated(parent, ExprKind::Fn { match_ }, arena);
 
         let vidpat = Pat::generated(
-            parent.clone(),
+            parent,
             PatKind::VId {
                 op: false,
-                longvid: newvid.clone(),
+                longvid: newvid,
             },
             arena,
         );
 
         let viddec = Dec::generated(
-            parent.clone(),
+            parent,
             DecKind::Val {
                 rec: true,
                 tyvarseq: Box::new([]),
@@ -731,7 +731,7 @@ impl Expr {
             match_: boxed_match,
         };
         let lowered_case = Self::generated(
-            NodeParent::from_expr(&originating_expr, arena),
+            NodeParent::from_expr(originating_expr, arena),
             lowered_case,
             arena,
         );
@@ -881,7 +881,7 @@ impl Pat {
         let longvid = pat
             .longvid()
             .map(|node| LongVId::from_node(&node, arena))
-            .unwrap_or_else(|| LongVId::missing());
+            .unwrap_or_else(LongVId::missing);
 
         PatKind::VId { op, longvid }
     }

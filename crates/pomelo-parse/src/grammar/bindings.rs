@@ -28,7 +28,6 @@ fn valbind_inner(p: &mut Parser, rec: bool) {
         // We may only eat an fn-match expression
         if p.peek() != FN_KW {
             p.error("val rec can only take bindings of form <pat> = fn <match>");
-            return;
         } else {
             grammar::fn_match(p);
         }
@@ -49,13 +48,10 @@ pub(crate) fn fvalbind(p: &mut Parser) {
     }
 
     // FIXME: "and" is likely not handled correctly... looks like these will nest
-    match p.peek() {
-        AND_KW => {
-            p.eat(AND_KW);
-            p.eat_trivia();
-            fvalbind(p);
-        }
-        _ => {}
+    if p.peek() == AND_KW {
+        p.eat(AND_KW);
+        p.eat_trivia();
+        fvalbind(p);
     }
 }
 

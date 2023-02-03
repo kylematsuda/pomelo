@@ -196,7 +196,6 @@ fn other_paren_pat(p: &mut Parser) {
     match p.peek() {
         R_PAREN => {
             p.expect(R_PAREN);
-            return;
         }
         COMMA => {
             p.expect(COMMA);

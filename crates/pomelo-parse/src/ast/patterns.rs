@@ -129,7 +129,7 @@ impl ConsInfixPat {
     }
 
     pub fn pat_2(&self) -> Option<ast::Pat> {
-        support::children(self.syntax()).skip(1).next()
+        support::children(self.syntax()).nth(1)
     }
 }
 

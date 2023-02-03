@@ -16,14 +16,14 @@ pub(crate) fn expression(p: &mut Parser) {
 fn expr_bp(p: &mut Parser, min_bp: u8) {
     let checkpoint = p.checkpoint();
 
-    let _lhs = match p.peek() {
+    match p.peek() {
         RAISE_KW => raise_exp(p),
         IF_KW => if_exp(p),
         WHILE_KW => while_exp(p),
         CASE_KW => case_match(p),
         FN_KW => fn_match(p),
         _ => infix_or_app_expr(p),
-    };
+    }
 
     loop {
         let kw = p.peek_next_nontrivia(0);

@@ -218,7 +218,7 @@ impl LocalDec {
     }
 
     pub fn dec2(&self) -> Option<ast::Dec> {
-        support::children(self.syntax()).skip(1).next()
+        support::children(self.syntax()).nth(1)
     }
 }
 

@@ -43,7 +43,7 @@ pub(crate) fn strid(p: &mut Parser) {
 pub(crate) fn label(p: &mut Parser) {
     match p.peek() {
         IDENT | INT => {
-            if p.peek_text().chars().next().unwrap() == '0' {
+            if p.peek_text().starts_with('0') {
                 p.error("record labels may not start with \'0\'");
             }
             p.eat_mapped(LAB);

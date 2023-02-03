@@ -17,8 +17,8 @@ fn op_str(op: bool) -> &'static str {
     }
 }
 
-fn boxed_seq<N: HirPrettyPrint, A: BodyArena>(nodes: &Box<[N]>, arena: &A) -> Vec<String> {
-    nodes.into_iter().map(|n| n.pretty(arena)).collect()
+fn boxed_seq<N: HirPrettyPrint, A: BodyArena>(nodes: &[N], arena: &A) -> Vec<String> {
+    nodes.iter().map(|n| n.pretty(arena)).collect()
 }
 
 pub(crate) trait HirPrettyPrint {
@@ -29,7 +29,7 @@ impl HirPrettyPrint for Name {
     fn pretty<A: BodyArena>(&self, arena: &A) -> String {
         match self {
             Self::String(index) => <A as NameInterner>::get(arena, *index).to_owned(),
-            Self::Generated(n) => format!("_temp{}", n),
+            Self::Generated(n) => format!("_temp{n}"),
             Self::BuiltIn(b) => b.as_str().to_owned(),
         }
     }
@@ -144,10 +144,10 @@ impl HirPrettyPrint for ConBind {
         let ty = self
             .ty
             .map(|t| t.pretty(arena))
-            .map(|ty| format!(" of {}", ty))
-            .unwrap_or_else(|| "".to_owned());
+            .map(|ty| format!(" of {ty}"))
+            .unwrap_or_else(String::new);
 
-        format!("{}{}{}", op_str(self.op), self.vid.pretty(arena), ty)
+        format!("{}{}{ty}", op_str(self.op), self.vid.pretty(arena))
     }
 }
 
@@ -157,9 +157,9 @@ impl HirPrettyPrint for ExBind {
             ExBind::Name { op, vid, ty } => {
                 let ty = ty
                     .map(|t| t.pretty(arena))
-                    .map(|ty| format!("of {}", ty))
-                    .unwrap_or_else(|| "".to_string());
-                format!("{}{} {}", op_str(*op), vid.pretty(arena), ty)
+                    .map(|ty| format!("of {ty}"))
+                    .unwrap_or_else(String::new);
+                format!("{}{} {ty}", op_str(*op), vid.pretty(arena))
             }
             ExBind::Assignment {
                 op_lhs,
@@ -286,13 +286,13 @@ impl HirPrettyPrint for Expr {
             }
             ExprKind::Fn { match_ } => {
                 let matches = boxed_seq(match_, arena).join(" | ");
-                format!("(fn {})", matches)
+                format!("(fn {matches})")
             }
             ExprKind::Let { dec, expr } => {
                 format!("let {} in {} end", dec.pretty(arena), expr.pretty(arena))
             }
             ExprKind::InfixOrApp { exprs } => {
-                format!("{}", boxed_seq(exprs, arena).join(" "))
+                boxed_seq(exprs, arena).join(" ")
             }
             ExprKind::Infix { lhs, vid, rhs } => {
                 format!(

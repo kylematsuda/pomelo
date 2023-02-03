@@ -73,7 +73,7 @@ impl BuiltIn {
         }
     }
 
-    pub fn from_str(s: &str) -> Option<Self> {
+    pub fn from_string(s: &str) -> Option<Self> {
         match s {
             "true" => Some(Self::True),
             "false" => Some(Self::False),
@@ -92,7 +92,7 @@ pub enum Name {
 }
 
 impl Name {
-    pub fn from_str<I: NameInterner>(s: &str, interner: &mut I) -> Self {
+    pub fn from_string<I: NameInterner>(s: &str, interner: &mut I) -> Self {
         Self::String(interner.alloc(s))
     }
 
@@ -101,9 +101,9 @@ impl Name {
     }
 
     pub fn try_builtin<I: NameInterner>(s: &str, interner: &mut I) -> Self {
-        match BuiltIn::from_str(s) {
+        match BuiltIn::from_string(s) {
             Some(b) => Self::BuiltIn(b),
-            None => Self::from_str(s, interner),
+            None => Self::from_string(s, interner),
         }
     }
 }
@@ -161,8 +161,8 @@ impl VId {
         }
     }
 
-    pub fn from_str<I: NameInterner>(name: &str, interner: &mut I) -> Self {
-        Self::Name(Name::from_str(name, interner))
+    pub fn from_string<I: NameInterner>(name: &str, interner: &mut I) -> Self {
+        Self::Name(Name::from_string(name, interner))
     }
 
     pub fn from_builtin(name: BuiltIn) -> Self {
@@ -174,9 +174,9 @@ impl VId {
     }
 
     fn try_builtin<I: NameInterner>(name: &str, interner: &mut I) -> Self {
-        match BuiltIn::from_str(name) {
+        match BuiltIn::from_string(name) {
             Some(b) => Self::from_builtin(b),
-            None => Self::from_str(name, interner),
+            None => Self::from_string(name, interner),
         }
     }
 }
@@ -193,7 +193,7 @@ impl LongStrId {
             .strids()
             .map(|s| StrId::from_token(Some(s), arena))
             .collect::<Vec<_>>();
-        let strid = strids.pop().unwrap_or_else(|| StrId::missing());
+        let strid = strids.pop().unwrap_or_else(StrId::missing);
 
         Self {
             strid_path: strids.into_boxed_slice(),
@@ -216,8 +216,8 @@ impl StrId {
         }
     }
 
-    pub fn from_str<I: NameInterner>(name: &str, interner: &mut I) -> Self {
-        Self::Name(Name::from_str(name, interner))
+    pub fn from_string<I: NameInterner>(name: &str, interner: &mut I) -> Self {
+        Self::Name(Name::from_string(name, interner))
     }
 
     pub fn from_builtin(name: BuiltIn) -> Self {
@@ -229,9 +229,9 @@ impl StrId {
     }
 
     fn try_builtin<I: NameInterner>(name: &str, interner: &mut I) -> Self {
-        match BuiltIn::from_str(name) {
+        match BuiltIn::from_string(name) {
             Some(b) => Self::from_builtin(b),
-            None => Self::from_str(name, interner),
+            None => Self::from_string(name, interner),
         }
     }
 }
@@ -246,12 +246,12 @@ impl TyVar {
     pub fn from_token<I: NameInterner>(opt_tyvar: Option<ast::TyVar>, interner: &mut I) -> Self {
         match opt_tyvar {
             None => Self::missing(),
-            Some(t) => Self::from_str(t.syntax().text(), interner),
+            Some(t) => Self::from_string(t.syntax().text(), interner),
         }
     }
 
-    pub fn from_str<I: NameInterner>(name: &str, interner: &mut I) -> Self {
-        Self::Name(Name::from_str(name, interner))
+    pub fn from_string<I: NameInterner>(name: &str, interner: &mut I) -> Self {
+        Self::Name(Name::from_string(name, interner))
     }
 
     pub fn missing() -> Self {
@@ -308,8 +308,8 @@ impl TyCon {
         }
     }
 
-    pub fn from_str<I: NameInterner>(name: &str, interner: &mut I) -> Self {
-        Self::Name(Name::from_str(name, interner))
+    pub fn from_string<I: NameInterner>(name: &str, interner: &mut I) -> Self {
+        Self::Name(Name::from_string(name, interner))
     }
 
     pub fn from_builtin(name: BuiltIn) -> Self {
@@ -321,9 +321,9 @@ impl TyCon {
     }
 
     fn try_builtin<I: NameInterner>(name: &str, interner: &mut I) -> Self {
-        match BuiltIn::from_str(name) {
+        match BuiltIn::from_string(name) {
             Some(b) => Self::from_builtin(b),
-            None => Self::from_str(name, interner),
+            None => Self::from_string(name, interner),
         }
     }
 }
@@ -343,7 +343,7 @@ impl Label {
             if let Ok(n) = s.parse::<u32>() {
                 Self::Numeric(n)
             } else {
-                Self::Named(Name::from_str(s, interner))
+                Self::Named(Name::from_string(s, interner))
             }
         } else {
             Self::Missing

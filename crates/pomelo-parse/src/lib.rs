@@ -40,7 +40,7 @@ impl Error {
     }
 }
 
-pub fn parse<'a>(input: &'a str) -> SyntaxTree {
+pub fn parse(input: &str) -> SyntaxTree {
     let tree = Parser::new(input).parse();
     passes::apply_passes(&tree);
     tree

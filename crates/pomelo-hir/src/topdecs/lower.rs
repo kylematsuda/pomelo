@@ -65,7 +65,7 @@ impl<I: NameInterner> NameOnlyArena<I> {
     fn map_longvid<A: FileArena>(&mut self, longvid: LongVId, other_arena: &mut A) -> LongVId {
         let LongVId { strids, vid } = longvid;
         let strids = strids
-            .into_iter()
+            .iter()
             .map(|s| self.map_strid(*s, other_arena))
             .collect();
         let vid = self.map_vid(vid, other_arena);
@@ -115,7 +115,7 @@ impl CoreDec {
         let p = Pat::lower(pat, &mut body_arena);
 
         let mut names = vec![];
-        Self::collect_pat_names(p, &mut body_arena, &mut names);
+        Self::collect_pat_names(p, &body_arena, &mut names);
 
         // FIXME: doubt that this makes sense
         let mut dummy_arena = NameOnlyArena::new(body_arena);

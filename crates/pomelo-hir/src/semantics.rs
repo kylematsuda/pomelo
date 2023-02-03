@@ -6,6 +6,8 @@ use crate::identifiers::LongVId;
 
 use std::collections::HashMap;
 
+pub type Error = String;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BodySymbols<'hir, A> {
     map: HashMap<LongVId, BodyRefs>,
@@ -20,21 +22,21 @@ impl<'hir, A: BodyArena> BodySymbols<'hir, A> {
         }
     }
 
-    pub fn add_def(&mut self, name: LongVId, kind: NameKind, dec: Idx<Dec>) -> Result<(), ()> {
+    pub fn add_def(&mut self, name: LongVId, kind: NameKind, dec: Idx<Dec>) -> Result<(), Error> {
         let bodyrefs = self
             .map
             .entry(name)
             .or_insert(BodyRefs::default_from_kind(kind));
 
         if bodyrefs.def.is_some() {
-            Err(())
+            Err(String::new())
         } else {
             bodyrefs.def = Some(dec);
             Ok(())
         }
     }
 
-    pub fn add_ref(&mut self, name: LongVId, kind: NameKind, hir_ref: HirRef) -> Result<(), ()> {
+    pub fn add_ref(&mut self, name: LongVId, kind: NameKind, hir_ref: HirRef) -> Result<(), Error> {
         self.map
             .entry(name)
             .or_insert(BodyRefs::default_from_kind(kind))
@@ -77,7 +79,7 @@ pub enum HirRef {
 }
 
 fn pretty_span(span: Option<(usize, usize)>) -> String {
-    span.map(|(start, end)| format!("({},{})", start, end))
+    span.map(|(start, end)| format!("({start},{end})"))
         .unwrap_or("Missing".to_owned())
 }
 
@@ -147,11 +149,11 @@ impl<'hir, A: BodyArena> std::fmt::Display for BodySymbols<'hir, A> {
 
 impl<'hir, A: BodyArena> BodySymbols<'hir, A> {
     // Only handle value names right now, don't worry about types yet
-    pub fn add_dec(&mut self, index: Idx<Dec>) -> Result<(), ()> {
+    pub fn add_dec(&mut self, index: Idx<Dec>) -> Result<(), Error> {
         let dec = self.arena.get_dec(index);
         match &dec.kind {
             DecKind::Seq { decs } => {
-                for dec in decs.into_iter() {
+                for dec in decs.iter() {
                     self.add_dec(*dec)?;
                 }
             }
@@ -167,7 +169,7 @@ impl<'hir, A: BodyArena> BodySymbols<'hir, A> {
                 self.add_dec(*outer)?;
             }
             DecKind::Fixity { vids, .. } => {
-                for vid in vids.into_iter() {
+                for vid in vids.iter() {
                     self.add_ref(LongVId::from_vid(*vid), NameKind::Value, HirRef::Dec(index))?;
                 }
             }
@@ -181,11 +183,11 @@ impl<'hir, A: BodyArena> BodySymbols<'hir, A> {
         Ok(())
     }
 
-    pub fn add_expr(&mut self, index: Idx<Expr>) -> Result<(), ()> {
+    pub fn add_expr(&mut self, index: Idx<Expr>) -> Result<(), Error> {
         let expr = self.arena.get_expr(index);
         match &expr.kind {
             ExprKind::Seq { exprs } => {
-                for e in exprs.into_iter() {
+                for e in exprs.iter() {
                     self.add_expr(*e)?;
                 }
             }
@@ -193,7 +195,7 @@ impl<'hir, A: BodyArena> BodySymbols<'hir, A> {
                 self.add_ref(longvid.clone(), NameKind::Value, HirRef::Expr(index))?;
             }
             ExprKind::Record { rows } => {
-                for row in rows.into_iter() {
+                for row in rows.iter() {
                     self.add_expr(row.expr)?;
                 }
             }
@@ -232,7 +234,7 @@ impl<'hir, A: BodyArena> BodySymbols<'hir, A> {
         Ok(())
     }
 
-    pub fn add_pat(&mut self, index: Idx<Pat>, def: Option<Idx<Dec>>) -> Result<(), ()> {
+    pub fn add_pat(&mut self, index: Idx<Pat>, def: Option<Idx<Dec>>) -> Result<(), Error> {
         let pat = self.arena.get_pat(index);
         match &pat.kind {
             PatKind::Missing | PatKind::Scon(_) | PatKind::Wildcard => {}
@@ -246,7 +248,7 @@ impl<'hir, A: BodyArena> BodySymbols<'hir, A> {
                 self.add_pat(*pat, def)?;
             }
             PatKind::Record { rows } => {
-                for row in rows.into_iter() {
+                for row in rows.iter() {
                     if let PatRow::Pattern { pat, .. } = row {
                         self.add_pat(*pat, def)?;
                     }
@@ -271,7 +273,7 @@ impl<'hir, A: BodyArena> BodySymbols<'hir, A> {
 
     /// FIXME: Need to generate a name for each match pattern
     /// A name in a pattern shadows the outer name
-    pub fn add_match(&mut self, match_: &[MRule]) -> Result<(), ()> {
+    pub fn add_match(&mut self, match_: &[MRule]) -> Result<(), Error> {
         for m in match_ {
             self.add_pat(m.pat, None)?;
             self.add_expr(m.expr)?;

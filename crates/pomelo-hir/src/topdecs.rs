@@ -35,7 +35,7 @@ impl AstIdMap {
         let syntax = astptr.syntax_node_ptr();
 
         let index = self.arena.alloc(syntax.clone());
-        self.backmap.insert(syntax, index.clone());
+        self.backmap.insert(syntax, index);
 
         FileAstIdx {
             index,

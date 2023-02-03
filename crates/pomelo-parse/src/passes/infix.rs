@@ -16,7 +16,7 @@ use std::iter::Peekable;
 type GreenElement = NodeOrToken<GreenNode, GreenToken>;
 
 #[rustfmt::skip]
-const BUILTINS: [(&'static str, Fixity); 18] = [
+const BUILTINS: [(&str, Fixity); 18] = [
     ("*",		Fixity { val: 7, assoc: Associativity::Left }),
     ("/",		Fixity { val: 7, assoc: Associativity::Left }),
     ("div",		Fixity { val: 7, assoc: Associativity::Left }),
@@ -130,7 +130,7 @@ fn rearrange_infix(tree: SyntaxTree, node: SyntaxNode, ctx: &mut Context) -> Syn
     ctx.update(&node);
 
     if ast::InfixOrAppExpr::cast(node.clone()).is_some() {
-        tree = fix_infix(tree, node.clone(), &ctx);
+        tree = fix_infix(tree, node.clone(), ctx);
         node = switch_tree(&node, &tree);
     }
 
@@ -209,11 +209,7 @@ fn fix_infix_bp(
             let mut trivia = collect_trivia(children);
 
             let vid = children
-                .skip_while(|c| match c {
-                    NodeOrToken::Token(_) => true,
-                    _ => false,
-                })
-                .next()
+                .find(|c| matches!(c, NodeOrToken::Node(_)))
                 .and_then(unwrap_syntax_node)
                 .expect("this is the same node as next");
             assert_eq!(vid, next);
@@ -238,7 +234,7 @@ fn fix_infix_bp(
             elts.append(&mut trivia);
             elts.push(vid_green);
             elts.append(&mut trivia_2);
-            elts.push(rhs_green.into());
+            elts.push(rhs_green);
 
             GreenNode::new(SyntaxKind::INFIX_EXP.into(), elts)
         } else {
@@ -252,11 +248,7 @@ fn fix_infix_bp(
             let mut trivia = collect_trivia(children);
 
             let rhs = children
-                .skip_while(|c| match c {
-                    NodeOrToken::Token(_) => true,
-                    _ => false,
-                })
-                .next()
+                .find(|c| matches!(c, NodeOrToken::Node(_))) 
                 .and_then(unwrap_syntax_node)
                 .expect("this is the same node as next");
             assert_eq!(rhs, next);
@@ -279,11 +271,7 @@ fn fix_infix_bp(
 fn next_syntax_node(children: &Peekable<SyntaxElementChildren>) -> Option<SyntaxNode> {
     children
         .clone()
-        .skip_while(|c| match c {
-            NodeOrToken::Token(_) => true,
-            _ => false,
-        })
-        .next()
+        .find(|c| matches!(c, NodeOrToken::Node(_)))
         .and_then(unwrap_syntax_node)
 }
 

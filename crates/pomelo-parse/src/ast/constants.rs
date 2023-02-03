@@ -14,11 +14,11 @@ pub enum Scon {
 impl AstToken for Scon {
     fn syntax(&self) -> &SyntaxToken {
         match self {
-            Self::Int(s) => &s,
-            Self::Real(s) => &s,
-            Self::Word(s) => &s,
-            Self::Char(s) => &s,
-            Self::String(s) => &s,
+            Self::Int(s) => s,
+            Self::Real(s) => s,
+            Self::Word(s) => s,
+            Self::Char(s) => s,
+            Self::String(s) => s,
         }
     }
 

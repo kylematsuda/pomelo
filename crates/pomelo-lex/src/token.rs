@@ -15,6 +15,10 @@ impl LexToken {
     pub fn len(&self) -> usize {
         self.len
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.len == 0
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -200,14 +204,9 @@ impl<'a> Cursor<'a> {
         assert_eq!(self.bump().unwrap(), '*');
 
         while let Some(c) = self.bump() {
-            match c {
-                '*' => {
-                    if self.first() == ')' {
+            if c == '*' && self.first() == ')' {
                         self.bump();
                         return LexKind::Comment { terminated: true };
-                    }
-                }
-                _ => {}
             }
         }
         // EOF reached
@@ -223,8 +222,8 @@ impl<'a> Cursor<'a> {
         }
 
         match self.bump() {
-            Some('"') => return LexKind::Char { terminated: true },
-            _ => return LexKind::Char { terminated: false },
+            Some('"') => LexKind::Char { terminated: true },
+            _ => LexKind::Char { terminated: false },
         }
     }
 
@@ -277,13 +276,12 @@ impl<'a> Cursor<'a> {
     }
 
     fn number(&mut self, first: char) -> LexKind {
-        match first {
-            '0' => match self.first() {
+        if first == '0' {
+            match self.first() {
                 'x' => return self.hexadecimal(),
                 'w' => return self.word(),
                 _ => {}
-            },
-            _ => {}
+            }
         }
         self.decimal_or_real()
     }

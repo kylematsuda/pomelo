@@ -23,7 +23,7 @@ impl<'a> Token<'a> {
     }
 
     pub fn text(&self) -> &str {
-        &self.text
+        self.text
     }
 
     fn from_lex_token(
@@ -33,13 +33,7 @@ impl<'a> Token<'a> {
     ) -> (Self, Option<crate::Error>) {
         let text = &src[offset..offset + lex.len()];
         let (kind, opt_err_msg) = SyntaxKind::from_lexed(lex.kind(), text);
-
-        let opt_err = if let Some(msg) = opt_err_msg {
-            Some(Error::new(msg, text, offset))
-        } else {
-            None
-        };
-
+        let opt_err = opt_err_msg.map(|msg| Error::new(msg, text, offset));
         (Self::new(kind, text), opt_err)
     }
 }
@@ -64,7 +58,7 @@ impl SyntaxTree {
     }
 
     pub fn has_errors(&self) -> bool {
-        self.errors.len() != 0
+        !self.errors.is_empty()
     }
 
     pub fn node(&self) -> GreenNode {
@@ -86,7 +80,7 @@ impl fmt::Display for SyntaxTree {
             write!(f, "{:indent$}", "", indent = indent)?;
             match element {
                 rowan::NodeOrToken::Node(node) => {
-                    writeln!(f, "{:?}", node)?;
+                    writeln!(f, "{node:?}")?;
                     for c in node.children_with_tokens() {
                         pretty_print(f, indent + 2, c)?;
                     }
@@ -97,7 +91,7 @@ impl fmt::Display for SyntaxTree {
                     SyntaxKind::WHITESPACE => {
                         writeln!(f, "{:?}@{:?}", token.kind(), token.text_range())
                     }
-                    _ => writeln!(f, "{:?}", token),
+                    _ => writeln!(f, "{token:?}"),
                 },
             }
         }
@@ -182,8 +176,7 @@ impl<'a> Parser<'a> {
             .iter()
             .rev()
             .filter(|t| !t.kind().is_trivia())
-            .skip(skip)
-            .next()
+            .nth(skip)
     }
 
     pub fn eat(&mut self, kind: SyntaxKind) -> bool {
@@ -238,7 +231,7 @@ impl<'a> Parser<'a> {
 
     pub fn expect(&mut self, kind: SyntaxKind) {
         if !self.eat(kind) {
-            self.error(format!("expected {:?}", kind))
+            self.error(format!("expected {kind:?}"))
         }
     }
 
@@ -246,7 +239,7 @@ impl<'a> Parser<'a> {
         let pos = self.current_pos;
         let text = self.peek_token().map(|t| t.text()).unwrap_or("").to_owned();
 
-        self.errors.push(Error::new(msg.clone(), text, pos));
+        self.errors.push(Error::new(msg, text, pos));
 
         // Push into syntax tree as well for now
         self.push_token(Token::new(SyntaxKind::ERROR, ""))
@@ -285,10 +278,7 @@ impl<'a> Parser<'a> {
     /// This may be generally an issue with gluing together tokens at
     /// lex-time (like "=>" as THICK_ARROW, "..." as ELLIPSIS, etc.)
     pub fn is_vid(&self) -> bool {
-        match self.peek() {
-            SyntaxKind::IDENT | SyntaxKind::EQ => true,
-            _ => false,
-        }
+        matches!(self.peek(), SyntaxKind::IDENT | SyntaxKind::EQ)
     }
 
     /// Check if the current token is a valid VId.
@@ -303,10 +293,10 @@ impl<'a> Parser<'a> {
     /// This may be generally an issue with gluing together tokens at
     /// lex-time (like "=>" as THICK_ARROW, "..." as ELLIPSIS, etc.)
     pub fn next_nontrivia_is_vid(&self) -> bool {
-        match self.peek_next_nontrivia(0) {
-            SyntaxKind::IDENT | SyntaxKind::EQ => true,
-            _ => false,
-        }
+        matches!(
+            self.peek_next_nontrivia(0),
+            SyntaxKind::IDENT | SyntaxKind::EQ
+        )
     }
 
     /// Check if the current token is a valid StrId.

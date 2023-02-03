@@ -1,5 +1,6 @@
 //! Scopes for expression bodies
 //!
+//! This is very basic scaffolding, needs to be fleshed out.
 //! See r-a/crates/hir-def/src/body/scope.rs
 
 use crate::arena::{Arena, Idx};
@@ -10,14 +11,14 @@ use std::collections::HashMap;
 
 #[derive(Debug, Clone, Default)]
 pub struct ExprScopes {
-    scopes: Arena<Scope>,
-    scope_by_expr: HashMap<Idx<Expr>, Idx<Scope>>,
+    pub scopes: Arena<Scope>,
+    pub scope_by_expr: HashMap<Idx<Expr>, Idx<Scope>>,
 }
 
 #[derive(Debug, Clone)]
 pub struct Scope {
-    parent: Option<Idx<Scope>>,
-    entries: Vec<ScopeEntry>,
+    pub parent: Option<Idx<Scope>>,
+    pub entries: Vec<ScopeEntry>,
 }
 
 #[derive(Debug, Clone)]
@@ -37,7 +38,7 @@ impl ScopeEntry {
 }
 
 impl ExprScopes {
-    fn new(body: &Body) -> Self {
+    pub fn new(body: &Body) -> Self {
         let mut scopes = ExprScopes::default();
 
         // FIXME: this is going to act like each body has only 1 top-most dec.
@@ -45,13 +46,12 @@ impl ExprScopes {
         // "val a = 3 and b = 4", etc., which are desugared to a [`DecKind::Seq`].
         //
         // Dunno what to do.......
-        let mut root = scopes.root_scope();
+        let _root = scopes.root_scope();
 
         match &body.topdec().kind {
-            DecKind::Val { rec, pat, expr, .. } => {
-            },
-            DecKind::Local { inner, outer } => {},
-            DecKind::Abstype { databinds, dec } => {},
+            DecKind::Val { .. } => {},
+            DecKind::Local { .. } => {},
+            DecKind::Abstype { .. } => {},
             DecKind::Open { .. } => todo!(),
             DecKind::Seq { .. } => todo!(), // Don't know how to handle this yet
             // The following don't contain an inner Expr
@@ -72,18 +72,18 @@ impl ExprScopes {
         })
     }
 
-    fn new_scope(&mut self, parent: Idx<Scope>) -> Idx<Scope> {
+    fn _new_scope(&mut self, parent: Idx<Scope>) -> Idx<Scope> {
         self.scopes.alloc(Scope {
             parent: Some(parent),
             entries: vec![],
         })
     }
 
-    fn set_scope(&mut self, node: Idx<Expr>, scope: Idx<Scope>) {
+    fn _set_scope(&mut self, node: Idx<Expr>, scope: Idx<Scope>) {
         self.scope_by_expr.insert(node, scope);
     }
 }
 
-fn compute_expr_scopes(expr: Idx<Expr>, body: &Body, scopes: &mut ExprScopes, scope: Idx<Scope>) {
+fn _compute_expr_scopes(_expr: Idx<Expr>, _body: &Body, _scopes: &mut ExprScopes, _scope: Idx<Scope>) {
     todo!()
 }
