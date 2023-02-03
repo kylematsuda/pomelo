@@ -41,19 +41,19 @@ jobs:
       uses: actions-rs/cargo@v1
       with:
         command: clippy
-        args: --all-features --all-targets --all
+        args: --workspace --all-features --all-targets --all
     - name: Test
       uses: actions-rs/cargo@v1
       with:
         command: test
-        args: --all-features --all-targets --all
+        args: --workspace --all-features --all-targets --all
     - name: Test docs
       uses: actions-rs/cargo@v1
       with:
         command: test
-        args: --doc
+        args: --workspace --doc
     - name: Check (without default features)
       uses: actions-rs/cargo@v1
       with:
         command: check
-        args: --no-default-features
+        args: --workspace --no-default-features
