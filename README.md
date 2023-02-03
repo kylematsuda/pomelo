@@ -10,7 +10,7 @@ This is extremely rough and incomplete and I'm learning a lot as I go!
 
 ## Name
 
-A pomelo is a fun (huge!) citrus fruit, which also happens to have "ML" in its name.
+A pomelo is a fun (big!) citrus fruit, which also happens to have "ML" in its name.
 
 ## Why SML?
 
