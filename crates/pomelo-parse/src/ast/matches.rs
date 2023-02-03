@@ -1,3 +1,4 @@
+//! AST nodes for matches.
 use crate::{ast, ast::support, impl_ast_node, AstNode, SyntaxNode};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

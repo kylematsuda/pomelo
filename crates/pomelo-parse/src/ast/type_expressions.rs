@@ -1,3 +1,4 @@
+//! AST nodes for types and type expressions.
 use crate::{ast, ast::support, impl_ast_node, impl_from, AstNode, SyntaxKind, SyntaxNode};
 use SyntaxKind::*;
 

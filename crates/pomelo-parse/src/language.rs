@@ -1,3 +1,5 @@
+//! This is boilerplate for making the [`rowan`] stuff work.
+
 use crate::SyntaxKind;
 
 pub type SyntaxNode = rowan::SyntaxNode<SML>;

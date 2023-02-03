@@ -1,9 +1,10 @@
+//! Functions to parse types.
 use crate::grammar;
 use crate::{parser::Token, Parser, SyntaxKind};
 
 use SyntaxKind::*;
 
-pub(crate) fn ty(p: &mut Parser) {
+pub fn ty(p: &mut Parser) {
     fun_ty(p)
 }
 

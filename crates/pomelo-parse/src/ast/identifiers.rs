@@ -1,3 +1,4 @@
+//! AST nodes for identifiers.
 use crate::{ast::support, impl_ast_node, impl_ast_token, AstNode, SyntaxNode, SyntaxToken};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

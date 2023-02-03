@@ -1,9 +1,9 @@
+//! Functions to parse matches.
 use crate::grammar;
 use crate::{Parser, SyntaxKind};
-
 use SyntaxKind::*;
 
-pub(crate) fn match_exp(p: &mut Parser) {
+pub fn match_exp(p: &mut Parser) {
     let _ng = p.start_node(MATCH);
     grammar::sequential(p, mrule, PIPE);
 }

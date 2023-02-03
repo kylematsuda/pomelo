@@ -1,3 +1,8 @@
+//! Representation of the AST.
+//!
+//! This follows [`rowan::ast`]. The basic idea is to try to "cast" the nodes
+//! of the concrete syntax tree (CST) to AST nodes based on their `SyntaxKind`.
+//! This is achieved with the [`AstNode`] and [`AstToken`] traits in this module.
 pub mod constants;
 pub use constants::*;
 

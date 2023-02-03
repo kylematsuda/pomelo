@@ -1,3 +1,4 @@
+//! AST nodes for constants (literals).
 use crate::{AstToken, SyntaxKind, SyntaxToken};
 
 use SyntaxKind::*;

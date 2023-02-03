@@ -1,7 +1,8 @@
+//! Utilities for combining parsers.
 use crate::{Parser, SyntaxKind};
 
 /// This function does not eat trailing trivia
-pub(crate) fn sequential<F>(p: &mut Parser, parse_function: F, delimiter: SyntaxKind)
+pub fn sequential<F>(p: &mut Parser, parse_function: F, delimiter: SyntaxKind)
 where
     F: Fn(&mut Parser),
 {
@@ -14,7 +15,7 @@ where
 
 /// outer_node_kind: e.g. EXP
 /// inner_node_kind: e.g., ORELSE_EXP
-pub(crate) fn descend_once(
+pub fn descend_once(
     p: &mut Parser,
     inner_node_kind: SyntaxKind,
     before: impl Fn(&mut Parser),
@@ -39,7 +40,7 @@ pub(crate) fn descend_once(
 /// NOTE: This folds all the `after` nodes into the same node in a flat structure.
 /// To make them right-associate, use `precedence_climber_once` recursively
 /// (i.e, with `after` set to the enclosing function.)
-pub(crate) fn descend_flat(
+pub fn descend_flat(
     p: &mut Parser,
     inner_node_kind: SyntaxKind,
     before: impl Fn(&mut Parser),
@@ -69,7 +70,7 @@ pub(crate) fn descend_flat(
 /// This folds expressions right associatively.
 /// It should be called recursively by putting the
 /// calling function in the `caller` arg.
-pub(crate) fn descend_right(
+pub fn descend_right(
     p: &mut Parser,
     inner_node_kind: SyntaxKind,
     before: impl Fn(&mut Parser),

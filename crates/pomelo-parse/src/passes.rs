@@ -1,3 +1,7 @@
+//! Validation passes to run after the AST is constructed.
+//!
+//! This doesn't do anything yet...
+
 pub mod infix;
 
 use crate::SyntaxTree;

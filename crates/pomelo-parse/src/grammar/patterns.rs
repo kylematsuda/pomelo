@@ -1,9 +1,10 @@
+//! Functions to parse patterns.
 use crate::grammar;
 use crate::{Parser, SyntaxKind};
 
 use SyntaxKind::*;
 
-pub(crate) fn pattern(p: &mut Parser) {
+pub fn pattern(p: &mut Parser) {
     layered_pat(p)
 }
 
@@ -47,7 +48,7 @@ fn atomic_in_pat(p: &mut Parser) {
     atomic_pattern(p);
 }
 
-pub(crate) fn atomic_pattern(p: &mut Parser) {
+pub fn atomic_pattern(p: &mut Parser) {
     match p.peek() {
         UNDERSCORE => {
             let _ng = p.start_node(WILDCARD_PAT);
@@ -74,7 +75,7 @@ pub(crate) fn atomic_pattern(p: &mut Parser) {
     }
 }
 
-pub(crate) fn record_pat(p: &mut Parser) {
+pub fn record_pat(p: &mut Parser) {
     let _ng = p.start_node(RECORD_PAT);
     p.expect(L_BRACE);
     p.eat_trivia();

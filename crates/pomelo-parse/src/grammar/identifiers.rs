@@ -1,9 +1,10 @@
+//! Functions to parse identifiers.
+
 use crate::grammar;
 use crate::{Parser, SyntaxKind};
-
 use SyntaxKind::*;
 
-pub(crate) fn longvid(p: &mut Parser) {
+pub fn longvid(p: &mut Parser) {
     let _ng = p.start_node(LONG_VID);
 
     // A longvid is a sequence of strids separated by DOTs,
@@ -17,7 +18,7 @@ pub(crate) fn longvid(p: &mut Parser) {
     vid(p)
 }
 
-pub(crate) fn vid(p: &mut Parser) {
+pub fn vid(p: &mut Parser) {
     if p.is_vid() {
         p.eat_mapped(VID);
     } else {
@@ -25,14 +26,14 @@ pub(crate) fn vid(p: &mut Parser) {
     }
 }
 
-pub(crate) fn longstrid(p: &mut Parser) {
+pub fn longstrid(p: &mut Parser) {
     let _ng = p.start_node(LONG_STRID);
     grammar::sequential(p, strid, DOT);
 }
 
 // TODO: make sure this is a valid STRID?
 // This should be handled in Parser::is_strid
-pub(crate) fn strid(p: &mut Parser) {
+pub fn strid(p: &mut Parser) {
     if p.is_strid() {
         p.eat_mapped(STRID);
     } else {
@@ -40,7 +41,7 @@ pub(crate) fn strid(p: &mut Parser) {
     }
 }
 
-pub(crate) fn label(p: &mut Parser) {
+pub fn label(p: &mut Parser) {
     match p.peek() {
         IDENT | INT => {
             if p.peek_text().starts_with('0') {

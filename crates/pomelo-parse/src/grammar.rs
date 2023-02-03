@@ -1,32 +1,35 @@
-pub(crate) mod bindings;
-pub(crate) use bindings::*;
+//! Functions to parse the SML Core language.
 
-pub(crate) mod declarations;
-pub(crate) use declarations::*;
+pub mod bindings;
+pub use bindings::*;
 
-pub(crate) mod expressions;
-pub(crate) use expressions::*;
+pub mod declarations;
+pub use declarations::*;
 
-pub(crate) mod matches;
-pub(crate) use matches::*;
+pub mod expressions;
+pub use expressions::*;
 
-pub(crate) mod patterns;
-pub(crate) use patterns::*;
+pub mod matches;
+pub use matches::*;
 
-pub(crate) mod type_expressions;
-pub(crate) use type_expressions::*;
+pub mod patterns;
+pub use patterns::*;
 
-pub(crate) mod identifiers;
-pub(crate) use identifiers::*;
+pub mod type_expressions;
+pub use type_expressions::*;
 
-pub(crate) mod combinators;
-pub(crate) use combinators::*;
+pub mod identifiers;
+pub use identifiers::*;
+
+pub mod combinators;
+pub use combinators::*;
 
 use crate::{Parser, SyntaxKind};
 
 use SyntaxKind::*;
 
-pub(crate) fn source_file(p: &mut Parser) {
+/// Parse an entire source file.
+pub fn source_file(p: &mut Parser) {
     let _ng = p.start_node(FILE);
 
     while !p.is_eof() {

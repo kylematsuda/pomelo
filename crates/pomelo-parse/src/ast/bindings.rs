@@ -1,3 +1,4 @@
+//! AST nodes for bindings.
 use crate::{ast, ast::support, impl_ast_node, AstNode, SyntaxKind, SyntaxNode};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

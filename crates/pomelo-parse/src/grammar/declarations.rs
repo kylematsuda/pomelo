@@ -1,9 +1,9 @@
+//! Functions to parse declarations.
 use crate::grammar;
 use crate::{Parser, SyntaxKind};
-
 use SyntaxKind::*;
 
-pub(crate) fn declaration(p: &mut Parser) {
+pub fn declaration(p: &mut Parser) {
     // let outer = p.checkpoint();
     let inner = p.checkpoint();
     declaration_inner(p);
@@ -29,7 +29,7 @@ pub(crate) fn declaration(p: &mut Parser) {
     }
 }
 
-pub(crate) fn declaration_inner(p: &mut Parser) {
+pub fn declaration_inner(p: &mut Parser) {
     // let _ng = p.start_node(DEC);
 
     match p.peek() {
@@ -47,7 +47,7 @@ pub(crate) fn declaration_inner(p: &mut Parser) {
     }
 }
 
-pub(crate) fn val_declaration(p: &mut Parser) {
+pub fn val_declaration(p: &mut Parser) {
     let _ng = p.start_node(VAL_DEC);
     assert_eq!(p.eat_any(), VAL_KW);
     p.eat_trivia();
@@ -55,7 +55,7 @@ pub(crate) fn val_declaration(p: &mut Parser) {
     grammar::sequential(p, grammar::valbind, AND_KW);
 }
 
-pub(crate) fn fun_declaration(p: &mut Parser) {
+pub fn fun_declaration(p: &mut Parser) {
     let _ng = p.start_node(FUN_DEC);
     assert_eq!(p.eat_any(), FUN_KW);
     p.eat_trivia();
@@ -64,14 +64,14 @@ pub(crate) fn fun_declaration(p: &mut Parser) {
     grammar::sequential(p, grammar::fvalbind, AND_KW);
 }
 
-pub(crate) fn type_declaration(p: &mut Parser) {
+pub fn type_declaration(p: &mut Parser) {
     let _ng = p.start_node(TY_DEC);
     assert_eq!(p.eat_any(), TYPE_KW);
     p.eat_trivia();
     grammar::sequential(p, grammar::typbind, AND_KW);
 }
 
-pub(crate) fn datatype_declaration(p: &mut Parser) {
+pub fn datatype_declaration(p: &mut Parser) {
     let checkpoint = p.checkpoint();
     assert_eq!(p.eat_any(), DATATYPE_KW);
     p.eat_trivia();
@@ -102,7 +102,7 @@ pub(crate) fn datatype_declaration(p: &mut Parser) {
     }
 }
 
-pub(crate) fn abstype_declaration(p: &mut Parser) {
+pub fn abstype_declaration(p: &mut Parser) {
     let _ng = p.start_node(ABSTYPE_DEC);
 
     assert!(p.eat(ABSTYPE_KW));
@@ -128,7 +128,7 @@ pub(crate) fn abstype_declaration(p: &mut Parser) {
     p.expect(END_KW);
 }
 
-pub(crate) fn exception_declaration(p: &mut Parser) {
+pub fn exception_declaration(p: &mut Parser) {
     let _ng = p.start_node(EXCEPT_DEC);
 
     assert!(p.eat(EXCEPTION_KW));

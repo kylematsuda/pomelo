@@ -1,3 +1,5 @@
+//! Defines the parse tokens, parser interface, and output syntax tree.
+
 use crate::Error;
 use crate::{SyntaxElement, SyntaxKind, SyntaxNode};
 
@@ -7,6 +9,10 @@ use std::rc::Rc;
 
 use rowan::{GreenNode, GreenNodeBuilder};
 
+/// A parsed token.
+///
+/// Consists of a [`crate::SyntaxKind`] and a reference to the corresponding 
+/// span of the source code.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Token<'a> {
     kind: SyntaxKind,
@@ -38,6 +44,10 @@ impl<'a> Token<'a> {
     }
 }
 
+/// Output of the parsing stage.
+///
+/// Holds a [`rowan::GreenNode`] representing the root of the tree,
+/// and any errors encountered during parsing.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SyntaxTree {
     node: GreenNode,
@@ -100,6 +110,10 @@ impl fmt::Display for SyntaxTree {
     }
 }
 
+/// The main interface for manipulating the lexed source.
+///
+/// This handles iterating over the lex tokens as well as building the syntax tree
+/// (see [`rowan::NodeBuilder`] for details).
 #[derive(Debug, Clone)]
 pub struct Parser<'a> {
     current_pos: usize,
@@ -141,11 +155,12 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// Peek at the kind of the next token.
     pub fn peek(&self) -> SyntaxKind {
         self.peek_nth(0)
     }
 
-    /// n = 0 is self.peek()
+    /// Peek ahead `n` tokens.
     pub fn peek_nth(&self, n: usize) -> SyntaxKind {
         self.tokens
             .iter()
@@ -155,22 +170,24 @@ impl<'a> Parser<'a> {
             .unwrap_or(SyntaxKind::EOF)
     }
 
-    /// Peeks past `skip` nontrivia tokens, then peeks at the next one.
+    /// Skips past `skip` nontrivia tokens, then peeks at the kind of the next one.
     pub fn peek_next_nontrivia(&self, skip: usize) -> SyntaxKind {
         self.peek_token_next_nontrivia(skip)
             .map(Token::kind)
             .unwrap_or(SyntaxKind::EOF)
     }
 
+    /// Peek at the next token.
     pub fn peek_token(&self) -> Option<&Token> {
         self.tokens.last()
     }
 
+    /// Peek at the text of the next token.
     pub fn peek_text(&self) -> &str {
         self.peek_token().map(Token::text).unwrap_or("\0")
     }
 
-    /// Peeks past `skip` nontrivia tokens, then peeks at the next one.
+    /// Peeks past `skip` nontrivia tokens, then peeks at the next token.
     pub fn peek_token_next_nontrivia(&self, skip: usize) -> Option<&Token> {
         self.tokens
             .iter()
@@ -179,6 +196,8 @@ impl<'a> Parser<'a> {
             .nth(skip)
     }
 
+    /// If `kind` matches the next token kind, consumes the token and returns true.
+    /// Else, returns false.
     pub fn eat(&mut self, kind: SyntaxKind) -> bool {
         if kind == self.peek() {
             let token = self.pop();
@@ -189,6 +208,7 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// Consume the next token, regardless of its kind.
     pub fn eat_any(&mut self) -> SyntaxKind {
         let token = self.pop();
         let kind = token.kind();
@@ -196,6 +216,7 @@ impl<'a> Parser<'a> {
         kind
     }
 
+    /// While the next token is trivia, consume it.
     pub fn eat_trivia(&mut self) -> bool {
         let mut eaten = false;
 
@@ -210,31 +231,28 @@ impl<'a> Parser<'a> {
         eaten
     }
 
-    /// Eats the current token if it matches `kind`, returning `true`.
-    ///
-    /// Otherwise, if the current token is trivia,
-    /// peeks through to the next non-trivia token.
-    /// If it matches `kind`, eats the trivia and the target token and returns `true`.
-    /// If it doesn't match `kind`, eats nothing and returns `false`.
-    ///
-    /// Else eats nothing and returns `false`.
+    /// If the next nontrivia token matches `kind`, consume it (and any leading trivia) and
+    /// return true. Else returns false.
     pub fn eat_through_trivia(&mut self, kind: SyntaxKind) -> bool {
+        // FIXME: the first branch can be removed
         if self.eat(kind) {
             true
         } else if self.peek_next_nontrivia(0) == kind {
             self.eat_trivia();
-            return self.eat(kind);
+            self.eat(kind)
         } else {
             false
         }
     }
 
+    /// Consume the next token if it matches `kind`, else generate an error.
     pub fn expect(&mut self, kind: SyntaxKind) {
         if !self.eat(kind) {
             self.error(format!("expected {kind:?}"))
         }
     }
 
+    /// Append a new error to the stored list of errors.
     pub fn error(&mut self, msg: impl Into<String> + Clone) {
         let pos = self.current_pos;
         let text = self.peek_token().map(|t| t.text()).unwrap_or("").to_owned();
@@ -245,6 +263,7 @@ impl<'a> Parser<'a> {
         self.push_token(Token::new(SyntaxKind::ERROR, ""))
     }
 
+    /// Consume the next token but remap its `SyntaxKind` to be `kind`. 
     pub fn eat_mapped(&mut self, kind: SyntaxKind) -> SyntaxKind {
         let token = self.pop();
         let mapped = Token::new(kind, token.text());
@@ -313,30 +332,45 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// Start a new node in the syntax tree. 
+    ///
+    /// Note that the returned [`NodeGuard`] will be dropped immediately if not
+    /// bound to a variable.
     #[must_use]
     pub fn start_node(&mut self, kind: SyntaxKind) -> NodeGuard {
         self.builder.start_node(kind)
     }
 
+    /// Set a checkpoint that can be used later to create a node earlier in the tree. 
+    ///
+    /// This is essentially just lookahead. Make an example?
     #[must_use]
     pub fn checkpoint(&self) -> Checkpoint {
         self.builder.checkpoint()
     }
 
+    /// Use a previously set `checkpoint` to create a new node at its position (higher up in the tree). 
+    ///
+    /// Note that the returned [`NodeGuard`] will be dropped immediately if not
+    /// bound to a variable.
     #[must_use]
     pub fn start_node_at(&mut self, checkpoint: Checkpoint, kind: SyntaxKind) -> NodeGuard {
         self.builder.start_node_at(checkpoint, kind)
     }
 
+    /// Add a token to the current node.
     pub fn push_token(&mut self, token: Token) {
         self.builder.push_token(token)
     }
 
+    /// Parse an entire source file. 
     pub fn parse(self) -> SyntaxTree {
         self.parse_inner(crate::grammar::source_file)
     }
 
-    /// For testing
+    /// Parse according to a specified parsing function `f`. 
+    ///
+    /// This is here for testing purposes.
     pub(crate) fn parse_inner<F>(mut self, mut f: F) -> SyntaxTree
     where
         F: FnMut(&mut Parser),
@@ -349,23 +383,28 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// Parse a single expression. 
     pub fn parse_expr(self) -> SyntaxTree {
         self.parse_inner(crate::grammar::expression)
     }
 
+    /// Parse a single pattern. 
     pub fn parse_pat(self) -> SyntaxTree {
         self.parse_inner(crate::grammar::pattern)
     }
 
+    /// Parse a single type. 
     pub fn parse_type(self) -> SyntaxTree {
         self.parse_inner(crate::grammar::ty)
     }
 
+    /// Parse a single declaration. 
     pub fn parse_dec(self) -> SyntaxTree {
         self.parse_inner(crate::grammar::declaration)
     }
 }
 
+/// A wrapper for [`rowan::GreenNodeBuilder`].
 #[derive(Debug, Clone)]
 pub(crate) struct NodeBuilder(Rc<RefCell<GreenNodeBuilder<'static>>>);
 
@@ -404,9 +443,14 @@ impl NodeBuilder {
     }
 }
 
+/// A wrapper for [`rowan::Checkpoint`].
 #[derive(Debug, Clone)]
 pub struct Checkpoint(rowan::Checkpoint);
 
+/// A guard to avoid forgetting to call `builder.finish_node()`.
+///
+/// This nice RAII trick is copied from
+/// [`apollo-parser`](https://docs.rs/apollo-parser/latest/apollo_parser/).
 #[derive(Debug, Clone)]
 pub struct NodeGuard {
     builder: Rc<RefCell<GreenNodeBuilder<'static>>>,

@@ -1,9 +1,9 @@
+//! Functions to parse expressions.
 use crate::grammar;
 use crate::{Checkpoint, Parser, SyntaxKind};
-
 use SyntaxKind::*;
 
-pub(crate) fn expression(p: &mut Parser) {
+pub fn expression(p: &mut Parser) {
     expr_bp(p, 0)
 }
 
@@ -142,7 +142,7 @@ fn appexp(p: &mut Parser) {
     atomic_inner(p);
 }
 
-pub(crate) fn fn_match(p: &mut Parser) {
+pub fn fn_match(p: &mut Parser) {
     let _ng = p.start_node(FN_EXP);
 
     assert!(p.eat(FN_KW));

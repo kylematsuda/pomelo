@@ -1,9 +1,10 @@
+//! Functions to parse bindings.
 use crate::grammar;
 use crate::{Parser, SyntaxKind};
 
 use SyntaxKind::*;
 
-pub(crate) fn valbind(p: &mut Parser) {
+pub fn valbind(p: &mut Parser) {
     let _ng = p.start_node(VAL_BIND);
 
     // Optionally eat a REC
@@ -34,7 +35,7 @@ fn valbind_inner(p: &mut Parser, rec: bool) {
     }
 }
 
-pub(crate) fn fvalbind(p: &mut Parser) {
+pub fn fvalbind(p: &mut Parser) {
     let _ng = p.start_node(FVAL_BIND);
 
     let mut row = 0;
@@ -55,7 +56,7 @@ pub(crate) fn fvalbind(p: &mut Parser) {
     }
 }
 
-pub(crate) fn fvalbind_row(p: &mut Parser, row_index: u32) {
+pub fn fvalbind_row(p: &mut Parser, row_index: u32) {
     let _ng = p.start_node(FVAL_BIND_ROW);
 
     if row_index > 0 {
@@ -89,7 +90,7 @@ pub(crate) fn fvalbind_row(p: &mut Parser, row_index: u32) {
     grammar::expression(p);
 }
 
-pub(crate) fn typbind(p: &mut Parser) {
+pub fn typbind(p: &mut Parser) {
     let _ng = p.start_node(TY_BIND);
     grammar::tyvarseq(p);
     p.eat_trivia();
@@ -111,7 +112,7 @@ pub(crate) fn databind(p: &mut Parser) {
     grammar::conbind(p);
 }
 
-pub(crate) fn conbind(p: &mut Parser) {
+pub fn conbind(p: &mut Parser) {
     grammar::sequential(p, conbind_inner, PIPE)
 }
 
@@ -132,7 +133,7 @@ fn conbind_inner(p: &mut Parser) {
     }
 }
 
-pub(crate) fn exbind(p: &mut Parser) {
+pub fn exbind(p: &mut Parser) {
     let _ng = p.start_node(EX_BIND);
 
     // <op>

@@ -1,5 +1,8 @@
+//! Kinds of syntax nodes.
+
 use pomelo_lex::LexKind;
 
+/// Kinds of syntax nodes in the Core SML language.
 #[allow(bad_style)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(u16)]
@@ -188,16 +191,19 @@ pub enum SyntaxKind {
 }
 
 impl SyntaxKind {
+    /// Returns true if `self` is a special constant (literal).
     pub fn is_special_constant(&self) -> bool {
         use SyntaxKind::*;
         matches!(self, INT | REAL | WORD | CHAR | STRING)
     }
 
+    /// Returns true if `self` is trivia (whitespace or comment).
     pub fn is_trivia(&self) -> bool {
         use SyntaxKind::*;
         matches!(self, WHITESPACE | COMMENT)
     }
 
+    /// Returns true if `self` is a keyword signalling a declaration.
     pub fn is_dec_kw(&self) -> bool {
         use SyntaxKind::*;
         matches!(
@@ -216,11 +222,14 @@ impl SyntaxKind {
         )
     }
 
+    /// Returns true if `self` is the start of a atomic type
+    /// (either a type variable or the start of a record or tuple type).
     pub fn is_ty_atom(&self) -> bool {
         use SyntaxKind::*;
         matches!(self, TYVAR | L_BRACE | L_PAREN)
     }
 
+    /// Returns true if `self` is a keyword.
     pub fn is_kw(&self) -> bool {
         use SyntaxKind::*;
         matches!(
@@ -260,6 +269,7 @@ impl SyntaxKind {
         )
     }
 
+    /// Returns true if `self` is the start of an atomic expression.
     pub fn is_atomic_exp_start(&self) -> bool {
         use SyntaxKind::*;
 
@@ -271,6 +281,7 @@ impl SyntaxKind {
             )
     }
 
+    /// Returns true if `self` is the start of an atomic pattern.
     pub fn is_atomic_pat_start(&self) -> bool {
         use SyntaxKind::*;
 
@@ -284,6 +295,7 @@ impl SyntaxKind {
             )
     }
 
+    /// Returns `Some(kind)` if `s` is a keyword, else `None`. 
     pub fn from_keyword(s: &str) -> Option<Self> {
         use SyntaxKind::*;
 
@@ -325,6 +337,7 @@ impl SyntaxKind {
         Some(kw)
     }
 
+    /// Returns `Some(kind)` if `s` is a symbol, else `None`. 
     pub fn from_symbol(s: &str) -> Option<Self> {
         use SyntaxKind::*;
 
@@ -351,6 +364,11 @@ impl SyntaxKind {
         Some(symb)
     }
 
+    /// Converts a lex token to a parse token. 
+    ///
+    /// Note that the return type is a `(val, err)` tuple instead of a `Result`.
+    /// This is because we want to collect errors here but defer their handling until after
+    /// everything has been parsed.
     pub fn from_lexed(lexkind: LexKind, text: &str) -> (Self, Option<&'static str>) {
         use LexKind::*;
         use SyntaxKind::*;

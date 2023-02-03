@@ -1,3 +1,16 @@
+//! Parser for SML '97.
+//!
+//! Currently, this only covers the Core language (no support for modules).
+//!
+//! The design of this module is heavily influenced by
+//! [`rust-analyzer/crates/parser`](https://github.com/rust-lang/rust-analyzer/tree/master/crates/parser),
+//! and uses [`rowan`](https://docs.rs/rowan/latest/rowan/) to construct the syntax tree.
+//! It is also influenced by
+//! [`apollo_parser`](https://docs.rs/apollo-parser/latest/apollo_parser/), a GraphQL parser in
+//! Rust that also draws heavily from `rust-analyzer`.
+//!
+//! TODO: Maybe add some examples here?
+
 pub mod grammar;
 
 pub mod syntax;
@@ -22,6 +35,7 @@ pub(crate) mod tests;
 
 use thiserror::Error;
 
+/// An parsing error.
 #[derive(Debug, Clone, Error, PartialEq, Eq)]
 #[error("Error@{pos}: {msg}")]
 pub struct Error {
@@ -40,6 +54,10 @@ impl Error {
     }
 }
 
+/// Lex and parse an input string.
+///
+/// Eventually, this can also apply validation passes
+/// (currently, `passes::apply_passes` does nothing).
 pub fn parse(input: &str) -> SyntaxTree {
     let tree = Parser::new(input).parse();
     passes::apply_passes(&tree);
