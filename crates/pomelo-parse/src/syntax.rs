@@ -1,5 +1,4 @@
 //! Kinds of syntax nodes.
-
 use pomelo_lex::LexKind;
 
 /// Kinds of syntax nodes in the Core SML language.

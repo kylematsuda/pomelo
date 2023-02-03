@@ -1,5 +1,5 @@
 //! AST nodes for constants (literals).
-use crate::{AstToken, SyntaxKind, SyntaxToken};
+use crate::{language::SyntaxToken, AstToken, SyntaxKind};
 
 use SyntaxKind::*;
 

@@ -1,5 +1,4 @@
 //! Functions to parse identifiers.
-
 use crate::grammar;
 use crate::{Parser, SyntaxKind};
 use SyntaxKind::*;

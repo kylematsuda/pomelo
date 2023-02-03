@@ -2,16 +2,16 @@
 //!
 //! Took this out of the passes. I think passes should probably just be used for validation,
 //! probably not actually transforming the syntax tree?
-
-use crate::{
-    ast, AstNode, AstToken, Error, SyntaxElement, SyntaxElementChildren, SyntaxKind, SyntaxNode,
-    SyntaxNodePtr, SyntaxTree,
-};
+use std::collections::HashMap;
+use std::iter::Peekable;
 
 use rowan::{GreenNode, GreenToken, NodeOrToken};
 
-use std::collections::HashMap;
-use std::iter::Peekable;
+use crate::{
+    ast,
+    language::{SyntaxElement, SyntaxElementChildren, SyntaxNode, SyntaxNodePtr},
+    AstNode, AstToken, Error, SyntaxKind, SyntaxTree,
+};
 
 type GreenElement = NodeOrToken<GreenNode, GreenToken>;
 

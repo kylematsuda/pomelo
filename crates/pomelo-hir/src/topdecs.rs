@@ -4,7 +4,11 @@
 use crate::arena::{Arena, Idx};
 use crate::core::Body;
 use crate::identifiers::{LongStrId, LongVId, NameInterner, NameInternerImpl, TyCon, VId};
-use pomelo_parse::{ast, language::SML, AstNode, AstPtr, SyntaxNodePtr};
+use pomelo_parse::{
+    ast,
+    language::{SyntaxNodePtr, SML},
+    AstNode, AstPtr,
+};
 use std::collections::HashMap;
 use std::marker::PhantomData;
 

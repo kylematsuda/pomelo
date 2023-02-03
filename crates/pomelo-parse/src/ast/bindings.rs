@@ -1,5 +1,5 @@
 //! AST nodes for bindings.
-use crate::{ast, ast::support, impl_ast_node, AstNode, SyntaxKind, SyntaxNode};
+use crate::{ast, ast::support, impl_ast_node, language::SyntaxNode, AstNode, SyntaxKind};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ValBind {

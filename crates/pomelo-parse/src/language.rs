@@ -1,5 +1,7 @@
-//! This is boilerplate for making the [`rowan`] stuff work.
-
+//! Boilerplate for making the [`rowan`] stuff work.
+//!
+//! This module is public because it is needed by consumers of the AST
+//! (i.e., `pomelo-hir`).
 use crate::SyntaxKind;
 
 pub type SyntaxNode = rowan::SyntaxNode<SML>;

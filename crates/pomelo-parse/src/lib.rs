@@ -11,19 +11,15 @@
 //!
 //! TODO: Maybe add some examples here?
 
-pub mod grammar;
+mod grammar;
 
-pub mod syntax;
+mod syntax;
 pub use syntax::SyntaxKind;
 
 pub mod language;
-pub use language::{
-    SyntaxElement, SyntaxElementChildren, SyntaxNode, SyntaxNodeChildren, SyntaxNodePtr,
-    SyntaxToken,
-};
 
-pub mod parser;
-pub use parser::{Checkpoint, NodeGuard, Parser, SyntaxTree};
+mod parser;
+pub use parser::{Parser, SyntaxTree};
 
 pub mod ast;
 pub use ast::{AstNode, AstPtr, AstToken};

@@ -27,7 +27,7 @@ pub use patterns::*;
 pub mod type_expressions;
 pub use type_expressions::*;
 
-use crate::{SyntaxNode, SyntaxToken};
+use crate::language::{SyntaxNode, SyntaxToken};
 pub use rowan::ast::AstNode;
 
 pub trait AstToken {
@@ -67,7 +67,7 @@ macro_rules! impl_ast_node {
                 kind == $kind
             }
 
-            fn cast(node: $crate::SyntaxNode) -> Option<Self>
+            fn cast(node: $crate::language::SyntaxNode) -> Option<Self>
             where
                 Self: Sized,
             {
@@ -78,7 +78,7 @@ macro_rules! impl_ast_node {
                 }
             }
 
-            fn syntax(&self) -> &$crate::SyntaxNode {
+            fn syntax(&self) -> &$crate::language::SyntaxNode {
                 &self.syntax
             }
         }
@@ -95,7 +95,7 @@ macro_rules! impl_ast_node {
 macro_rules! impl_ast_token {
     ($target:ty, $kind:ident) => {
         impl $crate::AstToken for $target {
-            fn cast(node: $crate::SyntaxToken) -> Option<Self>
+            fn cast(node: $crate::language::SyntaxToken) -> Option<Self>
             where
                 Self: Sized,
             {
@@ -106,7 +106,7 @@ macro_rules! impl_ast_token {
                 }
             }
 
-            fn syntax(&self) -> &$crate::SyntaxToken {
+            fn syntax(&self) -> &$crate::language::SyntaxToken {
                 &self.syntax
             }
         }
@@ -120,7 +120,10 @@ macro_rules! impl_ast_token {
 }
 
 pub mod support {
-    use crate::{language::SML, AstNode, AstToken, SyntaxElement, SyntaxNode};
+    use crate::{
+        language::{SyntaxElement, SyntaxNode, SML},
+        AstNode, AstToken,
+    };
 
     pub use rowan::ast::support::{child, token};
 

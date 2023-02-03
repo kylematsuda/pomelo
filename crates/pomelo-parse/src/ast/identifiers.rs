@@ -1,5 +1,10 @@
 //! AST nodes for identifiers.
-use crate::{ast::support, impl_ast_node, impl_ast_token, AstNode, SyntaxNode, SyntaxToken};
+use crate::{
+    ast::support,
+    impl_ast_node, impl_ast_token,
+    language::{SyntaxNode, SyntaxToken},
+    AstNode,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct LongVId {

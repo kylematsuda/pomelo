@@ -1,6 +1,9 @@
 //! Functions to parse expressions.
 use crate::grammar;
-use crate::{Checkpoint, Parser, SyntaxKind};
+use crate::{
+    parser::{Checkpoint, NodeGuard},
+    Parser, SyntaxKind,
+};
 use SyntaxKind::*;
 
 pub fn expression(p: &mut Parser) {
@@ -352,12 +355,12 @@ fn other_parenthesized(p: &mut Parser) {
     }
 }
 
-fn finish_tuple_expression(p: &mut Parser, _ng: crate::NodeGuard) {
+fn finish_tuple_expression(p: &mut Parser, _ng: NodeGuard) {
     grammar::sequential(p, expression, COMMA);
     p.expect(R_PAREN)
 }
 
-fn finish_seq_expression(p: &mut Parser, _ng: crate::NodeGuard) {
+fn finish_seq_expression(p: &mut Parser, _ng: NodeGuard) {
     grammar::sequential(p, expression, SEMICOLON);
     p.expect(R_PAREN)
 }

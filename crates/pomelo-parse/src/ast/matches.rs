@@ -1,5 +1,5 @@
 //! AST nodes for matches.
-use crate::{ast, ast::support, impl_ast_node, AstNode, SyntaxNode};
+use crate::{ast, ast::support, impl_ast_node, language::SyntaxNode, AstNode};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Match {
