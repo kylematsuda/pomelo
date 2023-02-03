@@ -11,7 +11,7 @@ use rowan::{GreenNode, GreenNodeBuilder};
 
 /// A parsed token.
 ///
-/// Consists of a [`crate::SyntaxKind`] and a reference to the corresponding 
+/// Consists of a [`crate::SyntaxKind`] and a reference to the corresponding
 /// span of the source code.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Token<'a> {
@@ -261,7 +261,7 @@ impl<'a> Parser<'a> {
         self.push_token(Token::new(SyntaxKind::ERROR, ""))
     }
 
-    /// Consume the next token but remap its `SyntaxKind` to be `kind`. 
+    /// Consume the next token but remap its `SyntaxKind` to be `kind`.
     pub fn eat_mapped(&mut self, kind: SyntaxKind) -> SyntaxKind {
         let token = self.pop();
         let mapped = Token::new(kind, token.text());
@@ -330,7 +330,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    /// Start a new node in the syntax tree. 
+    /// Start a new node in the syntax tree.
     ///
     /// Note that the returned [`NodeGuard`] will be dropped immediately if not
     /// bound to a variable.
@@ -339,7 +339,7 @@ impl<'a> Parser<'a> {
         self.builder.start_node(kind)
     }
 
-    /// Set a checkpoint that can be used later to create a node earlier in the tree. 
+    /// Set a checkpoint that can be used later to create a node earlier in the tree.
     ///
     /// This is essentially just lookahead. Make an example?
     #[must_use]
@@ -347,7 +347,7 @@ impl<'a> Parser<'a> {
         self.builder.checkpoint()
     }
 
-    /// Use a previously set `checkpoint` to create a new node at its position (higher up in the tree). 
+    /// Use a previously set `checkpoint` to create a new node at its position (higher up in the tree).
     ///
     /// Note that the returned [`NodeGuard`] will be dropped immediately if not
     /// bound to a variable.
@@ -361,12 +361,12 @@ impl<'a> Parser<'a> {
         self.builder.push_token(token)
     }
 
-    /// Parse an entire source file. 
+    /// Parse an entire source file.
     pub fn parse(self) -> SyntaxTree {
         self.parse_inner(crate::grammar::source_file)
     }
 
-    /// Parse according to a specified parsing function `f`. 
+    /// Parse according to a specified parsing function `f`.
     ///
     /// This is here for testing purposes.
     pub(crate) fn parse_inner<F>(mut self, mut f: F) -> SyntaxTree
@@ -381,22 +381,22 @@ impl<'a> Parser<'a> {
         }
     }
 
-    /// Parse a single expression. 
+    /// Parse a single expression.
     pub fn parse_expr(self) -> SyntaxTree {
         self.parse_inner(crate::grammar::expression)
     }
 
-    /// Parse a single pattern. 
+    /// Parse a single pattern.
     pub fn parse_pat(self) -> SyntaxTree {
         self.parse_inner(crate::grammar::pattern)
     }
 
-    /// Parse a single type. 
+    /// Parse a single type.
     pub fn parse_type(self) -> SyntaxTree {
         self.parse_inner(crate::grammar::ty)
     }
 
-    /// Parse a single declaration. 
+    /// Parse a single declaration.
     pub fn parse_dec(self) -> SyntaxTree {
         self.parse_inner(crate::grammar::declaration)
     }

@@ -295,7 +295,7 @@ impl SyntaxKind {
             )
     }
 
-    /// Returns `Some(kind)` if `s` is a keyword, else `None`. 
+    /// Returns `Some(kind)` if `s` is a keyword, else `None`.
     pub fn from_keyword(s: &str) -> Option<Self> {
         use SyntaxKind::*;
 
@@ -337,7 +337,7 @@ impl SyntaxKind {
         Some(kw)
     }
 
-    /// Returns `Some(kind)` if `s` is a symbol, else `None`. 
+    /// Returns `Some(kind)` if `s` is a symbol, else `None`.
     pub fn from_symbol(s: &str) -> Option<Self> {
         use SyntaxKind::*;
 
@@ -364,7 +364,7 @@ impl SyntaxKind {
         Some(symb)
     }
 
-    /// Converts a lex token to a parse token. 
+    /// Converts a lex token to a parse token.
     ///
     /// Note that the return type is a `(val, err)` tuple instead of a `Result`.
     /// This is because we want to collect errors here but defer their handling until after
