@@ -1,5 +1,9 @@
 # pomelo
 
+[![](https://img.shields.io/badge/docs-dev-blue.svg)](https://kylematsuda.github.io/pomelo/pomelo/)
+[![](https://github.com/kylematsuda/pomelo/workflows/Test/badge.svg)](https://github.com/kylematsuda/pomelo/actions?query=workflow:Test)
+[![](https://img.shields.io/badge/license-MIT-green)](https://github.com/kylematsuda/pomelo/blob/main/LICENSE.md)
+
 `pomelo` is a (hobby, WIP) lexer and parser for Standard ML (SML) '97 implemented in Rust.
 My goal is to eventually extend this to implement a Language Server and interpreter.
 This is extremely rough and incomplete and I'm learning a lot as I go!
