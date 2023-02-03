@@ -21,10 +21,10 @@ The ML family has a lot of really cool stuff:
 - Pattern matching
 - Module system
 
-So lots of opportunities for me to learn (/get really confused)!
+so lots of opportunities for me to learn (/get really confused)!
 
 For now, I don't plan to touch modules or imperative stuff (see [Scope](https://github.com/kylematsuda/pomelo#scope) below).
-However, just trying to implement the Core semantics correctly already gives me plenty to work on.
+However, just trying to implement the Core semantics is plenty for me at this point.
 
 ### Some SML resources
 
@@ -32,7 +32,7 @@ The language definition and standard library:
 - [The Definition of Standard ML (Revised '97)](https://smlfamily.github.io/sml97-defn.pdf)
 - [SML Basis Library](https://smlfamily.github.io/Basis/index.html) 
 
-Major SML compilers:
+SML compilers:
 - [SML of New Jersey](https://github.com/smlnj/smlnj)
 - [MLton](https://github.com/MLton/mlton)
 
@@ -48,8 +48,8 @@ Core SML language (so no modules). Also, no imperative stuff except for maybe ba
 ## General design
 
 At this stage, the design is heavily influenced by [`rust-analyzer`](https://github.com/rust-lang/rust-analyzer). This is mainly because:
-(1) I'd like to eventually turn this into a language server, and
-(2) Rust is probably the language that I have the best reading comprehension in, and the code in `rust-analyzer` seemed more approachable than `rustc` initially.
+1. I'd like to eventually turn this into a language server, and
+2. Rust is probably the language that I read best, and the code in `rust-analyzer` seemed a little more approachable than `rustc` initially.
 
 ### Lexer
 
