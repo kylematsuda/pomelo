@@ -69,7 +69,6 @@ pub mod body;
 pub mod identifiers;
 pub mod scope;
 pub mod semantics;
-pub mod topdecs;
 
 use std::marker::PhantomData;
 
@@ -81,9 +80,8 @@ use pomelo_parse::{
 use crate::arena::Idx;
 use crate::body::BodyArena;
 use crate::identifiers::{
-    Label, LongStrId, LongTyCon, LongVId, NameInternerImpl, TyCon, TyVar, VId,
+    Label, LongStrId, LongTyCon, LongVId, TyCon, TyVar, VId,
 };
-use crate::topdecs::{AstIdMap, FileArena};
 
 /// A pointer from the HIR node back to its corresponding AST node.
 ///
@@ -112,7 +110,7 @@ impl<N: AstNode<Language = SML>> AstId<N> {
         }
     }
 
-    pub fn as_span<A: FileArena>(&self, arena: &A) -> Option<(usize, usize)> {
+    pub fn as_span<A: BodyArena>(&self, arena: &A) -> Option<(usize, usize)> {
         match self {
             Self::Missing => None,
             Self::Node(n) => arena.get_ast_span(*n),
@@ -122,8 +120,11 @@ impl<N: AstNode<Language = SML>> AstId<N> {
 }
 
 /// A pointer to an AST node.
-///
-/// TODO: Get rid of this and just use `Idx`?
+/// 
+/// Currently, this is needed because we only hold references to `SyntaxNodePtr`,
+/// which know nothing about the type of the pointed-to AST node.
+/// This nice thing is that this allows us to allocate all of the `SyntaxNodePtr`s in the same
+/// arena (unlike if we used the typed `AstPtr`s).
 #[derive(Debug, PartialEq, Eq)]
 pub struct FileAstIdx<N> {
     index: Idx<SyntaxNodePtr>,
@@ -165,7 +166,7 @@ impl NodeParent {
         Self::Dec(id)
     }
 
-    pub fn as_span<A: FileArena>(&self, arena: &A) -> Option<(usize, usize)> {
+    pub fn as_span<A: BodyArena>(&self, arena: &A) -> Option<(usize, usize)> {
         match self {
             Self::Dec(d) => arena.get_ast_span(*d),
             Self::Expr(e) => arena.get_ast_span(*e),
@@ -177,15 +178,7 @@ impl NodeParent {
 /// A single source file or an input from the REPL.
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct File {
-    pub(crate) data: Box<FileData<NameInternerImpl>>,
     pub(crate) decs: Vec<TopDec>,
-}
-
-/// Figure out if this is necessary! I suspect not...
-#[derive(Default, Debug, Clone, PartialEq, Eq)]
-pub struct FileData<I> {
-    pub interner: I,
-    pub sources: AstIdMap,
 }
 
 /// Fundamental reuse unit is the TopDec
@@ -196,15 +189,7 @@ pub struct FileData<I> {
 ///     Plays nice with "use" directive
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TopDec {
-    kind: TopDecKind,
-    body: Option<body::Body>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum TopDecKind {
-    Core(Dec),
-    /// A placeholder for module stuff
-    Module,
+    body: body::Body,
 }
 
 /// HIR declaration node.
