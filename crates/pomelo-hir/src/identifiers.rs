@@ -173,6 +173,13 @@ impl VId {
         Self::Missing
     }
 
+    pub fn try_into_name(self) -> Option<Name> {
+        match self {
+            Self::Missing => None,
+            Self::Name(n) => Some(n),
+        }
+    }
+
     fn try_builtin<I: NameInterner>(name: &str, interner: &mut I) -> Self {
         match BuiltIn::from_string(name) {
             Some(b) => Self::from_builtin(b),
@@ -226,6 +233,13 @@ impl StrId {
 
     pub fn missing() -> Self {
         Self::Missing
+    }
+
+    pub fn try_into_name(self) -> Option<Name> {
+        match self {
+            Self::Missing => None,
+            Self::Name(n) => Some(n),
+        }
     }
 
     fn try_builtin<I: NameInterner>(name: &str, interner: &mut I) -> Self {
@@ -320,6 +334,13 @@ impl TyCon {
         Self::Missing
     }
 
+    pub fn try_into_name(self) -> Option<Name> {
+        match self {
+            Self::Missing => None,
+            Self::Name(n) => Some(n),
+        }
+    }
+
     fn try_builtin<I: NameInterner>(name: &str, interner: &mut I) -> Self {
         match BuiltIn::from_string(name) {
             Some(b) => Self::from_builtin(b),
@@ -356,5 +377,90 @@ impl Label {
 
     pub fn missing() -> Self {
         Self::Missing
+    }
+}
+
+/// Utility trait for swapping from one interner to another.
+pub trait SwitchInterner: Sized {
+    fn switch_interner<O, N>(&self, old_interner: &O, new_interner: &mut N) -> Option<Self>
+    where
+        O: NameInterner,
+        N: NameInterner;
+}
+
+impl SwitchInterner for Name {
+    fn switch_interner<O, N>(&self, old_interner: &O, new_interner: &mut N) -> Option<Self>
+    where
+        O: NameInterner,
+        N: NameInterner,
+    {
+        if let Name::String(idx) = self {
+            let s = old_interner.get(*idx);
+            let new_idx = new_interner.alloc(s);
+            Some(Name::String(new_idx))
+        } else {
+            Some(*self)
+        }
+    }
+}
+
+impl SwitchInterner for VId {
+    fn switch_interner<O, N>(&self, old_interner: &O, new_interner: &mut N) -> Option<Self>
+    where
+        O: NameInterner,
+        N: NameInterner,
+    {
+        match self {
+            VId::Missing => None,
+            VId::Name(n) => n
+                .switch_interner(old_interner, new_interner)
+                .map(VId::Name),
+        }
+    }
+}
+
+impl SwitchInterner for StrId {
+    fn switch_interner<O, N>(&self, old_interner: &O, new_interner: &mut N) -> Option<Self>
+    where
+        O: NameInterner,
+        N: NameInterner {
+        match self {
+            StrId::Missing => None,
+            StrId::Name(n) => n 
+                .switch_interner(old_interner, new_interner)
+                .map(StrId::Name)
+        }
+    }
+}
+
+impl SwitchInterner for TyCon {
+    fn switch_interner<O, N>(&self, old_interner: &O, new_interner: &mut N) -> Option<Self>
+    where
+        O: NameInterner,
+        N: NameInterner {
+        match self {
+            TyCon::Missing => None,
+            TyCon::Name(n) => n 
+                .switch_interner(old_interner, new_interner)
+                .map(TyCon::Name)
+        }
+    }
+}
+
+impl SwitchInterner for LongVId {
+    fn switch_interner<O, N>(&self, old_interner: &O, new_interner: &mut N) -> Option<Self>
+    where
+        O: NameInterner,
+        N: NameInterner,
+    {
+        let vid = self.vid.switch_interner(old_interner, new_interner)?;
+
+        let mut strids = vec![];
+        for strid in self.strids.iter() {
+            let strid = strid.switch_interner(old_interner, new_interner)?;
+            strids.push(strid);
+        }
+
+        Some(LongVId { strids: strids.into_boxed_slice(), vid }) 
     }
 }
