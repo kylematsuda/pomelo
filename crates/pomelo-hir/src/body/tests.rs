@@ -27,7 +27,8 @@ where
     let node = H::AstType::cast(tree.syntax());
 
     let mut arena = BodyArenaImpl::<NameInternerImpl>::default();
-    let actual = H::lower_opt(node, &mut arena).pretty(&arena);
+    let mut ctx = crate::lower::LoweringCtxt::default();
+    let actual = H::lower_opt(node, &mut arena, &mut ctx).pretty(&arena);
     expect.assert_eq(&actual);
 }
 

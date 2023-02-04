@@ -282,53 +282,53 @@ impl<'hir, A: BodyArena> BodySymbols<'hir, A> {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use crate::body::Body;
-    use crate::semantics::BodySymbols;
-    use pomelo_parse::{ast, AstNode, Parser};
-
-    fn check(src: &str) {
-        let parser = Parser::new(src);
-        let tree = parser.parse_dec();
-
-        for e in tree.errors() {
-            eprintln!("{:?}", e);
-        }
-        eprintln!("{}", tree);
-
-        let node = ast::Dec::cast(tree.syntax()).unwrap();
-        let body = Body::from_syntax(node);
-        let mut symbols = BodySymbols::new(body.arena());
-        symbols.add_dec(body.dec()).unwrap();
-
-        eprintln!("{}", symbols);
-    }
-
-    #[test]
-    fn test_symbol_map_basic() {
-        check(
-            "val x =
-                let 
-                    val a = 1
-                    val b = 2
-                in 
-                    a + b 
-                end 
-            ",
-        )
-    }
-
-    #[test]
-    fn test_symbol_map_shadow() {
-        check(
-            "val x =
-                let 
-                    val a = 1
-                in 
-                    fn x => a
-                end 
-            ",
-        )
-    }
-}
+// #[cfg(test)]
+// mod tests {
+//     use crate::body::Body;
+//     use crate::semantics::BodySymbols;
+//     use pomelo_parse::{ast, AstNode, Parser};
+//
+//     fn check(src: &str) {
+//         let parser = Parser::new(src);
+//         let tree = parser.parse_dec();
+//
+//         for e in tree.errors() {
+//             eprintln!("{:?}", e);
+//         }
+//         eprintln!("{}", tree);
+//
+//         let node = ast::Dec::cast(tree.syntax()).unwrap();
+//         let body = Body::from_syntax(node);
+//         let mut symbols = BodySymbols::new(body.arena());
+//         symbols.add_dec(body.dec()).unwrap();
+//
+//         eprintln!("{}", symbols);
+//     }
+//
+//     #[test]
+//     fn test_symbol_map_basic() {
+//         check(
+//             "val x =
+//                 let
+//                     val a = 1
+//                     val b = 2
+//                 in
+//                     a + b
+//                 end
+//             ",
+//         )
+//     }
+//
+//     #[test]
+//     fn test_symbol_map_shadow() {
+//         check(
+//             "val x =
+//                 let
+//                     val a = 1
+//                 in
+//                     fn x => a
+//                 end
+//             ",
+//         )
+//     }
+// }

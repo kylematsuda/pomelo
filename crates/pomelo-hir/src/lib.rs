@@ -67,6 +67,7 @@
 pub mod arena;
 pub mod body;
 pub mod identifiers;
+pub mod lower;
 pub mod scope;
 pub mod semantics;
 
@@ -79,9 +80,7 @@ use pomelo_parse::{
 
 use crate::arena::Idx;
 use crate::body::BodyArena;
-use crate::identifiers::{
-    Label, LongStrId, LongTyCon, LongVId, TyCon, TyVar, VId,
-};
+use crate::identifiers::{Label, LongStrId, LongTyCon, LongVId, TyCon, TyVar, VId};
 
 /// A pointer from the HIR node back to its corresponding AST node.
 ///
@@ -120,7 +119,7 @@ impl<N: AstNode<Language = SML>> AstId<N> {
 }
 
 /// A pointer to an AST node.
-/// 
+///
 /// Currently, this is needed because we only hold references to `SyntaxNodePtr`,
 /// which know nothing about the type of the pointed-to AST node.
 /// This nice thing is that this allows us to allocate all of the `SyntaxNodePtr`s in the same
@@ -181,6 +180,16 @@ pub struct File {
     pub(crate) decs: Vec<TopDec>,
 }
 
+impl File {
+    pub fn get_dec(&self, index: usize) -> Option<&TopDec> {
+        self.decs.get(index)
+    }
+
+    pub fn add_dec(&mut self, dec: TopDec) {
+        self.decs.push(dec);
+    }
+}
+
 /// Fundamental reuse unit is the TopDec
 ///
 /// Why?
@@ -190,6 +199,12 @@ pub struct File {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TopDec {
     body: body::Body,
+}
+
+impl TopDec {
+    pub fn new(body: body::Body) -> Self {
+        Self { body }
+    }
 }
 
 /// HIR declaration node.

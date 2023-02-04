@@ -7,12 +7,17 @@ pub mod pretty;
 use std::collections::HashMap;
 use std::marker::PhantomData;
 
-use pomelo_parse::{ast, language::{SML, SyntaxNodePtr}, AstNode, AstPtr};
+use pomelo_parse::{
+    ast,
+    language::{SyntaxNodePtr, SML},
+    AstNode, AstPtr,
+};
 
-use crate::{Dec, Expr, FileAstIdx, Pat, Type};
 use crate::arena::{Arena, Idx};
 use crate::body::lower::HirLower;
 use crate::identifiers::{NameInterner, NameInternerImpl};
+use crate::lower::LoweringCtxt;
+use crate::{Dec, Expr, FileAstIdx, Pat, Type};
 
 #[cfg(test)]
 mod tests;
@@ -34,9 +39,9 @@ pub struct Body {
 }
 
 impl Body {
-    pub fn from_syntax(dec: ast::Dec) -> Self {
+    pub fn from_syntax(dec: ast::Dec, ctx: &mut LoweringCtxt) -> Self {
         let mut arenas = BodyArenaImpl::default();
-        let dec = Dec::lower(dec, &mut arenas);
+        let dec = Dec::lower(dec, &mut arenas, ctx);
         Self { arenas, dec }
     }
 
@@ -53,7 +58,7 @@ impl Body {
     }
 }
 
-pub trait BodyArena : NameInterner {
+pub trait BodyArena: NameInterner {
     fn alloc_pat(&mut self, pat: Pat) -> Idx<Pat>;
     fn get_pat(&self, index: Idx<Pat>) -> &Pat;
 
@@ -192,9 +197,8 @@ impl<I: NameInterner> BodyArena for BodyArenaImpl<I> {
 
     fn get_ast_span<N>(&self, index: FileAstIdx<N>) -> Option<(usize, usize)>
     where
-        N: AstNode<Language = SML>
+        N: AstNode<Language = SML>,
     {
         self.ast_map.get_span(index)
     }
 }
-

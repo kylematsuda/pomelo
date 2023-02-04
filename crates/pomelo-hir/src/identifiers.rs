@@ -1,3 +1,8 @@
+//! Representation of identifiers in the HIR.
+//!
+//! TODO: this is not very DRY, especially repetition between `VId`, `StrId`, `TyCon` and their
+//! `Long-` forms.
+
 use crate::arena::{Arena, Idx};
 use pomelo_parse::{ast, AstToken};
 
@@ -273,7 +278,7 @@ impl TyVar {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct LongTyCon {
     pub strids: Box<[StrId]>,
     pub tycon: TyCon,
@@ -308,7 +313,7 @@ impl LongTyCon {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum TyCon {
     Missing,
     Name(Name),
@@ -412,9 +417,7 @@ impl SwitchInterner for VId {
     {
         match self {
             VId::Missing => None,
-            VId::Name(n) => n
-                .switch_interner(old_interner, new_interner)
-                .map(VId::Name),
+            VId::Name(n) => n.switch_interner(old_interner, new_interner).map(VId::Name),
         }
     }
 }
@@ -423,12 +426,13 @@ impl SwitchInterner for StrId {
     fn switch_interner<O, N>(&self, old_interner: &O, new_interner: &mut N) -> Option<Self>
     where
         O: NameInterner,
-        N: NameInterner {
+        N: NameInterner,
+    {
         match self {
             StrId::Missing => None,
-            StrId::Name(n) => n 
+            StrId::Name(n) => n
                 .switch_interner(old_interner, new_interner)
-                .map(StrId::Name)
+                .map(StrId::Name),
         }
     }
 }
@@ -437,12 +441,13 @@ impl SwitchInterner for TyCon {
     fn switch_interner<O, N>(&self, old_interner: &O, new_interner: &mut N) -> Option<Self>
     where
         O: NameInterner,
-        N: NameInterner {
+        N: NameInterner,
+    {
         match self {
             TyCon::Missing => None,
-            TyCon::Name(n) => n 
+            TyCon::Name(n) => n
                 .switch_interner(old_interner, new_interner)
-                .map(TyCon::Name)
+                .map(TyCon::Name),
         }
     }
 }
@@ -461,6 +466,30 @@ impl SwitchInterner for LongVId {
             strids.push(strid);
         }
 
-        Some(LongVId { strids: strids.into_boxed_slice(), vid }) 
+        Some(LongVId {
+            strids: strids.into_boxed_slice(),
+            vid,
+        })
+    }
+}
+
+impl SwitchInterner for LongTyCon {
+    fn switch_interner<O, N>(&self, old_interner: &O, new_interner: &mut N) -> Option<Self>
+    where
+        O: NameInterner,
+        N: NameInterner,
+    {
+        let tycon = self.tycon.switch_interner(old_interner, new_interner)?;
+
+        let mut strids = vec![];
+        for strid in self.strids.iter() {
+            let strid = strid.switch_interner(old_interner, new_interner)?;
+            strids.push(strid);
+        }
+
+        Some(LongTyCon {
+            strids: strids.into_boxed_slice(),
+            tycon,
+        })
     }
 }
