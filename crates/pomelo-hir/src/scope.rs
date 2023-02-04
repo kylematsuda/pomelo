@@ -4,8 +4,9 @@
 //! See r-a/crates/hir-def/src/body/scope.rs
 
 use crate::arena::{Arena, Idx};
-use crate::core::{Body, DecKind, Expr, Pat};
+use crate::body::Body;
 use crate::identifiers::LongVId;
+use crate::{DecKind, Expr, Pat};
 
 use std::collections::HashMap;
 

@@ -1,8 +1,8 @@
 use crate::arena::Idx;
-use crate::core::pretty::HirPrettyPrint;
-use crate::core::BodyArena;
-use crate::core::{Dec, DecKind, Expr, ExprKind, MRule, Pat, PatKind, PatRow, Type};
+use crate::body::pretty::HirPrettyPrint;
+use crate::body::BodyArena;
 use crate::identifiers::LongVId;
+use crate::{Dec, DecKind, Expr, ExprKind, MRule, Pat, PatKind, PatRow, Type};
 
 use std::collections::HashMap;
 
@@ -284,7 +284,7 @@ impl<'hir, A: BodyArena> BodySymbols<'hir, A> {
 
 #[cfg(test)]
 mod tests {
-    use crate::core::Body;
+    use crate::body::Body;
     use crate::semantics::BodySymbols;
     use pomelo_parse::{ast, AstNode, Parser};
 

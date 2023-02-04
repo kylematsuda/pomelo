@@ -1,10 +1,11 @@
 use crate::arena::Idx;
-use crate::core::{
-    BodyArena, ConBind, DataBind, Dec, DecKind, ExBind, ExpRow, Expr, ExprKind, Fixity, MRule, Pat,
-    PatKind, PatRow, Scon, TyKind, TyRow, Type,
-};
+use crate::body::BodyArena;
 use crate::identifiers::{
     Label, LongStrId, LongTyCon, LongVId, Name, NameInterner, StrId, TyCon, TyVar, VId,
+};
+use crate::{
+    ConBind, DataBind, Dec, DecKind, ExBind, ExpRow, Expr, ExprKind, Fixity, MRule, Pat, PatKind,
+    PatRow, Scon, TyKind, TyRow, Type,
 };
 
 const MISSING: &str = "*missing*";

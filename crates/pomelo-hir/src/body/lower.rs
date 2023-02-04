@@ -1,9 +1,9 @@
 use crate::arena::Idx;
-use crate::core::{
+use crate::identifiers::{BuiltIn, Label, LongStrId, LongTyCon, LongVId, TyCon, TyVar, VId};
+use crate::{
     AstId, BodyArena, ConBind, DataBind, Dec, DecKind, ExBind, ExpRow, Expr, ExprKind, Fixity,
     FloatWrapper, MRule, NodeParent, Pat, PatKind, PatRow, Scon, TyKind, TyRow, Type,
 };
-use crate::identifiers::{BuiltIn, Label, LongStrId, LongTyCon, LongVId, TyCon, TyVar, VId};
 use pomelo_parse::{ast, AstNode};
 
 pub(crate) trait HirLower: Sized {

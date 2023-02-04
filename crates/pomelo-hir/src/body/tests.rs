@@ -4,8 +4,8 @@ use pomelo_parse::{AstNode, Parser, SyntaxTree};
 use expect_test::{expect, Expect};
 
 use crate::arena::Idx;
-use crate::core::pretty::HirPrettyPrint;
-use crate::core::{lower::HirLower, BodyArenaImpl, Dec, Expr, Pat, Type};
+use crate::body::pretty::HirPrettyPrint;
+use crate::body::{lower::HirLower, BodyArenaImpl, Dec, Expr, Pat, Type};
 use crate::identifiers::NameInternerImpl;
 
 pub(crate) fn check<H, F>(src: &str, parse_with: F, expect: Expect)

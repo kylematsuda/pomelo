@@ -2,29 +2,16 @@
 //!
 //! Is this even necessary...?
 use crate::arena::{Arena, Idx};
-use crate::core::Body;
-use crate::identifiers::{LongStrId, LongVId, NameInterner, NameInternerImpl, TyCon, VId};
+use crate::identifiers::NameInterner;
+use crate::{FileAstIdx, FileData};
 use pomelo_parse::{
-    ast,
     language::{SyntaxNodePtr, SML},
     AstNode, AstPtr,
 };
 use std::collections::HashMap;
 use std::marker::PhantomData;
 
-pub mod lower;
-
-#[derive(Default, Debug, Clone, PartialEq, Eq)]
-pub struct File {
-    pub(crate) decs: Vec<TopDec>,
-    pub(crate) data: Box<FileData<NameInternerImpl>>,
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Eq)]
-pub struct FileData<I> {
-    pub interner: I,
-    pub sources: AstIdMap,
-}
+// pub mod lower;
 
 // See r-a hir_expand
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
@@ -100,114 +87,4 @@ impl<I: NameInterner> FileArena for FileData<I> {
     {
         self.sources.get(index)
     }
-}
-
-#[derive(Debug, PartialEq, Eq)]
-pub struct FileAstIdx<N> {
-    index: Idx<SyntaxNodePtr>,
-    _ph: PhantomData<fn() -> N>,
-}
-
-impl<N> Clone for FileAstIdx<N> {
-    fn clone(&self) -> Self {
-        Self {
-            index: self.index,
-            _ph: self._ph,
-        }
-    }
-}
-
-impl<N> Copy for FileAstIdx<N> {}
-
-/// Fundamental reuse unit is the TopDec
-///
-/// Why?
-///     Typing in body of one TopDec should not invalidate others
-///     Plays nice with repl (sequence of TopDecs)
-///     Plays nice with "use" directive
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum TopDec {
-    Core(CoreDec),
-    Module(ModuleDec),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum CoreDec {
-    Val {
-        names: Box<[LongVId]>,
-        ast_id: FileAstIdx<ast::ValDec>,
-        body: Option<Body>,
-    },
-    Ty {
-        tycons: Box<[TyCon]>,
-        ast_id: FileAstIdx<ast::TypeDec>,
-        body: Option<Body>,
-    },
-    Datatype {
-        databinds: Box<[DataBind]>,
-        ast_id: FileAstIdx<ast::DatatypeDec>,
-        body: Option<Body>,
-    },
-    Replication {
-        tycon: TyCon,
-        ast_id: FileAstIdx<ast::DatatypeRepDec>,
-        body: Option<Body>,
-    },
-    Abstype {
-        databind: DataBind,
-        decnames: Box<[CoreDec]>,
-        ast_id: FileAstIdx<ast::AbstypeDec>,
-        body: Option<Body>,
-    },
-    Exception {
-        exbinds: Box<[ExBind]>,
-        ast_id: FileAstIdx<ast::ExceptionDec>,
-        body: Option<Body>,
-    },
-    Local {
-        decnames: Box<[CoreDec]>,
-        ast_id: FileAstIdx<ast::LocalDec>,
-        body: Option<Body>,
-    },
-    Open {
-        strids: Box<[LongStrId]>,
-        ast_id: FileAstIdx<ast::OpenDec>,
-        body: Option<Body>,
-    },
-    Infix {
-        vids: Box<[VId]>,
-        prec: Option<u8>,
-        ast_id: FileAstIdx<ast::InfixDec>,
-        body: Option<Body>,
-    },
-    Infixr {
-        vids: Box<[VId]>,
-        prec: Option<u8>,
-        ast_id: FileAstIdx<ast::InfixrDec>,
-        body: Option<Body>,
-    },
-    Nonfix {
-        vids: Box<[VId]>,
-        ast_id: FileAstIdx<ast::NonfixDec>,
-        body: Option<Body>,
-    },
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct DataBind {
-    pub tycon: TyCon,
-    pub cons: Box<[VId]>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ExBind {
-    Name { vid: VId },
-    Rebind { lhs: VId, rhs: LongVId },
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ModuleDec {
-    Structure {},
-    Signature {},
-    Functor {},
 }
