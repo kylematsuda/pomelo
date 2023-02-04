@@ -53,16 +53,16 @@ At this stage, the design is heavily influenced by [`rust-analyzer`](https://git
 
 ### Lexer
 
-[`pomelo-lex`](https://github.com/kylematsuda/pomelo/tree/main/crates/pomelo-lex) contains a very basic lexer, very influenced by [`rustc_lexer`](https://github.com/rust-lang/rust/blob/master/compiler/rustc_lexer).
+[`pomelo-lex`](https://kylematsuda.github.io/pomelo/pomelo_lex/index.html) contains a very basic lexer, very influenced by [`rustc_lexer`](https://github.com/rust-lang/rust/blob/master/compiler/rustc_lexer).
 
 ### Parser 
 
-[`pomelo-parse`](https://github.com/kylematsuda/pomelo/tree/main/crates/pomelo-parse) creates a concrete syntax tree.
+[`pomelo-parse`](https://kylematsuda.github.io/pomelo/pomelo_parse/index.html) creates a concrete syntax tree.
 This is modeled off of [`rust-analyzer`'s parser](https://github.com/rust-lang/rust-analyzer/tree/master/crates/parser) and also uses [`rowan`](https://docs.rs/rowan/latest/rowan/) to create the concrete and abstract/typed syntax tree.
 
 ### HIR
 
-[`pomelo-hir`](https://github.com/kylematsuda/pomelo/tree/main/crates/pomelo-hir) defines the high-level intermediate representation (HIR).
+[`pomelo-hir`](https://kylematsuda.github.io/pomelo/pomelo_hir/index.html) defines the high-level intermediate representation (HIR).
 The HIR is very similar to the AST, except all of the derived forms (see Appendix A of the Definition) are desugared to their more basic equivalent form (similar to how loops, etc. are desugared away in `rustc`'s [HIR](https://rustc-dev-guide.rust-lang.org/hir.html)).
 Pomelo's HIR is represented as a graph stored in an arena (essentially a wrapper around a `Vec`, see `pomelo-hir::arena` or [`la_arena`](https://docs.rs/la-arena/latest/la_arena/)).
 
