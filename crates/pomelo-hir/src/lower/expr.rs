@@ -45,8 +45,6 @@ impl Expr {
     fn to_kind(ctx: &mut LoweringCtxt, e: &ast::Expr) -> ExprKind {
         match &e {
             ast::Expr::Atomic(e) => Self::lower_atomic(ctx, &e),
-            ast::Expr::Application(_) => todo!("remove this from the ast"),
-            ast::Expr::Infix(_) => todo!("remove this from the ast"),
             ast::Expr::InfixOrApp(_) => unreachable!("infix_or_app handled in Expr::lower"),
             ast::Expr::Typed(e) => Self::lower_typed(ctx, &e),
             ast::Expr::AndAlso(e) => Self::lower_andalso(ctx, &e),

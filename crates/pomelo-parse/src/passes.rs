@@ -1,8 +1,6 @@
 //! Validation passes to run after the AST is constructed.
 //!
 //! This doesn't do anything yet...
-pub mod infix;
-
 use crate::SyntaxTree;
 
 /// Apply validation passes, etc.
@@ -17,7 +15,7 @@ pub(crate) mod tests {
     use crate::{Parser, SyntaxTree};
     use expect_test::Expect;
 
-    pub(crate) fn check<F>(pass: F, should_error: bool, src: &str, expect_fixed: Expect)
+    pub(crate) fn _check<F>(pass: F, should_error: bool, src: &str, expect_fixed: Expect)
     where
         F: Fn(SyntaxTree) -> SyntaxTree,
     {

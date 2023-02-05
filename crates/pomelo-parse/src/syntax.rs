@@ -81,8 +81,6 @@ pub enum SyntaxKind {
 
     EXP_ROW,
 
-    APP_EXP,
-    INFIX_EXP,
     TY_EXP,
     HANDLE_EXP,
     RAISE_EXP,

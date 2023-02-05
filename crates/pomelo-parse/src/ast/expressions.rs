@@ -17,9 +17,7 @@ pub enum Expr {
     OrElse(OrElseExpr),
     AndAlso(AndAlsoExpr),
     Typed(TypedExpr),
-    Infix(InfixExpr),
     InfixOrApp(InfixOrAppExpr),
-    Application(ApplicationExpr),
     Atomic(AtomicExpr),
 }
 
@@ -38,9 +36,7 @@ impl AstNode for Expr {
                 | ORELSE_EXP
                 | ANDALSO_EXP
                 | TY_EXP
-                | INFIX_EXP
                 | INFIX_OR_APP_EXP
-                | APP_EXP
         ) || AtomicExpr::can_cast(kind)
     }
 
@@ -58,9 +54,7 @@ impl AstNode for Expr {
             ORELSE_EXP => Self::OrElse(OrElseExpr::cast(node)?),
             ANDALSO_EXP => Self::AndAlso(AndAlsoExpr::cast(node)?),
             TY_EXP => Self::Typed(TypedExpr::cast(node)?),
-            INFIX_EXP => Self::Infix(InfixExpr::cast(node)?),
             INFIX_OR_APP_EXP => Self::InfixOrApp(InfixOrAppExpr::cast(node)?),
-            APP_EXP => Self::Application(ApplicationExpr::cast(node)?),
             _ => Self::Atomic(AtomicExpr::cast(node)?),
         };
         Some(out)
@@ -77,9 +71,7 @@ impl AstNode for Expr {
             Self::OrElse(inner) => inner.syntax(),
             Self::AndAlso(inner) => inner.syntax(),
             Self::Typed(inner) => inner.syntax(),
-            Self::Infix(inner) => inner.syntax(),
             Self::InfixOrApp(inner) => inner.syntax(),
-            Self::Application(inner) => inner.syntax(),
             Self::Atomic(inner) => inner.syntax(),
         }
     }
@@ -100,8 +92,6 @@ impl_from!(Expr, Handle, HandleExpr);
 impl_from!(Expr, OrElse, OrElseExpr);
 impl_from!(Expr, AndAlso, AndAlsoExpr);
 impl_from!(Expr, Typed, TypedExpr);
-impl_from!(Expr, Infix, InfixExpr);
-impl_from!(Expr, Application, ApplicationExpr);
 impl_from!(Expr, InfixOrApp, InfixOrAppExpr);
 impl_from!(Expr, Atomic, AtomicExpr);
 
@@ -255,27 +245,6 @@ impl TypedExpr {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct InfixExpr {
-    syntax: SyntaxNode,
-}
-
-impl_ast_node!(InfixExpr, INFIX_EXP);
-
-impl InfixExpr {
-    pub fn expr_1(&self) -> Option<ast::Expr> {
-        support::child(self.syntax())
-    }
-
-    pub fn vid(&self) -> Option<ast::VId> {
-        support::tokens(self.syntax()).next()
-    }
-
-    pub fn expr_2(&self) -> Option<ast::Expr> {
-        support::children(self.syntax()).nth(1)
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct InfixOrAppExpr {
     syntax: SyntaxNode,
 }
@@ -285,23 +254,6 @@ impl_ast_node!(InfixOrAppExpr, INFIX_OR_APP_EXP);
 impl InfixOrAppExpr {
     pub fn exprs(&self) -> impl Iterator<Item = ast::Expr> {
         support::children(self.syntax())
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ApplicationExpr {
-    syntax: SyntaxNode,
-}
-
-impl_ast_node!(ApplicationExpr, APP_EXP);
-
-impl ApplicationExpr {
-    pub fn application(&self) -> Option<ast::Expr> {
-        support::children(self.syntax()).next()
-    }
-
-    pub fn atomic(&self) -> Option<ast::Expr> {
-        support::children(self.syntax()).nth(1)
     }
 }
 
@@ -402,26 +354,6 @@ impl SConExpr {
     pub fn scon(&self) -> Option<ast::Scon> {
         support::tokens(self.syntax()).next()
     }
-
-    // pub fn int(&self) -> Option<ast::Int> {
-    //     support::tokens(self.syntax()).next()
-    // }
-
-    // pub fn real(&self) -> Option<ast::Real> {
-    //     support::tokens(self.syntax()).next()
-    // }
-
-    // pub fn word(&self) -> Option<ast::Word> {
-    //     support::tokens(self.syntax()).next()
-    // }
-
-    // pub fn char(&self) -> Option<ast::Char> {
-    //     support::tokens(self.syntax()).next()
-    // }
-
-    // pub fn string(&self) -> Option<ast::String> {
-    //     support::tokens(self.syntax()).next()
-    // }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
