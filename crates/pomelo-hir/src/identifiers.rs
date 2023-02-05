@@ -2,9 +2,7 @@
 //!
 //! TODO: this is not very DRY, especially repetition between `VId`, `StrId`, `TyCon` and their
 //! `Long-` forms.
-
 use crate::arena::{Arena, Idx};
-use pomelo_parse::{ast, AstToken};
 
 use std::collections::HashMap;
 
@@ -120,23 +118,6 @@ pub struct LongVId {
 }
 
 impl LongVId {
-    pub fn from_node<I: NameInterner>(node: &ast::LongVId, arena: &mut I) -> Self {
-        let strids = node
-            .strids()
-            .map(|s| StrId::from_token(Some(s), arena))
-            .collect();
-        let vid = VId::from_token(node.vid(), arena);
-
-        Self { strids, vid }
-    }
-
-    pub fn from_opt_node<I: NameInterner>(opt_node: Option<&ast::LongVId>, arena: &mut I) -> Self {
-        match opt_node {
-            Some(vid) => Self::from_node(vid, arena),
-            None => Self::missing(),
-        }
-    }
-
     pub fn missing() -> Self {
         Self {
             strids: Box::new([]),
@@ -150,6 +131,10 @@ impl LongVId {
             vid,
         }
     }
+
+    pub fn is_builtin(&self) -> bool {
+        self.vid.is_builtin() && self.strids.is_empty()
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -159,13 +144,6 @@ pub enum VId {
 }
 
 impl VId {
-    pub fn from_token<I: NameInterner>(opt_vid: Option<ast::VId>, interner: &mut I) -> Self {
-        match opt_vid {
-            Some(vid) => Self::try_builtin(vid.syntax().text(), interner),
-            None => Self::missing(),
-        }
-    }
-
     pub fn from_string<I: NameInterner>(name: &str, interner: &mut I) -> Self {
         Self::Name(Name::from_string(name, interner))
     }
@@ -185,11 +163,15 @@ impl VId {
         }
     }
 
-    fn try_builtin<I: NameInterner>(name: &str, interner: &mut I) -> Self {
+    pub(crate) fn try_builtin<I: NameInterner>(name: &str, interner: &mut I) -> Self {
         match BuiltIn::from_string(name) {
             Some(b) => Self::from_builtin(b),
             None => Self::from_string(name, interner),
         }
+    }
+
+    pub fn is_builtin(&self) -> bool {
+        matches!(self, VId::Name(Name::BuiltIn(_)))
     }
 }
 
@@ -199,21 +181,6 @@ pub struct LongStrId {
     pub strid: StrId,
 }
 
-impl LongStrId {
-    pub fn from_node<A: NameInterner>(node: &ast::LongStrId, arena: &mut A) -> Self {
-        let mut strids = node
-            .strids()
-            .map(|s| StrId::from_token(Some(s), arena))
-            .collect::<Vec<_>>();
-        let strid = strids.pop().unwrap_or_else(StrId::missing);
-
-        Self {
-            strid_path: strids.into_boxed_slice(),
-            strid,
-        }
-    }
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum StrId {
     Missing,
@@ -221,13 +188,6 @@ pub enum StrId {
 }
 
 impl StrId {
-    pub fn from_token<I: NameInterner>(opt_strid: Option<ast::StrId>, interner: &mut I) -> Self {
-        match opt_strid {
-            Some(strid) => Self::try_builtin(strid.syntax().text(), interner),
-            None => Self::missing(),
-        }
-    }
-
     pub fn from_string<I: NameInterner>(name: &str, interner: &mut I) -> Self {
         Self::Name(Name::from_string(name, interner))
     }
@@ -247,7 +207,7 @@ impl StrId {
         }
     }
 
-    fn try_builtin<I: NameInterner>(name: &str, interner: &mut I) -> Self {
+    pub(crate) fn try_builtin<I: NameInterner>(name: &str, interner: &mut I) -> Self {
         match BuiltIn::from_string(name) {
             Some(b) => Self::from_builtin(b),
             None => Self::from_string(name, interner),
@@ -262,13 +222,6 @@ pub enum TyVar {
 }
 
 impl TyVar {
-    pub fn from_token<I: NameInterner>(opt_tyvar: Option<ast::TyVar>, interner: &mut I) -> Self {
-        match opt_tyvar {
-            None => Self::missing(),
-            Some(t) => Self::from_string(t.syntax().text(), interner),
-        }
-    }
-
     pub fn from_string<I: NameInterner>(name: &str, interner: &mut I) -> Self {
         Self::Name(Name::from_string(name, interner))
     }
@@ -285,30 +238,23 @@ pub struct LongTyCon {
 }
 
 impl LongTyCon {
-    pub fn from_node<I: NameInterner>(node: &ast::LongTyCon, arena: &mut I) -> Self {
-        let strids = node
-            .strids()
-            .map(|s| StrId::from_token(Some(s), arena))
-            .collect();
-        let tycon = TyCon::from_token(node.tycon(), arena);
-
-        Self { strids, tycon }
-    }
-
-    pub fn from_opt_node<I: NameInterner>(
-        opt_node: Option<&ast::LongTyCon>,
-        arena: &mut I,
-    ) -> Self {
-        match opt_node {
-            None => Self::missing(),
-            Some(t) => Self::from_node(t, arena),
-        }
-    }
-
     pub fn missing() -> Self {
         Self {
             strids: Box::new([]),
             tycon: TyCon::missing(),
+        }
+    }
+
+    pub fn is_builtin(&self) -> bool {
+        self.tycon.is_builtin() && self.strids.is_empty()
+    }
+}
+
+impl From<TyCon> for LongTyCon {
+    fn from(value: TyCon) -> Self {
+        Self {
+            strids: Box::new([]),
+            tycon: value,
         }
     }
 }
@@ -320,13 +266,6 @@ pub enum TyCon {
 }
 
 impl TyCon {
-    pub fn from_token<I: NameInterner>(opt_tycon: Option<ast::TyCon>, interner: &mut I) -> Self {
-        match opt_tycon {
-            None => Self::missing(),
-            Some(t) => Self::try_builtin(t.syntax().text(), interner),
-        }
-    }
-
     pub fn from_string<I: NameInterner>(name: &str, interner: &mut I) -> Self {
         Self::Name(Name::from_string(name, interner))
     }
@@ -346,11 +285,15 @@ impl TyCon {
         }
     }
 
-    fn try_builtin<I: NameInterner>(name: &str, interner: &mut I) -> Self {
+    pub(crate) fn try_builtin<I: NameInterner>(name: &str, interner: &mut I) -> Self {
         match BuiltIn::from_string(name) {
             Some(b) => Self::from_builtin(b),
             None => Self::from_string(name, interner),
         }
+    }
+
+    pub fn is_builtin(&self) -> bool {
+        matches!(self, Self::Name(Name::BuiltIn(_)))
     }
 }
 
@@ -362,20 +305,6 @@ pub enum Label {
 }
 
 impl Label {
-    pub fn from_token<I: NameInterner>(opt_label: Option<ast::Label>, interner: &mut I) -> Self {
-        if let Some(label) = opt_label {
-            let s = label.syntax().text();
-
-            if let Ok(n) = s.parse::<u32>() {
-                Self::Numeric(n)
-            } else {
-                Self::Named(Name::from_string(s, interner))
-            }
-        } else {
-            Self::Missing
-        }
-    }
-
     pub fn numeric(n: u32) -> Self {
         Self::Numeric(n)
     }

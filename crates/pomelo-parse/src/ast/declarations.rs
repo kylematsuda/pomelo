@@ -165,6 +165,14 @@ impl DatatypeDec {
     pub fn databinds(&self) -> impl Iterator<Item = ast::DataBind> {
         support::children(self.syntax())
     }
+
+    pub fn withtype(&self) -> bool {
+        support::token(self.syntax(), SyntaxKind::WITHTYPE_KW).is_some()
+    }
+
+    pub fn typbind(&self) -> Option<ast::TyBind> {
+        support::child(self.syntax())
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -194,6 +202,14 @@ impl_ast_node!(AbstypeDec, ABSTYPE_DEC);
 impl AbstypeDec {
     pub fn databinds(&self) -> impl Iterator<Item = ast::DataBind> {
         support::children(self.syntax())
+    }
+
+    pub fn withtype(&self) -> bool {
+        support::token(self.syntax(), SyntaxKind::WITHTYPE_KW).is_some()
+    }
+
+    pub fn typbind(&self) -> Option<ast::TyBind> {
+        support::child(self.syntax())
     }
 
     pub fn dec(&self) -> Option<ast::Dec> {

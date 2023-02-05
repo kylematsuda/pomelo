@@ -1,25 +1,168 @@
 use pomelo_parse::ast;
 
 use crate::arena::Idx;
-use crate::lower::{HirLower, HirLowerGenerated, LoweringCtxt};
-use crate::{NodeParent, Pat, PatKind};
+use crate::body::FileArena;
+use crate::identifiers::BuiltIn;
+use crate::lower::{util, HirLower, HirLowerGenerated, LoweringCtxt};
+use crate::{
+    AstId, DecKind, DefLoc, Label, LongVId, NodeParent, Pat, PatKind, PatRow, Scon, Ty, VId,
+};
 
 impl HirLower for Pat {
     type AstType = ast::Pat;
 
-    fn lower(_ctx: &mut LoweringCtxt, _ast: Self::AstType) -> Idx<Self> {
-        todo!()
+    fn lower(ctx: &mut LoweringCtxt, ast: Self::AstType) -> Idx<Self> {
+        let kind = match &ast {
+            ast::Pat::Atomic(p) => Self::lower_atomic(ctx, &p),
+            ast::Pat::Typed(p) => Self::lower_typed(ctx, &p),
+            // TODO: merge these into one AST node
+            ast::Pat::Cons(p) => Self::lower_cons(ctx, &p),
+            ast::Pat::ConsInfix(p) => Self::lower_cons_infix(ctx, &p),
+            ast::Pat::Layered(p) => Self::lower_layered(ctx, &p),
+        };
+        let ast_id = AstId::Node(ctx.alloc_ast_id(&ast));
+        let p = Self { kind, ast_id };
+        ctx.push_pat(p)
     }
 
-    fn missing(_ctx: &mut LoweringCtxt) -> Idx<Self> {
-        todo!()
+    fn missing(ctx: &mut LoweringCtxt) -> Idx<Self> {
+        let p = Self {
+            kind: PatKind::Missing,
+            ast_id: AstId::Missing,
+        };
+        ctx.push_pat(p)
     }
 }
 
 impl HirLowerGenerated for Pat {
     type Kind = PatKind;
 
-    fn generated(_ctx: &mut LoweringCtxt, _origin: NodeParent, _kind: Self::Kind) -> Idx<Self> {
+    fn generated(ctx: &mut LoweringCtxt, origin: NodeParent, kind: Self::Kind) -> Idx<Self> {
+        let p = Pat {
+            kind,
+            ast_id: AstId::Generated(origin),
+        };
+        ctx.push_pat(p)
+    }
+}
+
+impl Pat {
+    pub fn vid_builtin(b: BuiltIn) -> PatKind {
+        PatKind::VId {
+            op: false,
+            longvid: (
+                LongVId::from_vid(VId::from_builtin(b)),
+                Some(DefLoc::Builtin),
+            ),
+        }
+    }
+
+    fn lower_atomic(ctx: &mut LoweringCtxt, p: &ast::AtomicPat) -> PatKind {
+        match p {
+            ast::AtomicPat::Wildcard(_) => PatKind::Wildcard,
+            ast::AtomicPat::SCon(p) => Self::lower_scon(ctx, &p),
+            ast::AtomicPat::VId(p) => Self::lower_vid(ctx, &p),
+            ast::AtomicPat::List(p) => Self::lower_list(ctx, &p),
+            ast::AtomicPat::Tuple(p) => Self::lower_tuple(ctx, &p),
+            ast::AtomicPat::Record(p) => Self::lower_record(ctx, &p),
+            ast::AtomicPat::Unit(_) => PatKind::Record { rows: Box::new([]) },
+        }
+    }
+
+    fn lower_scon(_ctx: &mut LoweringCtxt, p: &ast::SConPat) -> PatKind {
+        let scon = p.scon().map(Scon::lower).unwrap_or(Scon::Missing);
+        PatKind::Scon(scon)
+    }
+
+    fn lower_vid(ctx: &mut LoweringCtxt, p: &ast::VIdPat) -> PatKind {
+        let op = p.op();
+        let longvid = LongVId::from_opt_node(ctx, p.longvid().as_ref());
+
+        let loc = if longvid.is_builtin() {
+            Some(DefLoc::Builtin)
+        } else {
+            // We need to look up if this is a constructor of a `datatype` variant.
+            // Otherwise, it is just shadowing or declaring a variable and this block should return
+            // `None`.
+            if let DefLoc::Dec(index) = ctx.resolver().lookup_vid(&longvid) {
+                let dec = ctx.arenas().get_dec(index);
+                if let DecKind::Datatype { .. } = dec.kind {
+                    Some(DefLoc::Dec(index))
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        };
+
+        PatKind::VId {
+            op,
+            longvid: (longvid, loc),
+        }
+    }
+
+    fn lower_list(ctx: &mut LoweringCtxt, p: &ast::ListPat) -> PatKind {
+        let origin = ast::Pat::from(ast::AtomicPat::from(p.clone()));
+        let parent = NodeParent::from_pat(ctx, &origin);
+        util::lower_list(
+            ctx,
+            parent,
+            p.pats(),
+            |(vid, loc)| PatKind::VId {
+                op: false,
+                longvid: (vid, Some(loc)),
+            },
+            |lhs, vid, rhs| PatKind::Infix { lhs, vid, rhs },
+        )
+    }
+
+    fn lower_tuple(ctx: &mut LoweringCtxt, p: &ast::TuplePat) -> PatKind {
+        let mut rows = vec![];
+
+        for (i, p) in p.pats().enumerate() {
+            let pat = Pat::lower(ctx, p);
+            let label = Label::Numeric((i + 1) as u32);
+            rows.push(PatRow::Pattern { label, pat });
+        }
+
+        PatKind::Record {
+            rows: rows.into_boxed_slice(),
+        }
+    }
+
+    fn lower_record(ctx: &mut LoweringCtxt, p: &ast::RecordPat) -> PatKind {
+        let rows = p.patrows().map(|p| PatRow::lower(ctx, &p)).collect();
+        PatKind::Record { rows }
+    }
+
+    fn lower_typed(ctx: &mut LoweringCtxt, p: &ast::TypedPat) -> PatKind {
+        let pat = Self::lower_opt(ctx, p.pat());
+        let ty = Ty::lower_opt(ctx, p.ty());
+        PatKind::Typed { pat, ty }
+    }
+
+    fn lower_cons(_ctx: &mut LoweringCtxt, _p: &ast::ConsPat) -> PatKind {
         todo!()
+    }
+
+    fn lower_cons_infix(_ctx: &mut LoweringCtxt, _p: &ast::ConsInfixPat) -> PatKind {
+        todo!()
+    }
+
+    fn lower_layered(ctx: &mut LoweringCtxt, p: &ast::LayeredPat) -> PatKind {
+        let op = p.op();
+        let vid = VId::from_token(ctx, p.vid());
+        let ty = p.ty().map(|t| Ty::lower(ctx, t));
+        let pat = Pat::lower_opt(ctx, p.pat());
+        PatKind::Layered { op, vid, ty, pat }
+    }
+}
+
+impl PatRow {
+    fn lower(ctx: &mut LoweringCtxt, patrow: &ast::PatRow) -> Self {
+        let pat = Pat::lower_opt(ctx, patrow.pat());
+        let label = Label::from_token(ctx, patrow.label());
+        PatRow::Pattern { label, pat }
     }
 }

@@ -15,10 +15,10 @@ use pomelo_parse::{
 
 use crate::arena::{Arena, Idx};
 use crate::identifiers::NameInterner;
-use crate::{Dec, Expr, FileAstIdx, Pat, Type};
+use crate::{Dec, Expr, FileAstIdx, Pat, Ty};
 
-// #[cfg(test)]
-// mod tests;
+#[cfg(test)]
+mod tests;
 
 pub trait FileArena: NameInterner {
     fn alloc_pat(&mut self, pat: Pat) -> Idx<Pat>;
@@ -33,9 +33,9 @@ pub trait FileArena: NameInterner {
     fn get_dec(&self, index: Idx<Dec>) -> &Dec;
     fn get_dec_mut(&mut self, index: Idx<Dec>) -> &mut Dec;
 
-    fn alloc_ty(&mut self, ty: Type) -> Idx<Type>;
-    fn get_ty(&self, index: Idx<Type>) -> &Type;
-    fn get_ty_mut(&mut self, index: Idx<Type>) -> &mut Type;
+    fn alloc_ty(&mut self, ty: Ty) -> Idx<Ty>;
+    fn get_ty(&self, index: Idx<Ty>) -> &Ty;
+    fn get_ty_mut(&mut self, index: Idx<Ty>) -> &mut Ty;
 
     fn alloc_ast_id<N>(&mut self, ast: &N) -> FileAstIdx<N>
     where
@@ -57,7 +57,7 @@ pub(crate) struct FileArenaImpl<NameInterner> {
 
     // Inner decs, as in a "let ... in ... end" expr
     pub(crate) decs: Arena<Dec>,
-    pub(crate) tys: Arena<Type>,
+    pub(crate) tys: Arena<Ty>,
 
     pub(crate) name_interner: NameInterner,
     pub(crate) ast_map: AstIdMap,
@@ -151,15 +151,15 @@ impl<I: NameInterner> FileArena for FileArenaImpl<I> {
         self.decs.get_mut(index)
     }
 
-    fn alloc_ty(&mut self, ty: Type) -> Idx<Type> {
+    fn alloc_ty(&mut self, ty: Ty) -> Idx<Ty> {
         self.tys.alloc(ty)
     }
 
-    fn get_ty(&self, index: Idx<Type>) -> &Type {
+    fn get_ty(&self, index: Idx<Ty>) -> &Ty {
         self.tys.get(index)
     }
 
-    fn get_ty_mut(&mut self, index: Idx<Type>) -> &mut Type {
+    fn get_ty_mut(&mut self, index: Idx<Ty>) -> &mut Ty {
         self.tys.get_mut(index)
     }
 

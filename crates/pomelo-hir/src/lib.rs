@@ -109,14 +109,6 @@ impl<N: AstNode<Language = SML>> AstId<N> {
             Self::Missing | Self::Generated(_) => None,
         }
     }
-
-    pub fn as_span<A: FileArena>(&self, arena: &A) -> Option<(usize, usize)> {
-        match self {
-            Self::Missing => None,
-            Self::Node(n) => arena.get_ast_span(*n),
-            Self::Generated(parent) => parent.as_span(arena),
-        }
-    }
 }
 
 /// A pointer to an AST node.
@@ -150,31 +142,6 @@ pub enum NodeParent {
     Pat(FileAstIdx<ast::Pat>),
 }
 
-impl NodeParent {
-    pub fn from_expr<A: FileArena>(expr: &ast::Expr, arena: &mut A) -> Self {
-        let id = arena.alloc_ast_id(expr);
-        Self::Expr(id)
-    }
-
-    pub fn from_pat<A: FileArena>(pat: &ast::Pat, arena: &mut A) -> Self {
-        let id = arena.alloc_ast_id(pat);
-        Self::Pat(id)
-    }
-
-    pub fn from_dec<A: FileArena>(dec: &ast::Dec, arena: &mut A) -> Self {
-        let id = arena.alloc_ast_id(dec);
-        Self::Dec(id)
-    }
-
-    pub fn as_span<A: FileArena>(&self, arena: &A) -> Option<(usize, usize)> {
-        match self {
-            Self::Dec(d) => arena.get_ast_span(*d),
-            Self::Expr(e) => arena.get_ast_span(*e),
-            Self::Pat(p) => arena.get_ast_span(*p),
-        }
-    }
-}
-
 /// Location where an identifier is bound.
 ///
 /// The `Pat` variant should only be used inside of match statements.
@@ -182,6 +149,8 @@ impl NodeParent {
 pub enum DefLoc {
     Dec(Idx<Dec>),
     Pat(Idx<Pat>),
+    Builtin,
+    Missing,
 }
 
 /// Represents a desugared top-level declaration and its contents.
@@ -227,39 +196,11 @@ pub struct Dec {
 
 impl Dec {
     pub fn bound_vids(&self, ctx: &LoweringCtxt) -> Vec<LongVId> {
-        match &self.kind {
-            DecKind::Missing
-            | DecKind::Ty { .. }
-            | DecKind::Replication { .. }
-                // Fixity is a weird one, need to figure out how to treat it
-            | DecKind::Fixity { .. } => vec![],
-            DecKind::Seq { decs } => {
-                let mut names = vec![];
+        self.kind.bound_vids(ctx)
+    }
 
-                for d in decs.iter() {
-                    let d = ctx.arenas().get_dec(*d).bound_vids(ctx);
-                    names.extend(d);
-                }
-
-                names
-            }
-            DecKind::Val { bindings, .. } => bindings
-                .iter()
-                .flat_map(|b| b.bound_vids(ctx).into_iter())
-                .collect(),
-            DecKind::Datatype { databind } => databind.bound_vids(),
-            DecKind::Abstype { databinds, dec } => {
-                let mut names = databinds
-                    .iter()
-                    .flat_map(|d| d.bound_vids().into_iter())
-                    .collect::<Vec<_>>();
-                names.extend(ctx.arenas().get_dec(*dec).bound_vids(ctx));
-                names
-            }
-            DecKind::Exception { exbind } => vec![exbind.bound_vid()],
-            DecKind::Local { outer, .. } => ctx.arenas().get_dec(*outer).bound_vids(ctx),
-            DecKind::Open { .. } => todo!(),
-        }
+    pub fn bound_tycons(&self, ctx: &LoweringCtxt) -> Vec<LongTyCon> {
+        self.kind.bound_tycons(ctx)
     }
 }
 
@@ -278,12 +219,10 @@ pub enum DecKind {
         bindings: Box<[ValBind]>,
     },
     Ty {
-        tyvarseq: Box<[TyVar]>,
-        tycon: TyCon,
-        ty: (Idx<Type>, DefLoc),
+        bindings: Box<[TypBind]>,
     },
     Datatype {
-        databind: DataBind,
+        databinds: Box<[DataBind]>,
     },
     Replication {
         lhs: TyCon,
@@ -309,6 +248,77 @@ pub enum DecKind {
     },
 }
 
+impl DecKind {
+    pub fn bound_vids(&self, ctx: &LoweringCtxt) -> Vec<LongVId> {
+        match self {
+            DecKind::Missing
+            | DecKind::Ty { .. }
+            | DecKind::Replication { .. }
+                // Fixity is a weird one, need to figure out how to treat it
+            | DecKind::Fixity { .. } => vec![],
+            DecKind::Seq { decs } => {
+                let mut names = vec![];
+
+                for d in decs.iter() {
+                    let d = ctx.arenas().get_dec(*d).bound_vids(ctx);
+                    names.extend(d);
+                }
+
+                names
+            }
+            DecKind::Val { bindings, .. } => bindings
+                .iter()
+                .flat_map(|b| b.bound_vids(ctx).into_iter())
+                .collect(),
+            DecKind::Datatype { databinds } => databinds.iter().flat_map(|d| d.bound_vids().into_iter()).collect(),
+            DecKind::Abstype { databinds, dec } => {
+                let mut names = databinds
+                    .iter()
+                    .flat_map(|d| d.bound_vids().into_iter())
+                    .collect::<Vec<_>>();
+                names.extend(ctx.arenas().get_dec(*dec).bound_vids(ctx));
+                names
+            }
+            DecKind::Exception { exbind } => vec![exbind.bound_vid()],
+            DecKind::Local { outer, .. } => ctx.arenas().get_dec(*outer).bound_vids(ctx),
+            DecKind::Open { .. } => todo!(),
+        }
+    }
+
+    pub fn bound_tycons(&self, ctx: &LoweringCtxt) -> Vec<LongTyCon> {
+        match self {
+            DecKind::Missing
+            | DecKind::Val {  .. }
+            | DecKind::Exception { .. }
+                // Fixity is a weird one, need to figure out how to treat it
+            | DecKind::Fixity { .. } => vec![],
+            DecKind::Seq { decs } => {
+                let mut tycons = vec![];
+
+                for d in decs.iter() {
+                    let d = ctx.arenas().get_dec(*d).bound_tycons(ctx);
+                    tycons.extend(d);
+                }
+
+                tycons
+            },
+            DecKind::Ty { bindings } => bindings.iter().map(TypBind::bound_tycon).collect(),
+            DecKind::Datatype { databinds } => databinds.iter().map(DataBind::bound_tycon).collect(),
+            DecKind::Replication { lhs, .. } => vec![LongTyCon::from(*lhs)],
+            DecKind::Abstype { databinds, dec } => {
+                let mut tycons = databinds
+                    .iter()
+                    .map(DataBind::bound_tycon)
+                    .collect::<Vec<_>>();
+                tycons.extend(ctx.arenas().get_dec(*dec).bound_tycons(ctx));
+                tycons
+            }
+            DecKind::Local { outer, .. } => ctx.arenas().get_dec(*outer).bound_tycons(ctx),
+            DecKind::Open { .. } => todo!(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ValBind {
     pub rec: bool,
@@ -319,6 +329,19 @@ pub struct ValBind {
 impl ValBind {
     pub fn bound_vids(&self, ctx: &LoweringCtxt) -> Vec<LongVId> {
         ctx.arenas().get_pat(self.pat).bound_vids(ctx)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TypBind {
+    pub tyvarseq: Box<[TyVar]>,
+    pub tycon: TyCon,
+    pub ty: Idx<Ty>,
+}
+
+impl TypBind {
+    pub fn bound_tycon(&self) -> LongTyCon {
+        LongTyCon::from(self.tycon)
     }
 }
 
@@ -336,13 +359,17 @@ impl DataBind {
             .map(|b| LongVId::from_vid(b.vid))
             .collect()
     }
+
+    pub fn bound_tycon(&self) -> LongTyCon {
+        LongTyCon::from(self.tycon)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ConBind {
     op: bool,
     vid: VId,
-    ty: Option<(Idx<Type>, DefLoc)>,
+    ty: Option<Idx<Ty>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -350,7 +377,7 @@ pub enum ExBind {
     Name {
         op: bool,
         vid: VId,
-        ty: Option<(Idx<Type>, DefLoc)>,
+        ty: Option<(Idx<Ty>, DefLoc)>,
     },
     Assignment {
         op_lhs: bool,
@@ -369,7 +396,7 @@ impl ExBind {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Fixity {
     Left(Option<u8>),
     Right(Option<u8>),
@@ -419,7 +446,7 @@ pub enum ExprKind {
     },
     Typed {
         expr: Idx<Expr>,
-        ty: Idx<Type>,
+        ty: Idx<Ty>,
     },
     Handle {
         expr: Idx<Expr>,
@@ -478,7 +505,54 @@ pub struct Pat {
 impl Pat {
     /// Names bound by this pattern
     pub fn bound_vids(&self, ctx: &LoweringCtxt) -> Vec<LongVId> {
-        match &self.kind {
+        self.kind.bound_vids(ctx)
+    }
+}
+
+/// Kinds of HIR expressions.
+///
+/// These correspond to the basic forms in Chapter 2 of the Definition, after
+/// desugaring the derived forms from Appendix A.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PatKind {
+    Missing,
+    Wildcard,
+    Scon(Scon),
+    VId {
+        op: bool,
+        // Note that `longvid` can bind a new variable, or it could refer to a variant of a
+        // datatype! If it's the latter, then we need to know where the variant was defined.
+        longvid: (LongVId, Option<DefLoc>),
+    },
+    Record {
+        rows: Box<[PatRow]>,
+    },
+    Constructed {
+        op: bool,
+        longvid: (LongVId, DefLoc),
+        pat: Idx<Pat>,
+    },
+    Infix {
+        lhs: Idx<Pat>,
+        vid: (VId, DefLoc),
+        rhs: Idx<Pat>,
+    },
+    Typed {
+        pat: Idx<Pat>,
+        ty: Idx<Ty>,
+    },
+    Layered {
+        op: bool,
+        vid: VId,
+        ty: Option<Idx<Ty>>,
+        pat: Idx<Pat>,
+    },
+}
+
+impl PatKind {
+    /// Names bound by this pattern
+    pub fn bound_vids(&self, ctx: &LoweringCtxt) -> Vec<LongVId> {
+        match &self {
             PatKind::Missing | PatKind::Wildcard | PatKind::Scon(_) => vec![],
             PatKind::VId {
                 longvid: (name, def),
@@ -516,46 +590,6 @@ impl Pat {
     }
 }
 
-/// Kinds of HIR expressions.
-///
-/// These correspond to the basic forms in Chapter 2 of the Definition, after
-/// desugaring the derived forms from Appendix A.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum PatKind {
-    Missing,
-    Wildcard,
-    Scon(Scon),
-    VId {
-        op: bool,
-        // Note that `longvid` can bind a new variable, or it could refer to a variant of a
-        // datatype! If it's the latter, then we need to know where the variant was defined.
-        longvid: (LongVId, Option<DefLoc>),
-    },
-    Record {
-        rows: Box<[PatRow]>,
-    },
-    Constructed {
-        op: bool,
-        longvid: (LongVId, DefLoc),
-        pat: Idx<Pat>,
-    },
-    Infix {
-        lhs: Idx<Pat>,
-        vid: (VId, DefLoc),
-        rhs: Idx<Pat>,
-    },
-    Typed {
-        pat: Idx<Pat>,
-        ty: (Idx<Type>, DefLoc),
-    },
-    Layered {
-        op: bool,
-        vid: VId,
-        ty: Option<(Idx<Type>, DefLoc)>,
-        pat: Idx<Pat>,
-    },
-}
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PatRow {
     Wildcard,
@@ -566,7 +600,7 @@ pub type LabelIdx = Idx<Label>;
 
 /// HIR type node.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Type {
+pub struct Ty {
     pub kind: TyKind,
     // None only if TyKind::Missing
     pub ast_id: AstId<ast::Ty>,
@@ -579,24 +613,24 @@ pub struct Type {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TyKind {
     Missing,
-    Var(TyVar, DefLoc),
+    Var(TyVar),
     Record {
         tyrows: Box<[TyRow]>,
     },
     Constructed {
-        tyseq: Box<[Idx<Type>]>,
+        tyseq: Box<[Idx<Ty>]>,
         longtycon: (LongTyCon, DefLoc),
     },
     Function {
-        domain: Idx<Type>,
-        range: Idx<Type>,
+        domain: Idx<Ty>,
+        range: Idx<Ty>,
     },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TyRow {
     label: Label,
-    ty: Idx<Type>,
+    ty: Idx<Ty>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -4,6 +4,8 @@ pub use context::LoweringCtxt;
 pub mod dec;
 pub mod expr;
 pub mod pat;
+pub mod token;
+pub mod ty;
 mod util;
 
 use pomelo_parse::AstNode;
@@ -11,7 +13,7 @@ use pomelo_parse::AstNode;
 use crate::arena::Idx;
 use crate::NodeParent;
 
-trait HirLower: Sized {
+pub(crate) trait HirLower: Sized {
     type AstType: AstNode;
 
     fn missing(ctx: &mut LoweringCtxt) -> Idx<Self>;

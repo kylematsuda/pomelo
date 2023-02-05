@@ -5,8 +5,7 @@ use expect_test::{expect, Expect};
 
 use crate::arena::Idx;
 use crate::body::pretty::HirPrettyPrint;
-use crate::body::{lower::HirLower, Dec, Expr, FileArenaImpl, Pat, Type};
-use crate::identifiers::NameInternerImpl;
+use crate::{lower::HirLower, Dec, Expr, Pat, Ty};
 
 pub(crate) fn check<H, F>(src: &str, parse_with: F, expect: Expect)
 where
@@ -26,9 +25,8 @@ where
 
     let node = H::AstType::cast(tree.syntax());
 
-    let mut arena = FileArenaImpl::<NameInternerImpl>::default();
     let mut ctx = crate::lower::LoweringCtxt::default();
-    let actual = H::lower_opt(node, &mut arena, &mut ctx).pretty(&arena);
+    let actual = H::lower_opt(&mut ctx, node).pretty(ctx.arenas());
     expect.assert_eq(&actual);
 }
 
@@ -45,6 +43,16 @@ fn lower_valdec_rec() {
         src,
         |p| p.parse_dec(),
         expect!["val rec x = (fn {  } => (fn true => (exp2; x {  }) | false => {  }) exp1)"],
+    )
+}
+
+#[test]
+fn lower_datatype_no_data() {
+    let src = "datatype direction = NORTH | SOUTH | EAST | WEST";
+    check::<Dec, _>(
+        src,
+        |p| p.parse_dec(),
+        expect![[r##"datatype direction = NORTH | SOUTH | EAST | WEST"##]],
     )
 }
 
@@ -197,7 +205,7 @@ fn lower_list_expr() {
 #[test]
 fn lower_product_ty() {
     let src = "ty1 * ty2 * ty3 * ty4";
-    check::<Type, _>(
+    check::<Ty, _>(
         src,
         |p| p.parse_type(),
         expect![[r##"{ 1:ty1, 2:ty2, 3:ty3, 4:ty4 }"##]],
