@@ -5,7 +5,7 @@ use expect_test::{expect, Expect};
 
 use crate::arena::Idx;
 use crate::body::pretty::HirPrettyPrint;
-use crate::body::{lower::HirLower, BodyArenaImpl, Dec, Expr, Pat, Type};
+use crate::body::{lower::HirLower, Dec, Expr, FileArenaImpl, Pat, Type};
 use crate::identifiers::NameInternerImpl;
 
 pub(crate) fn check<H, F>(src: &str, parse_with: F, expect: Expect)
@@ -26,7 +26,7 @@ where
 
     let node = H::AstType::cast(tree.syntax());
 
-    let mut arena = BodyArenaImpl::<NameInternerImpl>::default();
+    let mut arena = FileArenaImpl::<NameInternerImpl>::default();
     let mut ctx = crate::lower::LoweringCtxt::default();
     let actual = H::lower_opt(node, &mut arena, &mut ctx).pretty(&arena);
     expect.assert_eq(&actual);

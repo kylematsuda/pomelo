@@ -1,10 +1,12 @@
 //! Lowering context.
+use std::collections::HashMap;
 
-use std::collections::{HashMap, HashSet};
-use std::hash::Hash;
+use pomelo_parse::{ast, language::SML, AstNode, AstPtr};
 
-use crate::identifiers::{LongTyCon, LongVId, NameInterner, NameInternerImpl, SwitchInterner};
-use crate::File;
+use crate::arena::Idx;
+use crate::body::FileArena;
+use crate::identifiers::{LongTyCon, LongVId, NameInterner};
+use crate::{AstId, Dec, DecKind, DefLoc, Expr, File, FileAstIdx, Pat};
 
 /// Context needed while lowering.
 ///
@@ -14,17 +16,24 @@ use crate::File;
 /// That seems like an annoying corner case...
 #[derive(Debug, Default, Clone)]
 pub struct LoweringCtxt {
-    resolver: Resolver,
-    file: File,
+    res: Resolver,
+    file: crate::File,
 }
 
 impl LoweringCtxt {
     pub fn resolver(&self) -> &Resolver {
-        &self.resolver
+        &self.res
     }
 
     pub fn resolver_mut(&mut self) -> &mut Resolver {
-        &mut self.resolver
+        &mut self.res
+    }
+
+    pub fn enter_scope(&mut self, mut f: impl FnMut(&mut Self)) {
+        // This is probably super inefficient...
+        let saved_resolver = self.res.clone();
+        f(self);
+        self.res = saved_resolver;
     }
 
     pub fn file(&self) -> &File {
@@ -34,126 +43,118 @@ impl LoweringCtxt {
     pub fn file_mut(&mut self) -> &mut File {
         &mut self.file
     }
+
+    pub fn arenas(&self) -> &impl FileArena {
+        &self.file.arenas
+    }
+
+    pub fn alloc_ast_id<N>(&mut self, ast: &N) -> FileAstIdx<N>
+    where
+        N: AstNode<Language = SML>,
+    {
+        self.arenas_mut().alloc_ast_id(ast)
+    }
+
+    pub fn get_ast_id<N>(&self, index: FileAstIdx<N>) -> Option<AstPtr<N>>
+    where
+        N: AstNode<Language = SML>,
+    {
+        self.arenas().get_ast_id(index)
+    }
+
+    pub fn get_ast_span<N>(&self, index: FileAstIdx<N>) -> Option<(usize, usize)>
+    where
+        N: AstNode<Language = SML>,
+    {
+        self.arenas().get_ast_span(index)
+    }
+
+    pub fn interner_mut(&mut self) -> &mut impl NameInterner {
+        &mut self.file.arenas.name_interner
+    }
+
+    pub fn bound_names(&self, pat: Idx<Pat>) -> Vec<LongVId> {
+        self.arenas().get_pat(pat).bound_vids(self)
+    }
+
+    /// This is needed because some of the dec can have recursive bindings.
+    ///
+    /// For these, we need to preallocate the Dec node so we can give its index out before
+    /// lowering interior pats, exprs, etc.
+    pub fn make_rec_dec(
+        &mut self,
+        ast_id: AstId<ast::Dec>,
+        f: impl FnOnce(&mut Self, Idx<Dec>) -> DecKind,
+    ) -> Idx<Dec> {
+        let dec = Dec {
+            kind: DecKind::Missing,
+            ast_id,
+        };
+        let index = self.arenas_mut().alloc_dec(dec);
+        let mut kind = f(self, index);
+
+        let dec = self.arenas_mut().get_dec_mut(index);
+        std::mem::swap(&mut dec.kind, &mut kind);
+        self.register_bound_vids_dec(index);
+
+        index
+    }
+
+    pub fn push_dec(&mut self, dec: Dec) -> Idx<Dec> {
+        let index = self.arenas_mut().alloc_dec(dec);
+        self.register_bound_vids_dec(index);
+        index
+    }
+
+    pub fn register_rec_pat(&mut self, pat: Idx<Pat>, dec: Idx<Dec>) {
+        let bound_vids = self.arenas().get_pat(pat).bound_vids(self);
+        for v in bound_vids {
+            self.resolver_mut().def_value(v, DefLoc::Dec(dec));
+        }
+    }
+
+    pub fn register_bound_vids_dec(&mut self, index: Idx<Dec>) {
+        let dec = self.arenas().get_dec(index);
+        let bound_vids = dec.bound_vids(self);
+        for v in bound_vids {
+            self.resolver_mut().def_value(v, DefLoc::Dec(index));
+        }
+    }
+
+    pub fn push_expr(&mut self, expr: Expr) -> Idx<Expr> {
+        self.arenas_mut().alloc_expr(expr)
+    }
+
+    pub fn push_pat(&mut self, pat: Pat) -> Idx<Pat> {
+        self.arenas_mut().alloc_pat(pat)
+    }
+
+    fn arenas_mut(&mut self) -> &mut impl FileArena {
+        &mut self.file.arenas
+    }
 }
 
 /// Holds the results of early name resolution
 #[derive(Debug, Default, Clone)]
 pub struct Resolver {
-    // Hold names that have top-level scope
-    interner: NameInternerImpl,
-    values: NamespaceRes<LongVId>,
-    tys: NamespaceRes<LongTyCon>,
+    values: HashMap<LongVId, DefLoc>,
+    tys: HashMap<LongTyCon, DefLoc>,
 }
-
-/// This is just a wrapper to avoid looking at the interned string indices relative to the wrong
-/// interner.
-///
-/// Maybe there's a more elegant way to do this... perhaps a trick using lifetimes?
-pub struct InternedHere<T>(T);
 
 impl Resolver {
-    /// Update the interned string refs in `id` (initially relative to `body_interner`)
-    /// to point to the correct indices relative to `self.interner`.
-    pub fn rebase_id_on_self<T: SwitchInterner, I: NameInterner>(
-        &mut self,
-        id: T,
-        body_interner: &I,
-    ) -> Option<InternedHere<T>> {
-        id.switch_interner(body_interner, &mut self.interner)
-            .map(InternedHere)
+    pub fn def_value(&mut self, vid: LongVId, loc: DefLoc) {
+        self.values.insert(vid, loc);
     }
 
-    pub fn add_value_def(&mut self, vid: InternedHere<LongVId>, at_index: usize) -> Option<usize> {
-        self.values.add_def(vid.0, at_index)
+    pub fn def_ty(&mut self, ty: LongTyCon, loc: DefLoc) {
+        self.tys.insert(ty, loc);
     }
 
-    pub fn add_ty_def(&mut self, ty: InternedHere<LongTyCon>, at_index: usize) -> Option<usize> {
-        self.tys.add_def(ty.0, at_index)
+    pub fn lookup_value(&self, vid: &LongVId) -> Option<DefLoc> {
+        self.values.get(vid).copied()
     }
 
-    pub fn find_value_def(
-        &mut self,
-        vid: &InternedHere<LongVId>,
-        current_index: usize,
-    ) -> Option<usize> {
-        self.values.find_def(&vid.0, current_index)
-    }
-
-    pub fn find_ty_def(
-        &mut self,
-        ty: &InternedHere<LongTyCon>,
-        current_index: usize,
-    ) -> Option<usize> {
-        self.tys.find_def(&ty.0, current_index)
-    }
-
-    pub fn add_value_ref(
-        &mut self,
-        vid: InternedHere<LongVId>,
-        current_index: usize,
-    ) -> Option<usize> {
-        self.values.add_ref(vid.0, current_index)
-    }
-
-    pub fn add_ty_ref(
-        &mut self,
-        ty: InternedHere<LongTyCon>,
-        current_index: usize,
-    ) -> Option<usize> {
-        self.tys.add_ref(ty.0, current_index)
-    }
-}
-
-/// FIXME: Need to distinguish value vs type namespace!!!
-#[derive(Debug, Clone)]
-pub struct NamespaceRes<T> {
-    // Maps from a name to the index of the topdec where it's defined.
-    // The value type is a `Vec` because names may be shadowed.
-    defs: HashMap<T, Vec<usize>>,
-    // Maps from a name and its def location to the topdecs where it is referenced.
-    refs: HashMap<(T, usize), Vec<usize>>,
-    // Set of shadowed names inside of the body.
-    // This is to avoid having `refs` erroneously point at a shadowed name inside of a body.
-    shadowed: HashSet<T>,
-}
-
-impl<T> Default for NamespaceRes<T> {
-    fn default() -> Self {
-        Self {
-            defs: HashMap::new(),
-            refs: HashMap::new(),
-            shadowed: HashSet::new(),
-        }
-    }
-}
-
-impl<T: SwitchInterner + Eq + Hash> NamespaceRes<T> {
-    pub fn add_def(&mut self, id: T, at_index: usize) -> Option<usize> {
-        self.defs
-            .entry(id)
-            .and_modify(|indices| indices.push(at_index))
-            .or_insert_with(|| vec![at_index]);
-        Some(at_index)
-    }
-
-    pub fn find_def(&mut self, longid: &T, current_index: usize) -> Option<usize> {
-        // TODO: figure out if this shadowed check is helpful / needed / correct
-        if self.shadowed.get(longid).is_some() {
-            return None;
-        }
-
-        let indices = self.defs.get(longid)?;
-        // !!! This assumes that `indices` is in order !!! It would be nice if we didn't have to.
-        indices.iter().rev().find(|&&n| n > current_index).copied()
-    }
-
-    pub fn add_ref(&mut self, longid: T, current_index: usize) -> Option<usize> {
-        let def_pos = self.find_def(&longid, current_index)?;
-
-        self.refs
-            .entry((longid, def_pos))
-            .and_modify(|indices| indices.push(current_index))
-            .or_insert_with(|| vec![current_index]);
-        Some(current_index)
+    pub fn lookup_ty(&self, ty: &LongTyCon) -> Option<DefLoc> {
+        self.tys.get(ty).copied()
     }
 }

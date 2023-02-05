@@ -68,8 +68,6 @@ pub mod arena;
 pub mod body;
 pub mod identifiers;
 pub mod lower;
-pub mod scope;
-pub mod semantics;
 
 use std::marker::PhantomData;
 
@@ -79,8 +77,11 @@ use pomelo_parse::{
 };
 
 use crate::arena::Idx;
-use crate::body::BodyArena;
-use crate::identifiers::{Label, LongStrId, LongTyCon, LongVId, TyCon, TyVar, VId};
+use crate::body::{FileArena, FileArenaImpl};
+use crate::identifiers::{
+    Label, LongStrId, LongTyCon, LongVId, NameInternerImpl, TyCon, TyVar, VId,
+};
+use crate::lower::LoweringCtxt;
 
 /// A pointer from the HIR node back to its corresponding AST node.
 ///
@@ -109,7 +110,7 @@ impl<N: AstNode<Language = SML>> AstId<N> {
         }
     }
 
-    pub fn as_span<A: BodyArena>(&self, arena: &A) -> Option<(usize, usize)> {
+    pub fn as_span<A: FileArena>(&self, arena: &A) -> Option<(usize, usize)> {
         match self {
             Self::Missing => None,
             Self::Node(n) => arena.get_ast_span(*n),
@@ -150,22 +151,22 @@ pub enum NodeParent {
 }
 
 impl NodeParent {
-    pub fn from_expr<A: BodyArena>(expr: &ast::Expr, arena: &mut A) -> Self {
+    pub fn from_expr<A: FileArena>(expr: &ast::Expr, arena: &mut A) -> Self {
         let id = arena.alloc_ast_id(expr);
         Self::Expr(id)
     }
 
-    pub fn from_pat<A: BodyArena>(pat: &ast::Pat, arena: &mut A) -> Self {
+    pub fn from_pat<A: FileArena>(pat: &ast::Pat, arena: &mut A) -> Self {
         let id = arena.alloc_ast_id(pat);
         Self::Pat(id)
     }
 
-    pub fn from_dec<A: BodyArena>(dec: &ast::Dec, arena: &mut A) -> Self {
+    pub fn from_dec<A: FileArena>(dec: &ast::Dec, arena: &mut A) -> Self {
         let id = arena.alloc_ast_id(dec);
         Self::Dec(id)
     }
 
-    pub fn as_span<A: BodyArena>(&self, arena: &A) -> Option<(usize, usize)> {
+    pub fn as_span<A: FileArena>(&self, arena: &A) -> Option<(usize, usize)> {
         match self {
             Self::Dec(d) => arena.get_ast_span(*d),
             Self::Expr(e) => arena.get_ast_span(*e),
@@ -174,36 +175,46 @@ impl NodeParent {
     }
 }
 
-/// A single source file or an input from the REPL.
-#[derive(Default, Debug, Clone, PartialEq, Eq)]
+/// Location where an identifier is bound.
+///
+/// The `Pat` variant should only be used inside of match statements.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum DefLoc {
+    Dec(Idx<Dec>),
+    Pat(Idx<Pat>),
+}
+
+/// Represents a desugared top-level declaration and its contents.
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct File {
-    pub(crate) decs: Vec<TopDec>,
+    arenas: FileArenaImpl<NameInternerImpl>,
+
+    // The actual outermost dec(s)
+    //
+    // `TopDec` maps to each real (syntactic) topdec.
+    // This is similar to `ItemTree` in r-a.
+    // However, when lowing to HIR (`Dec`, etc.), it makes sense to split multiple
+    // semantic declarations into their own `Dec` instances.
+    // For example, "val a = b and c = d" represents a single `TopDec`, but two
+    // `Dec`s.
+    topdecs: Vec<Idx<Dec>>,
 }
 
 impl File {
-    pub fn get_dec(&self, index: usize) -> Option<&TopDec> {
-        self.decs.get(index)
+    pub fn arenas(&self) -> &impl FileArena {
+        &self.arenas
     }
 
-    pub fn add_dec(&mut self, dec: TopDec) {
-        self.decs.push(dec);
+    pub fn arenas_mut(&mut self) -> &mut impl FileArena {
+        &mut self.arenas
     }
-}
 
-/// Fundamental reuse unit is the TopDec
-///
-/// Why?
-///     Typing in body of one TopDec should not invalidate others
-///     Plays nice with repl (sequence of TopDecs)
-///     Plays nice with "use" directive
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TopDec {
-    body: body::Body,
-}
+    pub fn topdecs(&self) -> &[Idx<Dec>] {
+        &self.topdecs
+    }
 
-impl TopDec {
-    pub fn new(body: body::Body) -> Self {
-        Self { body }
+    pub fn topdecs_mut(&mut self) -> &mut Vec<Idx<Dec>> {
+        &mut self.topdecs
     }
 }
 
@@ -212,6 +223,44 @@ impl TopDec {
 pub struct Dec {
     pub kind: DecKind,
     pub ast_id: AstId<ast::Dec>,
+}
+
+impl Dec {
+    pub fn bound_vids(&self, ctx: &LoweringCtxt) -> Vec<LongVId> {
+        match &self.kind {
+            DecKind::Missing
+            | DecKind::Ty { .. }
+            | DecKind::Replication { .. }
+                // Fixity is a weird one, need to figure out how to treat it
+            | DecKind::Fixity { .. } => vec![],
+            DecKind::Seq { decs } => {
+                let mut names = vec![];
+
+                for d in decs.iter() {
+                    let d = ctx.arenas().get_dec(*d).bound_vids(ctx);
+                    names.extend(d);
+                }
+
+                names
+            }
+            DecKind::Val { bindings, .. } => bindings
+                .iter()
+                .flat_map(|b| b.bound_vids(ctx).into_iter())
+                .collect(),
+            DecKind::Datatype { databind } => databind.bound_vids(),
+            DecKind::Abstype { databinds, dec } => {
+                let mut names = databinds
+                    .iter()
+                    .flat_map(|d| d.bound_vids().into_iter())
+                    .collect::<Vec<_>>();
+                names.extend(ctx.arenas().get_dec(*dec).bound_vids(ctx));
+                names
+            }
+            DecKind::Exception { exbind } => vec![exbind.bound_vid()],
+            DecKind::Local { outer, .. } => ctx.arenas().get_dec(*outer).bound_vids(ctx),
+            DecKind::Open { .. } => todo!(),
+        }
+    }
 }
 
 /// Kinds of HIR declarations.
@@ -225,22 +274,20 @@ pub enum DecKind {
         decs: Box<[Idx<Dec>]>,
     },
     Val {
-        rec: bool,
         tyvarseq: Box<[TyVar]>,
-        pat: Idx<Pat>,
-        expr: Idx<Expr>,
+        bindings: Box<[ValBind]>,
     },
     Ty {
         tyvarseq: Box<[TyVar]>,
         tycon: TyCon,
-        ty: Idx<Type>,
+        ty: (Idx<Type>, DefLoc),
     },
     Datatype {
         databind: DataBind,
     },
     Replication {
         lhs: TyCon,
-        rhs: LongTyCon,
+        rhs: (LongTyCon, DefLoc),
     },
     Abstype {
         databinds: Box<[DataBind]>,
@@ -258,22 +305,44 @@ pub enum DecKind {
     },
     Fixity {
         fixity: Fixity,
-        vids: Box<[VId]>,
+        vids: Box<[(VId, DefLoc)]>,
     },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ValBind {
+    pub rec: bool,
+    pub pat: Idx<Pat>,
+    pub expr: Idx<Expr>,
+}
+
+impl ValBind {
+    pub fn bound_vids(&self, ctx: &LoweringCtxt) -> Vec<LongVId> {
+        ctx.arenas().get_pat(self.pat).bound_vids(ctx)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DataBind {
-    tyvarseq: Box<[TyVar]>,
-    tycon: TyCon,
-    conbinds: Box<[ConBind]>,
+    pub tyvarseq: Box<[TyVar]>,
+    pub tycon: TyCon,
+    pub conbinds: Box<[ConBind]>,
+}
+
+impl DataBind {
+    pub fn bound_vids(&self) -> Vec<LongVId> {
+        self.conbinds
+            .iter()
+            .map(|b| LongVId::from_vid(b.vid))
+            .collect()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ConBind {
     op: bool,
     vid: VId,
-    ty: Option<Idx<Type>>,
+    ty: Option<(Idx<Type>, DefLoc)>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -281,14 +350,23 @@ pub enum ExBind {
     Name {
         op: bool,
         vid: VId,
-        ty: Option<Idx<Type>>,
+        ty: Option<(Idx<Type>, DefLoc)>,
     },
     Assignment {
         op_lhs: bool,
         lhs: VId,
         op_rhs: bool,
-        rhs: LongVId,
+        rhs: (LongVId, DefLoc),
     },
+}
+
+impl ExBind {
+    pub fn bound_vid(&self) -> LongVId {
+        match self {
+            Self::Name { vid, .. } => LongVId::from_vid(*vid),
+            Self::Assignment { lhs, .. } => LongVId::from_vid(*lhs),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -318,44 +396,42 @@ pub enum ExprKind {
     },
     VId {
         op: bool,
-        longvid: LongVId,
+        longvid: (LongVId, DefLoc),
     },
     Record {
         rows: Box<[ExpRow]>,
     },
     Let {
         dec: Idx<Dec>,
-        expr: ExprIdx,
+        expr: Idx<Expr>,
     },
     InfixOrApp {
         exprs: Box<[Idx<Expr>]>,
     },
     Application {
-        expr: ExprIdx,
-        param: ExprIdx,
+        expr: Idx<Expr>,
+        param: Idx<Expr>,
     },
     Infix {
-        lhs: ExprIdx,
-        vid: VId,
-        rhs: ExprIdx,
+        lhs: Idx<Expr>,
+        vid: (VId, DefLoc),
+        rhs: Idx<Expr>,
     },
     Typed {
-        expr: ExprIdx,
-        ty: TyRefIdx,
+        expr: Idx<Expr>,
+        ty: Idx<Type>,
     },
     Handle {
-        expr: ExprIdx,
+        expr: Idx<Expr>,
         match_: Box<[MRule]>,
     },
     Raise {
-        expr: ExprIdx,
+        expr: Idx<Expr>,
     },
     Fn {
         match_: Box<[MRule]>,
     },
 }
-
-pub type ExprIdx = Idx<Expr>;
 
 /// HIR constant (literal).
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -389,7 +465,7 @@ impl std::fmt::Display for FloatWrapper {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExpRow {
     pub label: Label,
-    pub expr: ExprIdx,
+    pub expr: Idx<Expr>,
 }
 
 /// HIR pattern node.
@@ -397,6 +473,47 @@ pub struct ExpRow {
 pub struct Pat {
     pub kind: PatKind,
     pub ast_id: AstId<ast::Pat>,
+}
+
+impl Pat {
+    /// Names bound by this pattern
+    pub fn bound_vids(&self, ctx: &LoweringCtxt) -> Vec<LongVId> {
+        match &self.kind {
+            PatKind::Missing | PatKind::Wildcard | PatKind::Scon(_) => vec![],
+            PatKind::VId {
+                longvid: (name, def),
+                ..
+            } => match def {
+                None => vec![name.clone()],
+                Some(_) => vec![],
+            },
+            PatKind::Record { rows } => {
+                let mut names = vec![];
+
+                for r in rows.iter() {
+                    if let PatRow::Pattern { pat, .. } = r {
+                        names.extend(ctx.arenas().get_pat(*pat).bound_vids(ctx));
+                    }
+                }
+                names
+            }
+            PatKind::Constructed { pat, .. } => ctx.arenas().get_pat(*pat).bound_vids(ctx),
+            PatKind::Infix { lhs, rhs, .. } => {
+                let arena = ctx.arenas();
+                let mut lhs = arena.get_pat(*lhs).bound_vids(ctx);
+                let rhs = arena.get_pat(*rhs).bound_vids(ctx);
+                lhs.extend(rhs);
+                lhs
+            }
+            PatKind::Typed { pat, .. } => ctx.arenas().get_pat(*pat).bound_vids(ctx),
+            PatKind::Layered { vid, pat, .. } => {
+                let mut names = vec![LongVId::from_vid(*vid)];
+                let pat_names = ctx.arenas().get_pat(*pat).bound_vids(ctx);
+                names.extend(pat_names);
+                names
+            }
+        }
+    }
 }
 
 /// Kinds of HIR expressions.
@@ -410,39 +527,39 @@ pub enum PatKind {
     Scon(Scon),
     VId {
         op: bool,
-        longvid: LongVId,
+        // Note that `longvid` can bind a new variable, or it could refer to a variant of a
+        // datatype! If it's the latter, then we need to know where the variant was defined.
+        longvid: (LongVId, Option<DefLoc>),
     },
     Record {
         rows: Box<[PatRow]>,
     },
     Constructed {
         op: bool,
-        longvid: LongVId,
-        pat: PatIdx,
+        longvid: (LongVId, DefLoc),
+        pat: Idx<Pat>,
     },
     Infix {
-        lhs: PatIdx,
-        vid: VId,
-        rhs: PatIdx,
+        lhs: Idx<Pat>,
+        vid: (VId, DefLoc),
+        rhs: Idx<Pat>,
     },
     Typed {
-        pat: PatIdx,
-        ty: TyRefIdx,
+        pat: Idx<Pat>,
+        ty: (Idx<Type>, DefLoc),
     },
     Layered {
         op: bool,
         vid: VId,
-        ty: Option<Idx<Type>>,
-        pat: PatIdx,
+        ty: Option<(Idx<Type>, DefLoc)>,
+        pat: Idx<Pat>,
     },
 }
-
-pub type PatIdx = Idx<Pat>;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PatRow {
     Wildcard,
-    Pattern { label: Label, pat: PatIdx },
+    Pattern { label: Label, pat: Idx<Pat> },
 }
 
 pub type LabelIdx = Idx<Label>;
@@ -462,21 +579,19 @@ pub struct Type {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TyKind {
     Missing,
-    Var(TyVar),
+    Var(TyVar, DefLoc),
     Record {
         tyrows: Box<[TyRow]>,
     },
     Constructed {
         tyseq: Box<[Idx<Type>]>,
-        longtycon: LongTyCon,
+        longtycon: (LongTyCon, DefLoc),
     },
     Function {
         domain: Idx<Type>,
         range: Idx<Type>,
     },
 }
-
-pub type TyRefIdx = Idx<Type>;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TyRow {
@@ -486,6 +601,6 @@ pub struct TyRow {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MRule {
-    pub pat: PatIdx,
-    pub expr: ExprIdx,
+    pub pat: Idx<Pat>,
+    pub expr: Idx<Expr>,
 }

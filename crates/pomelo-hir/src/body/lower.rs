@@ -2,7 +2,7 @@ use crate::arena::Idx;
 use crate::identifiers::{BuiltIn, Label, LongStrId, LongTyCon, LongVId, TyCon, TyVar, VId};
 use crate::lower::LoweringCtxt;
 use crate::{
-    AstId, BodyArena, ConBind, DataBind, Dec, DecKind, ExBind, ExpRow, Expr, ExprKind, Fixity,
+    AstId, ConBind, DataBind, Dec, DecKind, ExBind, ExpRow, Expr, ExprKind, FileArena, Fixity,
     FloatWrapper, MRule, NodeParent, Pat, PatKind, PatRow, Scon, TyKind, TyRow, Type,
 };
 
@@ -11,10 +11,10 @@ use pomelo_parse::{ast, AstNode};
 pub(crate) trait HirLower: Sized {
     type AstType: AstNode;
 
-    fn missing<A: BodyArena>(arena: &mut A) -> Idx<Self>;
-    fn lower<A: BodyArena>(ast: Self::AstType, arena: &mut A, ctx: &mut LoweringCtxt) -> Idx<Self>;
+    fn missing<A: FileArena>(arena: &mut A) -> Idx<Self>;
+    fn lower<A: FileArena>(ast: Self::AstType, arena: &mut A, ctx: &mut LoweringCtxt) -> Idx<Self>;
 
-    fn lower_opt<A: BodyArena>(
+    fn lower_opt<A: FileArena>(
         opt_ast: Option<Self::AstType>,
         arena: &mut A,
         ctx: &mut LoweringCtxt,
@@ -28,7 +28,7 @@ pub(crate) trait HirLower: Sized {
 
 pub(crate) trait HirLowerGenerated: HirLower {
     type Kind: Clone;
-    fn generated<A: BodyArena>(
+    fn generated<A: FileArena>(
         origin: NodeParent,
         kind: Self::Kind,
         arena: &mut A,
@@ -44,7 +44,7 @@ pub(crate) trait HirLowerGenerated: HirLower {
 // elts: e.g., "expr.exprs()" or "pat.pats()"
 // vid_kind: construct an `ExprKind::VId` or `PatKind::VId`
 // infix_kind: construct an `ExprKind::Infix` or `PatKind::Infix`
-fn lower_list<A: BodyArena, H: HirLowerGenerated>(
+fn lower_list<A: FileArena, H: HirLowerGenerated>(
     origin: NodeParent,
     elts: impl Iterator<Item = H::AstType>,
     vid_kind: impl Fn(LongVId) -> H::Kind,
@@ -88,7 +88,7 @@ fn lower_list<A: BodyArena, H: HirLowerGenerated>(
 impl HirLower for Dec {
     type AstType = ast::Dec;
 
-    fn lower<A: BodyArena>(ast: Self::AstType, arena: &mut A, ctx: &mut LoweringCtxt) -> Idx<Self> {
+    fn lower<A: FileArena>(ast: Self::AstType, arena: &mut A, ctx: &mut LoweringCtxt) -> Idx<Self> {
         let kind = match &ast {
             ast::Dec::Val(v) => Self::lower_val(v, arena, ctx),
             ast::Dec::Fun(f) => Self::lower_fun(f, arena, ctx),
@@ -112,7 +112,7 @@ impl HirLower for Dec {
         arena.alloc_dec(dec)
     }
 
-    fn missing<A: BodyArena>(arena: &mut A) -> Idx<Self> {
+    fn missing<A: FileArena>(arena: &mut A) -> Idx<Self> {
         let dec = Self {
             kind: DecKind::Missing,
             ast_id: AstId::Missing,
@@ -124,7 +124,7 @@ impl HirLower for Dec {
 impl HirLowerGenerated for Dec {
     type Kind = DecKind;
 
-    fn generated<A: BodyArena>(
+    fn generated<A: FileArena>(
         origin: NodeParent,
         kind: Self::Kind,
         arena: &mut A,
@@ -139,7 +139,7 @@ impl HirLowerGenerated for Dec {
 }
 
 impl Dec {
-    fn make_seq<A: BodyArena>(
+    fn make_seq<A: FileArena>(
         parent: NodeParent,
         kinds: Vec<DecKind>,
         arena: &mut A,
@@ -152,7 +152,7 @@ impl Dec {
         DecKind::Seq { decs }
     }
 
-    fn lower_val<A: BodyArena>(
+    fn lower_val<A: FileArena>(
         dec: &ast::ValDec,
         arena: &mut A,
         ctx: &mut LoweringCtxt,
@@ -185,7 +185,7 @@ impl Dec {
         }
     }
 
-    fn lower_fun<A: BodyArena>(
+    fn lower_fun<A: FileArena>(
         _dec: &ast::FunDec,
         _arena: &mut A,
         _ctx: &mut LoweringCtxt,
@@ -193,7 +193,7 @@ impl Dec {
         todo!()
     }
 
-    fn _lower_fvalbind<A: BodyArena>(
+    fn _lower_fvalbind<A: FileArena>(
         _fvalbind: &ast::FvalBind,
         _arena: &mut A,
         _ctx: &mut LoweringCtxt,
@@ -202,7 +202,7 @@ impl Dec {
         todo!()
     }
 
-    fn lower_type<A: BodyArena>(
+    fn lower_type<A: FileArena>(
         dec: &ast::TypeDec,
         arena: &mut A,
         ctx: &mut LoweringCtxt,
@@ -233,7 +233,7 @@ impl Dec {
     }
 
     // FIXME: Handle "withtype"
-    fn lower_datatype<A: BodyArena>(
+    fn lower_datatype<A: FileArena>(
         dec: &ast::DatatypeDec,
         arena: &mut A,
         ctx: &mut LoweringCtxt,
@@ -252,7 +252,7 @@ impl Dec {
         }
     }
 
-    fn lower_replication<A: BodyArena>(
+    fn lower_replication<A: FileArena>(
         dec: &ast::DatatypeRepDec,
         arena: &mut A,
         _ctx: &mut LoweringCtxt,
@@ -263,7 +263,7 @@ impl Dec {
     }
 
     // FIXME: Handle "withtype"
-    fn lower_abstype<A: BodyArena>(
+    fn lower_abstype<A: FileArena>(
         dec: &ast::AbstypeDec,
         arena: &mut A,
         ctx: &mut LoweringCtxt,
@@ -276,7 +276,7 @@ impl Dec {
         DecKind::Abstype { databinds, dec }
     }
 
-    fn lower_exception<A: BodyArena>(
+    fn lower_exception<A: FileArena>(
         _dec: &ast::ExceptionDec,
         _arena: &mut A,
         _ctx: &mut LoweringCtxt,
@@ -284,7 +284,7 @@ impl Dec {
         todo!()
     }
 
-    fn lower_local<A: BodyArena>(
+    fn lower_local<A: FileArena>(
         dec: &ast::LocalDec,
         arena: &mut A,
         ctx: &mut LoweringCtxt,
@@ -297,7 +297,7 @@ impl Dec {
         }
     }
 
-    fn lower_open<A: BodyArena>(
+    fn lower_open<A: FileArena>(
         dec: &ast::OpenDec,
         arena: &mut A,
         _ctx: &mut LoweringCtxt,
@@ -309,7 +309,7 @@ impl Dec {
         DecKind::Open { longstrids }
     }
 
-    fn lower_infix<A: BodyArena>(
+    fn lower_infix<A: FileArena>(
         dec: &ast::InfixDec,
         arena: &mut A,
         _ctx: &mut LoweringCtxt,
@@ -325,7 +325,7 @@ impl Dec {
         }
     }
 
-    fn lower_infixr<A: BodyArena>(
+    fn lower_infixr<A: FileArena>(
         dec: &ast::InfixrDec,
         arena: &mut A,
         _ctx: &mut LoweringCtxt,
@@ -341,7 +341,7 @@ impl Dec {
         }
     }
 
-    fn lower_nonfix<A: BodyArena>(
+    fn lower_nonfix<A: FileArena>(
         dec: &ast::NonfixDec,
         arena: &mut A,
         _ctx: &mut LoweringCtxt,
@@ -356,7 +356,7 @@ impl Dec {
         }
     }
 
-    fn lower_seq<A: BodyArena>(
+    fn lower_seq<A: FileArena>(
         dec: &ast::SeqDec,
         arena: &mut A,
         ctx: &mut LoweringCtxt,
@@ -370,7 +370,7 @@ impl Dec {
 }
 
 impl DataBind {
-    fn lower<A: BodyArena>(
+    fn lower<A: FileArena>(
         databind: &ast::DataBind,
         arena: &mut A,
         ctx: &mut LoweringCtxt,
@@ -395,7 +395,7 @@ impl DataBind {
 }
 
 impl ConBind {
-    fn lower<A: BodyArena>(conbind: &ast::ConBind, arena: &mut A, ctx: &mut LoweringCtxt) -> Self {
+    fn lower<A: FileArena>(conbind: &ast::ConBind, arena: &mut A, ctx: &mut LoweringCtxt) -> Self {
         let op = conbind.op();
         let vid = VId::from_token(conbind.vid(), arena);
         let ty = conbind.ty().map(|t| Type::lower(t, arena, ctx));
@@ -404,7 +404,7 @@ impl ConBind {
 }
 
 impl ExBind {
-    fn _lower<A: BodyArena>(
+    fn _lower<A: FileArena>(
         _exbind: &ast::ExBind,
         _arena: &mut A,
         _ctx: &mut LoweringCtxt,
@@ -416,7 +416,7 @@ impl ExBind {
 impl HirLower for Expr {
     type AstType = ast::Expr;
 
-    fn missing<A: BodyArena>(arena: &mut A) -> Idx<Self> {
+    fn missing<A: FileArena>(arena: &mut A) -> Idx<Self> {
         let e = Self {
             kind: ExprKind::Missing,
             ast_id: AstId::Missing,
@@ -424,7 +424,7 @@ impl HirLower for Expr {
         arena.alloc_expr(e)
     }
 
-    fn lower<A: BodyArena>(ast: Self::AstType, arena: &mut A, ctx: &mut LoweringCtxt) -> Idx<Self> {
+    fn lower<A: FileArena>(ast: Self::AstType, arena: &mut A, ctx: &mut LoweringCtxt) -> Idx<Self> {
         let kind = Self::to_kind(&ast, arena, ctx);
         let ast_id = AstId::Node(arena.alloc_ast_id(&ast));
         arena.alloc_expr(Self { kind, ast_id })
@@ -434,7 +434,7 @@ impl HirLower for Expr {
 impl HirLowerGenerated for Expr {
     type Kind = ExprKind;
 
-    fn generated<A: BodyArena>(
+    fn generated<A: FileArena>(
         origin: NodeParent,
         kind: Self::Kind,
         arena: &mut A,
@@ -449,7 +449,7 @@ impl HirLowerGenerated for Expr {
 }
 
 impl Expr {
-    fn to_kind<A: BodyArena>(expr: &ast::Expr, arena: &mut A, ctx: &mut LoweringCtxt) -> ExprKind {
+    fn to_kind<A: FileArena>(expr: &ast::Expr, arena: &mut A, ctx: &mut LoweringCtxt) -> ExprKind {
         match &expr {
             ast::Expr::Atomic(e) => Self::lower_atomic(e, arena, ctx),
             ast::Expr::Application(e) => Self::lower_application(e, arena, ctx),
@@ -467,7 +467,7 @@ impl Expr {
         }
     }
 
-    fn lower_atomic<A: BodyArena>(
+    fn lower_atomic<A: FileArena>(
         expr: &ast::AtomicExpr,
         arena: &mut A,
         ctx: &mut LoweringCtxt,
@@ -486,7 +486,7 @@ impl Expr {
         }
     }
 
-    fn lower_scon<A: BodyArena>(
+    fn lower_scon<A: FileArena>(
         expr: &ast::SConExpr,
         _arena: &mut A,
         _ctx: &mut LoweringCtxt,
@@ -495,7 +495,7 @@ impl Expr {
         ExprKind::Scon(scon)
     }
 
-    fn lower_vid<A: BodyArena>(
+    fn lower_vid<A: FileArena>(
         expr: &ast::VIdExpr,
         arena: &mut A,
         _ctx: &mut LoweringCtxt,
@@ -505,7 +505,7 @@ impl Expr {
         ExprKind::VId { op, longvid }
     }
 
-    fn lower_let<A: BodyArena>(
+    fn lower_let<A: FileArena>(
         expr: &ast::LetExpr,
         arena: &mut A,
         ctx: &mut LoweringCtxt,
@@ -521,7 +521,7 @@ impl Expr {
         ExprKind::Let { dec, expr }
     }
 
-    fn lower_seq<A: BodyArena>(
+    fn lower_seq<A: FileArena>(
         expr: &ast::SeqExpr,
         arena: &mut A,
         ctx: &mut LoweringCtxt,
@@ -530,7 +530,7 @@ impl Expr {
         ExprKind::Seq { exprs }
     }
 
-    fn lower_unit<A: BodyArena>(
+    fn lower_unit<A: FileArena>(
         _expr: &ast::UnitExpr,
         _arena: &mut A,
         _ctx: &mut LoweringCtxt,
@@ -538,7 +538,7 @@ impl Expr {
         ExprKind::Record { rows: Box::new([]) }
     }
 
-    fn lower_record<A: BodyArena>(
+    fn lower_record<A: FileArena>(
         expr: &ast::RecordExpr,
         arena: &mut A,
         ctx: &mut LoweringCtxt,
@@ -550,7 +550,7 @@ impl Expr {
         ExprKind::Record { rows }
     }
 
-    fn lower_tuple<A: BodyArena>(
+    fn lower_tuple<A: FileArena>(
         expr: &ast::TupleExpr,
         arena: &mut A,
         ctx: &mut LoweringCtxt,
@@ -567,7 +567,7 @@ impl Expr {
         }
     }
 
-    fn lower_list<A: BodyArena>(
+    fn lower_list<A: FileArena>(
         expr: &ast::ListExpr,
         arena: &mut A,
         ctx: &mut LoweringCtxt,
@@ -585,7 +585,7 @@ impl Expr {
 
     // "# lab" is lowered to "fn {lab=vid, .. } => vid"
     // where "vid" is a new (fresh) identifier
-    fn lower_recsel<A: BodyArena>(
+    fn lower_recsel<A: FileArena>(
         expr: &ast::RecSelExpr,
         arena: &mut A,
         ctx: &mut LoweringCtxt,
@@ -641,7 +641,7 @@ impl Expr {
     }
 
     // FIXME: this is a bit gross, maybe need to rethink the traits??
-    fn lower_paren<A: BodyArena>(
+    fn lower_paren<A: FileArena>(
         expr: &ast::ParenExpr,
         arena: &mut A,
         ctx: &mut LoweringCtxt,
@@ -652,7 +652,7 @@ impl Expr {
         }
     }
 
-    fn lower_application<A: BodyArena>(
+    fn lower_application<A: FileArena>(
         expr: &ast::ApplicationExpr,
         arena: &mut A,
         ctx: &mut LoweringCtxt,
@@ -662,7 +662,7 @@ impl Expr {
         ExprKind::Application { expr: app, param }
     }
 
-    fn lower_infix_or_app<A: BodyArena>(
+    fn lower_infix_or_app<A: FileArena>(
         expr: &ast::InfixOrAppExpr,
         arena: &mut A,
         ctx: &mut LoweringCtxt,
@@ -671,7 +671,7 @@ impl Expr {
         ExprKind::InfixOrApp { exprs }
     }
 
-    fn lower_infix<A: BodyArena>(
+    fn lower_infix<A: FileArena>(
         expr: &ast::InfixExpr,
         arena: &mut A,
         ctx: &mut LoweringCtxt,
@@ -682,7 +682,7 @@ impl Expr {
         ExprKind::Infix { lhs, vid, rhs }
     }
 
-    fn lower_typed<A: BodyArena>(
+    fn lower_typed<A: FileArena>(
         expr: &ast::TypedExpr,
         arena: &mut A,
         ctx: &mut LoweringCtxt,
@@ -697,7 +697,7 @@ impl Expr {
     // This might be correct.. it also might be wrong...
     //
     // "exp1 andalso exp2" desugars to "if exp1 then exp2 else false"
-    fn lower_andalso<A: BodyArena>(
+    fn lower_andalso<A: FileArena>(
         expr: &ast::AndAlsoExpr,
         arena: &mut A,
         ctx: &mut LoweringCtxt,
@@ -722,7 +722,7 @@ impl Expr {
     }
 
     // "exp1 orelse exp2" desugars to "if exp1 then true else exp2"
-    fn lower_orelse<A: BodyArena>(
+    fn lower_orelse<A: FileArena>(
         expr: &ast::OrElseExpr,
         arena: &mut A,
         ctx: &mut LoweringCtxt,
@@ -746,7 +746,7 @@ impl Expr {
         Self::_lower_if(&originating, expr_1, true_expr, expr_2, arena, ctx)
     }
 
-    fn lower_handle<A: BodyArena>(
+    fn lower_handle<A: FileArena>(
         expr: &ast::HandleExpr,
         arena: &mut A,
         ctx: &mut LoweringCtxt,
@@ -759,7 +759,7 @@ impl Expr {
         ExprKind::Handle { expr, match_ }
     }
 
-    fn lower_raise<A: BodyArena>(
+    fn lower_raise<A: FileArena>(
         expr: &ast::RaiseExpr,
         arena: &mut A,
         ctx: &mut LoweringCtxt,
@@ -768,7 +768,7 @@ impl Expr {
         ExprKind::Raise { expr }
     }
 
-    fn lower_if<A: BodyArena>(
+    fn lower_if<A: FileArena>(
         expr: &ast::IfExpr,
         arena: &mut A,
         ctx: &mut LoweringCtxt,
@@ -786,7 +786,7 @@ impl Expr {
         )
     }
 
-    fn _lower_if<A: BodyArena>(
+    fn _lower_if<A: FileArena>(
         originating_expr: &ast::Expr,
         expr1: Idx<Expr>,
         expr2: Idx<Expr>,
@@ -823,7 +823,7 @@ impl Expr {
         Self::_lower_case(originating_expr, expr1, match_arms, arena, ctx)
     }
 
-    fn lower_while<A: BodyArena>(
+    fn lower_while<A: FileArena>(
         expr: &ast::WhileExpr,
         arena: &mut A,
         ctx: &mut LoweringCtxt,
@@ -906,7 +906,7 @@ impl Expr {
         }
     }
 
-    fn lower_case<A: BodyArena>(
+    fn lower_case<A: FileArena>(
         expr: &ast::CaseExpr,
         arena: &mut A,
         ctx: &mut LoweringCtxt,
@@ -919,7 +919,7 @@ impl Expr {
         Self::_lower_case(&ast::Expr::from(expr.clone()), test, match_, arena, ctx)
     }
 
-    fn _lower_case<A: BodyArena>(
+    fn _lower_case<A: FileArena>(
         originating_expr: &ast::Expr,
         test: Idx<Expr>,
         boxed_match: Box<[MRule]>,
@@ -942,7 +942,7 @@ impl Expr {
         }
     }
 
-    fn lower_fn<A: BodyArena>(
+    fn lower_fn<A: FileArena>(
         expr: &ast::FnExpr,
         arena: &mut A,
         ctx: &mut LoweringCtxt,
@@ -956,7 +956,7 @@ impl Expr {
 }
 
 impl ExpRow {
-    pub fn lower<A: BodyArena>(
+    pub fn lower<A: FileArena>(
         exprow: ast::ExprRow,
         arena: &mut A,
         ctx: &mut LoweringCtxt,
@@ -972,13 +972,13 @@ impl ExpRow {
 }
 
 impl MRule {
-    fn lower<A: BodyArena>(mrule: &ast::Mrule, arena: &mut A, ctx: &mut LoweringCtxt) -> Self {
+    fn lower<A: FileArena>(mrule: &ast::Mrule, arena: &mut A, ctx: &mut LoweringCtxt) -> Self {
         let pat = Pat::lower_opt(mrule.pat(), arena, ctx);
         let expr = Expr::lower_opt(mrule.expr(), arena, ctx);
         Self { pat, expr }
     }
 
-    fn lower_from_match<A: BodyArena>(
+    fn lower_from_match<A: FileArena>(
         match_expr: &ast::Match,
         arena: &mut A,
         ctx: &mut LoweringCtxt,
@@ -1032,7 +1032,7 @@ impl Scon {
 impl HirLower for Pat {
     type AstType = ast::Pat;
 
-    fn missing<A: BodyArena>(arena: &mut A) -> Idx<Self> {
+    fn missing<A: FileArena>(arena: &mut A) -> Idx<Self> {
         let p = Self {
             kind: PatKind::Missing,
             ast_id: AstId::Missing,
@@ -1040,7 +1040,7 @@ impl HirLower for Pat {
         arena.alloc_pat(p)
     }
 
-    fn lower<A: BodyArena>(pat: ast::Pat, arena: &mut A, ctx: &mut LoweringCtxt) -> Idx<Self> {
+    fn lower<A: FileArena>(pat: ast::Pat, arena: &mut A, ctx: &mut LoweringCtxt) -> Idx<Self> {
         let kind = match pat.clone() {
             ast::Pat::Atomic(p) => Self::lower_atomic(p, arena, ctx),
             ast::Pat::Typed(p) => Self::lower_typed(p, arena, ctx),
@@ -1057,7 +1057,7 @@ impl HirLower for Pat {
 impl HirLowerGenerated for Pat {
     type Kind = PatKind;
 
-    fn generated<A: BodyArena>(
+    fn generated<A: FileArena>(
         origin: NodeParent,
         kind: Self::Kind,
         arena: &mut A,
@@ -1072,7 +1072,7 @@ impl HirLowerGenerated for Pat {
 }
 
 impl Pat {
-    fn lower_atomic<A: BodyArena>(
+    fn lower_atomic<A: FileArena>(
         pat: ast::AtomicPat,
         arena: &mut A,
         ctx: &mut LoweringCtxt,
@@ -1088,7 +1088,7 @@ impl Pat {
         }
     }
 
-    fn lower_wildcard<A: BodyArena>(
+    fn lower_wildcard<A: FileArena>(
         _pat: ast::WildcardPat,
         _arena: &mut A,
         _ctx: &mut LoweringCtxt,
@@ -1096,7 +1096,7 @@ impl Pat {
         PatKind::Wildcard
     }
 
-    fn lower_scon<A: BodyArena>(
+    fn lower_scon<A: FileArena>(
         pat: ast::SConPat,
         _arena: &mut A,
         _ctx: &mut LoweringCtxt,
@@ -1105,7 +1105,7 @@ impl Pat {
         PatKind::Scon(scon)
     }
 
-    fn lower_vid<A: BodyArena>(
+    fn lower_vid<A: FileArena>(
         pat: ast::VIdPat,
         arena: &mut A,
         _ctx: &mut LoweringCtxt,
@@ -1120,7 +1120,7 @@ impl Pat {
     }
 
     // [pat1, pat2, ..., patn] lowers to pat1 :: pat2 :: ... :: patn :: nil
-    fn lower_list<A: BodyArena>(
+    fn lower_list<A: FileArena>(
         pat: ast::ListPat,
         arena: &mut A,
         ctx: &mut LoweringCtxt,
@@ -1136,7 +1136,7 @@ impl Pat {
         )
     }
 
-    fn lower_tuple<A: BodyArena>(
+    fn lower_tuple<A: FileArena>(
         tuple: ast::TuplePat,
         arena: &mut A,
         ctx: &mut LoweringCtxt,
@@ -1154,7 +1154,7 @@ impl Pat {
         }
     }
 
-    fn lower_record<A: BodyArena>(
+    fn lower_record<A: FileArena>(
         pat: ast::RecordPat,
         arena: &mut A,
         ctx: &mut LoweringCtxt,
@@ -1166,7 +1166,7 @@ impl Pat {
         PatKind::Record { rows }
     }
 
-    fn lower_typed<A: BodyArena>(
+    fn lower_typed<A: FileArena>(
         pat: ast::TypedPat,
         arena: &mut A,
         ctx: &mut LoweringCtxt,
@@ -1176,7 +1176,7 @@ impl Pat {
         PatKind::Typed { pat: p, ty }
     }
 
-    fn lower_cons<A: BodyArena>(
+    fn lower_cons<A: FileArena>(
         pat: ast::ConsPat,
         arena: &mut A,
         ctx: &mut LoweringCtxt,
@@ -1188,7 +1188,7 @@ impl Pat {
         PatKind::Constructed { op, longvid, pat }
     }
 
-    fn lower_cons_infix<A: BodyArena>(
+    fn lower_cons_infix<A: FileArena>(
         pat: ast::ConsInfixPat,
         arena: &mut A,
         ctx: &mut LoweringCtxt,
@@ -1199,7 +1199,7 @@ impl Pat {
         PatKind::Infix { lhs, vid, rhs }
     }
 
-    fn lower_layered<A: BodyArena>(
+    fn lower_layered<A: FileArena>(
         pat: ast::LayeredPat,
         arena: &mut A,
         ctx: &mut LoweringCtxt,
@@ -1213,7 +1213,7 @@ impl Pat {
 }
 
 impl PatRow {
-    fn lower<A: BodyArena>(patrow: ast::PatRow, arena: &mut A, ctx: &mut LoweringCtxt) -> Self {
+    fn lower<A: FileArena>(patrow: ast::PatRow, arena: &mut A, ctx: &mut LoweringCtxt) -> Self {
         let pat = patrow
             .pat()
             .map(|node| Pat::lower(node, arena, ctx))
@@ -1222,7 +1222,7 @@ impl PatRow {
         Self::new_from_pat(pat, label, arena)
     }
 
-    fn new_from_pat<A: BodyArena>(pat: Idx<Pat>, label: Label, arena: &mut A) -> Self {
+    fn new_from_pat<A: FileArena>(pat: Idx<Pat>, label: Label, arena: &mut A) -> Self {
         if let PatKind::Wildcard = arena.get_pat(pat).kind {
             Self::Wildcard
         } else {
@@ -1234,7 +1234,7 @@ impl PatRow {
 impl HirLower for Type {
     type AstType = ast::Ty;
 
-    fn missing<A: BodyArena>(arena: &mut A) -> Idx<Self> {
+    fn missing<A: FileArena>(arena: &mut A) -> Idx<Self> {
         let t = Self {
             kind: TyKind::Missing,
             ast_id: AstId::Missing,
@@ -1242,7 +1242,7 @@ impl HirLower for Type {
         arena.alloc_ty(t)
     }
 
-    fn lower<A: BodyArena>(ty: ast::Ty, arena: &mut A, ctx: &mut LoweringCtxt) -> Idx<Self> {
+    fn lower<A: FileArena>(ty: ast::Ty, arena: &mut A, ctx: &mut LoweringCtxt) -> Idx<Self> {
         let kind = match &ty {
             ast::Ty::Fun(t) => Self::lower_fun(t, arena, ctx),
             ast::Ty::Cons(t) => Self::lower_cons(t, arena, ctx),
@@ -1261,7 +1261,7 @@ impl HirLower for Type {
 impl HirLowerGenerated for Type {
     type Kind = TyKind;
 
-    fn generated<A: BodyArena>(
+    fn generated<A: FileArena>(
         origin: NodeParent,
         kind: Self::Kind,
         arena: &mut A,
@@ -1276,19 +1276,19 @@ impl HirLowerGenerated for Type {
 }
 
 impl Type {
-    fn lower_fun<A: BodyArena>(ty: &ast::FunTy, arena: &mut A, ctx: &mut LoweringCtxt) -> TyKind {
+    fn lower_fun<A: FileArena>(ty: &ast::FunTy, arena: &mut A, ctx: &mut LoweringCtxt) -> TyKind {
         let domain = Self::lower_opt(ty.ty_1(), arena, ctx);
         let range = Self::lower_opt(ty.ty_2(), arena, ctx);
         TyKind::Function { domain, range }
     }
 
-    fn lower_cons<A: BodyArena>(ty: &ast::ConsTy, arena: &mut A, ctx: &mut LoweringCtxt) -> TyKind {
+    fn lower_cons<A: FileArena>(ty: &ast::ConsTy, arena: &mut A, ctx: &mut LoweringCtxt) -> TyKind {
         let tyseq = ty.tys().map(|t| Self::lower(t, arena, ctx)).collect();
         let longtycon = LongTyCon::from_opt_node(ty.longtycon().as_ref(), arena);
         TyKind::Constructed { tyseq, longtycon }
     }
 
-    fn lower_tuple<A: BodyArena>(
+    fn lower_tuple<A: FileArena>(
         ty: &ast::TupleTy,
         arena: &mut A,
         ctx: &mut LoweringCtxt,
@@ -1304,7 +1304,7 @@ impl Type {
         }
     }
 
-    fn lower_tyvar<A: BodyArena>(
+    fn lower_tyvar<A: FileArena>(
         ty: &ast::TyVarTy,
         arena: &mut A,
         _ctx: &mut LoweringCtxt,
@@ -1313,7 +1313,7 @@ impl Type {
         TyKind::Var(idx)
     }
 
-    fn lower_record<A: BodyArena>(
+    fn lower_record<A: FileArena>(
         ty: &ast::RecordTy,
         arena: &mut A,
         ctx: &mut LoweringCtxt,
@@ -1324,7 +1324,7 @@ impl Type {
 }
 
 impl TyRow {
-    fn lower<A: BodyArena>(tyrow: ast::TyRow, arena: &mut A, ctx: &mut LoweringCtxt) -> Self {
+    fn lower<A: FileArena>(tyrow: ast::TyRow, arena: &mut A, ctx: &mut LoweringCtxt) -> Self {
         let ty = Type::lower_opt(tyrow.ty(), arena, ctx);
         let label = Label::from_token(tyrow.label(), arena);
         Self { label, ty }

@@ -1,21 +1,31 @@
 pub mod context;
 pub use context::LoweringCtxt;
 
-use pomelo_parse::ast;
+pub mod dec;
+pub mod expr;
+pub mod pat;
+mod util;
 
-use crate::body::Body;
-use crate::TopDec;
+use pomelo_parse::AstNode;
 
-/// Lower the AST to HIR
-///
-/// `LoweringCtxt` contains `crate::File`
-pub fn lower(root: ast::File) -> LoweringCtxt {
-    let mut ctx = LoweringCtxt::default();
+use crate::arena::Idx;
+use crate::NodeParent;
 
-    for d in root.declarations() {
-        let body = Body::from_syntax(d, &mut ctx);
-        ctx.file_mut().add_dec(TopDec::new(body));
+trait HirLower: Sized {
+    type AstType: AstNode;
+
+    fn missing(ctx: &mut LoweringCtxt) -> Idx<Self>;
+    fn lower(ctx: &mut LoweringCtxt, ast: Self::AstType) -> Idx<Self>;
+
+    fn lower_opt(ctx: &mut LoweringCtxt, opt_ast: Option<Self::AstType>) -> Idx<Self> {
+        match opt_ast {
+            Some(a) => Self::lower(ctx, a),
+            None => Self::missing(ctx),
+        }
     }
+}
 
-    ctx
+trait HirLowerGenerated: HirLower {
+    type Kind: Clone;
+    fn generated(ctx: &mut LoweringCtxt, origin: NodeParent, kind: Self::Kind) -> Idx<Self>;
 }

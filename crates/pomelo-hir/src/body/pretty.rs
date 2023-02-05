@@ -1,11 +1,11 @@
 use crate::arena::Idx;
-use crate::body::BodyArena;
+use crate::body::FileArena;
 use crate::identifiers::{
     Label, LongStrId, LongTyCon, LongVId, Name, NameInterner, StrId, TyCon, TyVar, VId,
 };
 use crate::{
     ConBind, DataBind, Dec, DecKind, ExBind, ExpRow, Expr, ExprKind, Fixity, MRule, Pat, PatKind,
-    PatRow, Scon, TyKind, TyRow, Type,
+    PatRow, Scon, TyKind, TyRow, Type, ValBind
 };
 
 const MISSING: &str = "*missing*";
@@ -18,16 +18,19 @@ fn op_str(op: bool) -> &'static str {
     }
 }
 
-fn boxed_seq<N: HirPrettyPrint, A: BodyArena>(nodes: &[N], arena: &A) -> Vec<String> {
-    nodes.iter().map(|n| n.pretty(arena)).collect()
+fn boxed_seq<'a, N: HirPrettyPrint + 'a, A: FileArena>(
+    nodes: impl Iterator<Item = &'a N>,
+    arena: &A,
+) -> Vec<String> {
+    nodes.map(|n| n.pretty(arena)).collect()
 }
 
 pub(crate) trait HirPrettyPrint {
-    fn pretty<A: BodyArena>(&self, arena: &A) -> String;
+    fn pretty<A: FileArena>(&self, arena: &A) -> String;
 }
 
 impl HirPrettyPrint for Name {
-    fn pretty<A: BodyArena>(&self, arena: &A) -> String {
+    fn pretty<A: FileArena>(&self, arena: &A) -> String {
         match self {
             Self::String(index) => <A as NameInterner>::get(arena, *index).to_owned(),
             Self::Generated(n) => format!("_temp{n}"),
@@ -37,23 +40,18 @@ impl HirPrettyPrint for Name {
 }
 
 impl HirPrettyPrint for Dec {
-    fn pretty<A: BodyArena>(&self, arena: &A) -> String {
+    fn pretty<A: FileArena>(&self, arena: &A) -> String {
         match &self.kind {
             DecKind::Missing => MISSING.to_owned(),
-            DecKind::Seq { decs } => boxed_seq(decs, arena).join("; "),
+            DecKind::Seq { decs } => boxed_seq(decs.iter(), arena).join("; "),
             DecKind::Val {
-                rec,
                 tyvarseq,
-                pat,
-                expr,
+                bindings,
             } => {
-                let rec = if *rec { "rec " } else { "" };
                 format!(
-                    "val {}{}{} = {}",
-                    boxed_seq(tyvarseq, arena).join(" "),
-                    rec,
-                    pat.pretty(arena),
-                    expr.pretty(arena)
+                    "val {}{}",
+                    boxed_seq(tyvarseq.iter(), arena).join(" "),
+                    boxed_seq(bindings.iter(), arena).join(" and "),
                 )
             }
             DecKind::Ty {
@@ -63,9 +61,9 @@ impl HirPrettyPrint for Dec {
             } => {
                 format!(
                     "type {} {} = {}",
-                    boxed_seq(tyvarseq, arena).join(" "),
+                    boxed_seq(tyvarseq.iter(), arena).join(" "),
                     tycon.pretty(arena),
-                    ty.pretty(arena),
+                    ty.0.pretty(arena),
                 )
             }
             DecKind::Datatype { databind } => {
@@ -75,13 +73,13 @@ impl HirPrettyPrint for Dec {
                 format!(
                     "datatype {} = datatype {}",
                     lhs.pretty(arena),
-                    rhs.pretty(arena)
+                    rhs.0.pretty(arena)
                 )
             }
             DecKind::Abstype { databinds, dec } => {
                 format!(
                     "abstype {} with {} end",
-                    boxed_seq(databinds, arena).join(" and "),
+                    boxed_seq(databinds.iter(), arena).join(" and "),
                     dec.pretty(arena),
                 )
             }
@@ -96,7 +94,7 @@ impl HirPrettyPrint for Dec {
                 format!("exception {}", exbind.pretty(arena))
             }
             DecKind::Open { longstrids } => {
-                format!("open {}", boxed_seq(longstrids, arena).join(" "))
+                format!("open {}", boxed_seq(longstrids.iter(), arena).join(" "))
             }
             DecKind::Fixity { fixity, vids } => {
                 let (dec_str, val_str) = match fixity {
@@ -116,7 +114,7 @@ impl HirPrettyPrint for Dec {
                     "{} {} {}",
                     dec_str,
                     val_str,
-                    boxed_seq(vids, arena).join(" ")
+                    boxed_seq(vids.iter().map(|v| &v.0), arena).join(" ")
                 )
             }
         }
@@ -124,27 +122,39 @@ impl HirPrettyPrint for Dec {
 }
 
 impl HirPrettyPrint for Idx<Dec> {
-    fn pretty<A: BodyArena>(&self, arena: &A) -> String {
+    fn pretty<A: FileArena>(&self, arena: &A) -> String {
         arena.get_dec(*self).pretty(arena)
     }
 }
 
+impl HirPrettyPrint for ValBind {
+    fn pretty<A: FileArena>(&self, arena: &A) -> String {
+        format!(
+            "{}{} = {}",
+            if self.rec {"rec "} else { "" },
+            self.pat.pretty(arena),
+            self.expr.pretty(arena)
+        )
+
+    }
+}
+
 impl HirPrettyPrint for DataBind {
-    fn pretty<A: BodyArena>(&self, arena: &A) -> String {
+    fn pretty<A: FileArena>(&self, arena: &A) -> String {
         format!(
             "{} {} = {}",
-            boxed_seq(&self.tyvarseq, arena).join(" "),
+            boxed_seq(self.tyvarseq.iter(), arena).join(" "),
             self.tycon.pretty(arena),
-            boxed_seq(&self.conbinds, arena).join(" | ")
+            boxed_seq(self.conbinds.iter(), arena).join(" | ")
         )
     }
 }
 
 impl HirPrettyPrint for ConBind {
-    fn pretty<A: BodyArena>(&self, arena: &A) -> String {
+    fn pretty<A: FileArena>(&self, arena: &A) -> String {
         let ty = self
             .ty
-            .map(|t| t.pretty(arena))
+            .map(|t| t.0.pretty(arena))
             .map(|ty| format!(" of {ty}"))
             .unwrap_or_else(String::new);
 
@@ -153,11 +163,11 @@ impl HirPrettyPrint for ConBind {
 }
 
 impl HirPrettyPrint for ExBind {
-    fn pretty<A: BodyArena>(&self, arena: &A) -> String {
+    fn pretty<A: FileArena>(&self, arena: &A) -> String {
         match self {
             ExBind::Name { op, vid, ty } => {
                 let ty = ty
-                    .map(|t| t.pretty(arena))
+                    .map(|t| t.0.pretty(arena))
                     .map(|ty| format!("of {ty}"))
                     .unwrap_or_else(String::new);
                 format!("{}{} {ty}", op_str(*op), vid.pretty(arena))
@@ -173,7 +183,7 @@ impl HirPrettyPrint for ExBind {
                     op_str(*op_lhs),
                     lhs.pretty(arena),
                     op_str(*op_rhs),
-                    rhs.pretty(arena)
+                    rhs.0.pretty(arena)
                 )
             }
         }
@@ -181,23 +191,25 @@ impl HirPrettyPrint for ExBind {
 }
 
 impl HirPrettyPrint for Pat {
-    fn pretty<A: BodyArena>(&self, arena: &A) -> String {
+    fn pretty<A: FileArena>(&self, arena: &A) -> String {
         match &self.kind {
             PatKind::Missing => MISSING.to_owned(),
             PatKind::Wildcard => "_".to_owned(),
             PatKind::Scon(s) => s.pretty(arena),
             PatKind::VId { op, longvid } => {
-                format!("{}{}", op_str(*op), longvid.pretty(arena))
+                format!("{}{}", op_str(*op), longvid.0.pretty(arena))
             }
-            PatKind::Record { rows } => format!("{{ {} }}", boxed_seq(rows, arena).join(", ")),
+            PatKind::Record { rows } => {
+                format!("{{ {} }}", boxed_seq(rows.iter(), arena).join(", "))
+            }
             PatKind::Typed { pat, ty } => {
-                format!("{} : {}", pat.pretty(arena), ty.pretty(arena))
+                format!("{} : {}", pat.pretty(arena), ty.0.pretty(arena))
             }
             PatKind::Constructed { op, longvid, pat } => {
                 format!(
                     "{}{} {}",
                     op_str(*op),
-                    longvid.pretty(arena),
+                    longvid.0.pretty(arena),
                     pat.pretty(arena)
                 )
             }
@@ -205,13 +217,13 @@ impl HirPrettyPrint for Pat {
                 format!(
                     "{} {} {}",
                     lhs.pretty(arena),
-                    vid.pretty(arena),
+                    vid.0.pretty(arena),
                     rhs.pretty(arena)
                 )
             }
             PatKind::Layered { op, vid, ty, pat } => {
                 let ty = ty
-                    .map(|t| format!(" : {}", t.pretty(arena)))
+                    .map(|t| format!(" : {}", t.0.pretty(arena)))
                     .unwrap_or_else(|| "".to_owned());
 
                 format!(
@@ -227,13 +239,13 @@ impl HirPrettyPrint for Pat {
 }
 
 impl HirPrettyPrint for Idx<Pat> {
-    fn pretty<A: BodyArena>(&self, arena: &A) -> String {
+    fn pretty<A: FileArena>(&self, arena: &A) -> String {
         arena.get_pat(*self).pretty(arena)
     }
 }
 
 impl HirPrettyPrint for PatRow {
-    fn pretty<A: BodyArena>(&self, arena: &A) -> String {
+    fn pretty<A: FileArena>(&self, arena: &A) -> String {
         match &self {
             PatRow::Wildcard => "..".to_owned(),
             PatRow::Pattern { label, pat } => {
@@ -244,17 +256,19 @@ impl HirPrettyPrint for PatRow {
 }
 
 impl HirPrettyPrint for Type {
-    fn pretty<A: BodyArena>(&self, arena: &A) -> String {
+    fn pretty<A: FileArena>(&self, arena: &A) -> String {
         match &self.kind {
             TyKind::Missing => MISSING.to_owned(),
-            TyKind::Var(v) => v.pretty(arena),
-            TyKind::Record { tyrows } => format!("{{ {} }}", boxed_seq(tyrows, arena).join(", ")),
+            TyKind::Var(v, _) => v.pretty(arena),
+            TyKind::Record { tyrows } => {
+                format!("{{ {} }}", boxed_seq(tyrows.iter(), arena).join(", "))
+            }
             TyKind::Function { domain, range } => {
                 format!("{} -> {}", domain.pretty(arena), range.pretty(arena))
             }
             TyKind::Constructed { tyseq, longtycon } => {
-                let mut tys = boxed_seq(tyseq, arena);
-                tys.push(longtycon.pretty(arena));
+                let mut tys = boxed_seq(tyseq.iter(), arena);
+                tys.push(longtycon.0.pretty(arena));
                 tys.join(" ")
             }
         }
@@ -262,42 +276,42 @@ impl HirPrettyPrint for Type {
 }
 
 impl HirPrettyPrint for Idx<Type> {
-    fn pretty<A: BodyArena>(&self, arena: &A) -> String {
+    fn pretty<A: FileArena>(&self, arena: &A) -> String {
         arena.get_ty(*self).pretty(arena)
     }
 }
 
 impl HirPrettyPrint for TyRow {
-    fn pretty<A: BodyArena>(&self, arena: &A) -> String {
+    fn pretty<A: FileArena>(&self, arena: &A) -> String {
         format!("{}:{}", self.label.pretty(arena), self.ty.pretty(arena))
     }
 }
 
 impl HirPrettyPrint for Expr {
-    fn pretty<A: BodyArena>(&self, arena: &A) -> String {
+    fn pretty<A: FileArena>(&self, arena: &A) -> String {
         match &self.kind {
             ExprKind::Missing => MISSING.to_owned(),
-            ExprKind::Seq { exprs } => format!("({})", boxed_seq(exprs, arena).join("; ")),
+            ExprKind::Seq { exprs } => format!("({})", boxed_seq(exprs.iter(), arena).join("; ")),
             ExprKind::Scon(s) => s.pretty(arena),
             ExprKind::VId { op, longvid } => {
-                format!("{}{}", op_str(*op), longvid.pretty(arena))
+                format!("{}{}", op_str(*op), longvid.0.pretty(arena))
             }
             ExprKind::Record { rows } => {
-                format!("{{ {} }}", boxed_seq(rows, arena).join(", "))
+                format!("{{ {} }}", boxed_seq(rows.iter(), arena).join(", "))
             }
             ExprKind::Fn { match_ } => {
-                let matches = boxed_seq(match_, arena).join(" | ");
+                let matches = boxed_seq(match_.iter(), arena).join(" | ");
                 format!("(fn {matches})")
             }
             ExprKind::Let { dec, expr } => {
                 format!("let {} in {} end", dec.pretty(arena), expr.pretty(arena))
             }
-            ExprKind::InfixOrApp { exprs } => boxed_seq(exprs, arena).join(" "),
+            ExprKind::InfixOrApp { exprs } => boxed_seq(exprs.iter(), arena).join(" "),
             ExprKind::Infix { lhs, vid, rhs } => {
                 format!(
                     "{} {} {}",
                     lhs.pretty(arena),
-                    vid.pretty(arena),
+                    vid.0.pretty(arena),
                     rhs.pretty(arena)
                 )
             }
@@ -311,7 +325,7 @@ impl HirPrettyPrint for Expr {
                 format!(
                     "{} handle {}",
                     expr.pretty(arena),
-                    boxed_seq(match_, arena).join(" | ")
+                    boxed_seq(match_.iter(), arena).join(" | ")
                 )
             }
             ExprKind::Raise { expr } => {
@@ -322,25 +336,25 @@ impl HirPrettyPrint for Expr {
 }
 
 impl HirPrettyPrint for Idx<Expr> {
-    fn pretty<A: BodyArena>(&self, arena: &A) -> String {
+    fn pretty<A: FileArena>(&self, arena: &A) -> String {
         arena.get_expr(*self).pretty(arena)
     }
 }
 
 impl HirPrettyPrint for ExpRow {
-    fn pretty<A: BodyArena>(&self, arena: &A) -> String {
+    fn pretty<A: FileArena>(&self, arena: &A) -> String {
         format!("{}={}", self.label.pretty(arena), self.expr.pretty(arena))
     }
 }
 
 impl HirPrettyPrint for MRule {
-    fn pretty<A: BodyArena>(&self, arena: &A) -> String {
+    fn pretty<A: FileArena>(&self, arena: &A) -> String {
         format!("{} => {}", self.pat.pretty(arena), self.expr.pretty(arena))
     }
 }
 
 impl HirPrettyPrint for Scon {
-    fn pretty<A: BodyArena>(&self, _arena: &A) -> String {
+    fn pretty<A: FileArena>(&self, _arena: &A) -> String {
         match self {
             Scon::Missing => MISSING.to_owned(),
             Scon::Int(i) => i.to_string(),
@@ -353,7 +367,7 @@ impl HirPrettyPrint for Scon {
 }
 
 impl HirPrettyPrint for Label {
-    fn pretty<A: BodyArena>(&self, arena: &A) -> String {
+    fn pretty<A: FileArena>(&self, arena: &A) -> String {
         match self {
             Label::Missing => MISSING.to_owned(),
             Label::Numeric(i) => i.to_string(),
@@ -363,7 +377,7 @@ impl HirPrettyPrint for Label {
 }
 
 impl HirPrettyPrint for VId {
-    fn pretty<A: BodyArena>(&self, arena: &A) -> String {
+    fn pretty<A: FileArena>(&self, arena: &A) -> String {
         match self {
             VId::Missing => MISSING.to_owned(),
             VId::Name(n) => n.pretty(arena),
@@ -372,15 +386,15 @@ impl HirPrettyPrint for VId {
 }
 
 impl HirPrettyPrint for LongVId {
-    fn pretty<A: BodyArena>(&self, arena: &A) -> String {
-        let mut s = boxed_seq(&self.strids, arena);
+    fn pretty<A: FileArena>(&self, arena: &A) -> String {
+        let mut s = boxed_seq(self.strids.iter(), arena);
         s.push(self.vid.pretty(arena));
         s.join(".")
     }
 }
 
 impl HirPrettyPrint for StrId {
-    fn pretty<A: BodyArena>(&self, arena: &A) -> String {
+    fn pretty<A: FileArena>(&self, arena: &A) -> String {
         match self {
             StrId::Missing => MISSING.to_owned(),
             StrId::Name(n) => n.pretty(arena),
@@ -389,15 +403,15 @@ impl HirPrettyPrint for StrId {
 }
 
 impl HirPrettyPrint for LongStrId {
-    fn pretty<A: BodyArena>(&self, arena: &A) -> String {
-        let mut s = boxed_seq(&self.strid_path, arena);
+    fn pretty<A: FileArena>(&self, arena: &A) -> String {
+        let mut s = boxed_seq(self.strid_path.iter(), arena);
         s.push(self.strid.pretty(arena));
         s.join(".")
     }
 }
 
 impl HirPrettyPrint for TyVar {
-    fn pretty<A: BodyArena>(&self, arena: &A) -> String {
+    fn pretty<A: FileArena>(&self, arena: &A) -> String {
         match self {
             TyVar::Missing => MISSING.to_owned(),
             TyVar::Name(n) => n.pretty(arena),
@@ -406,7 +420,7 @@ impl HirPrettyPrint for TyVar {
 }
 
 impl HirPrettyPrint for TyCon {
-    fn pretty<A: BodyArena>(&self, arena: &A) -> String {
+    fn pretty<A: FileArena>(&self, arena: &A) -> String {
         match self {
             TyCon::Missing => MISSING.to_owned(),
             TyCon::Name(n) => n.pretty(arena),
@@ -415,8 +429,8 @@ impl HirPrettyPrint for TyCon {
 }
 
 impl HirPrettyPrint for LongTyCon {
-    fn pretty<A: BodyArena>(&self, arena: &A) -> String {
-        let mut s = boxed_seq(&self.strids, arena);
+    fn pretty<A: FileArena>(&self, arena: &A) -> String {
+        let mut s = boxed_seq(self.strids.iter(), arena);
         s.push(self.tycon.pretty(arena));
         s.join(".")
     }

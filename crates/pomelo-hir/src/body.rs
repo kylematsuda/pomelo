@@ -1,75 +1,41 @@
 //! HIR definitions for the Core language constructs
 //!
 //! Should [`Body`] be specialized to only [`Expr`]s?
-pub mod lower;
+
+// pub mod lower;
 pub mod pretty;
 
 use std::collections::HashMap;
 use std::marker::PhantomData;
 
 use pomelo_parse::{
-    ast,
     language::{SyntaxNodePtr, SML},
     AstNode, AstPtr,
 };
 
 use crate::arena::{Arena, Idx};
-use crate::body::lower::HirLower;
-use crate::identifiers::{NameInterner, NameInternerImpl};
-use crate::lower::LoweringCtxt;
+use crate::identifiers::NameInterner;
 use crate::{Dec, Expr, FileAstIdx, Pat, Type};
 
-#[cfg(test)]
-mod tests;
+// #[cfg(test)]
+// mod tests;
 
-/// Represents a desugared top-level declaration and its contents.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Body {
-    arenas: BodyArenaImpl<NameInternerImpl>,
-
-    // The actual outermost dec(s)
-    //
-    // `TopDec` maps to each real (syntactic) topdec.
-    // This is similar to `ItemTree` in r-a.
-    // However, when lowing to HIR (`Dec`, etc.), it makes sense to split multiple
-    // semantic declarations into their own `Dec` instances.
-    // For example, "val a = b and c = d" represents a single `TopDec`, but two
-    // `Dec`s.
-    dec: Idx<Dec>,
-}
-
-impl Body {
-    pub fn from_syntax(dec: ast::Dec, ctx: &mut LoweringCtxt) -> Self {
-        let mut arenas = BodyArenaImpl::default();
-        let dec = Dec::lower(dec, &mut arenas, ctx);
-        Self { arenas, dec }
-    }
-
-    pub fn arena(&self) -> &impl BodyArena {
-        &self.arenas
-    }
-
-    pub fn dec(&self) -> Idx<Dec> {
-        self.dec
-    }
-
-    pub fn topdec(&self) -> &Dec {
-        self.arenas.get_dec(self.dec)
-    }
-}
-
-pub trait BodyArena: NameInterner {
+pub trait FileArena: NameInterner {
     fn alloc_pat(&mut self, pat: Pat) -> Idx<Pat>;
     fn get_pat(&self, index: Idx<Pat>) -> &Pat;
+    fn get_pat_mut(&mut self, index: Idx<Pat>) -> &mut Pat;
 
     fn alloc_expr(&mut self, expr: Expr) -> Idx<Expr>;
     fn get_expr(&self, index: Idx<Expr>) -> &Expr;
+    fn get_expr_mut(&mut self, index: Idx<Expr>) -> &mut Expr;
 
     fn alloc_dec(&mut self, dec: Dec) -> Idx<Dec>;
     fn get_dec(&self, index: Idx<Dec>) -> &Dec;
+    fn get_dec_mut(&mut self, index: Idx<Dec>) -> &mut Dec;
 
     fn alloc_ty(&mut self, ty: Type) -> Idx<Type>;
     fn get_ty(&self, index: Idx<Type>) -> &Type;
+    fn get_ty_mut(&mut self, index: Idx<Type>) -> &mut Type;
 
     fn alloc_ast_id<N>(&mut self, ast: &N) -> FileAstIdx<N>
     where
@@ -85,7 +51,7 @@ pub trait BodyArena: NameInterner {
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
-pub(crate) struct BodyArenaImpl<NameInterner> {
+pub(crate) struct FileArenaImpl<NameInterner> {
     pub(crate) pats: Arena<Pat>,
     pub(crate) exprs: Arena<Expr>,
 
@@ -134,7 +100,7 @@ impl AstIdMap {
     }
 }
 
-impl<I: NameInterner> NameInterner for BodyArenaImpl<I> {
+impl<I: NameInterner> NameInterner for FileArenaImpl<I> {
     fn fresh(&mut self) -> u32 {
         self.name_interner.fresh()
     }
@@ -148,13 +114,17 @@ impl<I: NameInterner> NameInterner for BodyArenaImpl<I> {
     }
 }
 
-impl<I: NameInterner> BodyArena for BodyArenaImpl<I> {
+impl<I: NameInterner> FileArena for FileArenaImpl<I> {
     fn alloc_pat(&mut self, pat: Pat) -> Idx<Pat> {
         self.pats.alloc(pat)
     }
 
     fn get_pat(&self, index: Idx<Pat>) -> &Pat {
         self.pats.get(index)
+    }
+
+    fn get_pat_mut(&mut self, index: Idx<Pat>) -> &mut Pat {
+        self.pats.get_mut(index)
     }
 
     fn alloc_expr(&mut self, expr: Expr) -> Idx<Expr> {
@@ -165,6 +135,10 @@ impl<I: NameInterner> BodyArena for BodyArenaImpl<I> {
         self.exprs.get(index)
     }
 
+    fn get_expr_mut(&mut self, index: Idx<Expr>) -> &mut Expr {
+        self.exprs.get_mut(index)
+    }
+
     fn alloc_dec(&mut self, dec: Dec) -> Idx<Dec> {
         self.decs.alloc(dec)
     }
@@ -173,12 +147,20 @@ impl<I: NameInterner> BodyArena for BodyArenaImpl<I> {
         self.decs.get(index)
     }
 
+    fn get_dec_mut(&mut self, index: Idx<Dec>) -> &mut Dec {
+        self.decs.get_mut(index)
+    }
+
     fn alloc_ty(&mut self, ty: Type) -> Idx<Type> {
         self.tys.alloc(ty)
     }
 
     fn get_ty(&self, index: Idx<Type>) -> &Type {
         self.tys.get(index)
+    }
+
+    fn get_ty_mut(&mut self, index: Idx<Type>) -> &mut Type {
+        self.tys.get_mut(index)
     }
 
     fn alloc_ast_id<N>(&mut self, ast: &N) -> FileAstIdx<N>
