@@ -1,7 +1,7 @@
 use pomelo_parse::ast;
 
 use crate::arena::Idx;
-use crate::lower::{util, HirLower, HirLowerGenerated, LoweringCtxt};
+use crate::lower::{infix, util, HirLower, HirLowerGenerated, LoweringCtxt};
 use crate::{
     AstId, Builtin, Dec, DecKind, DefLoc, ExpRow, Expr, ExprKind, Label, LongVId, MRule,
     NameInterner, NodeParent, Pat, PatKind, PatRow, Scon, Ty, VId, ValBind,
@@ -11,6 +11,10 @@ impl HirLower for Expr {
     type AstType = ast::Expr;
 
     fn lower(ctx: &mut LoweringCtxt, ast: Self::AstType) -> Idx<Self> {
+        if let ast::Expr::InfixOrApp(e) = &ast {
+            return infix::fix_infix(ctx, e);
+        }
+
         let kind = Self::to_kind(ctx, &ast);
         let ast_id = AstId::Node(ctx.alloc_ast_id(&ast));
         ctx.add_expr(Self { kind, ast_id })
@@ -43,7 +47,7 @@ impl Expr {
             ast::Expr::Atomic(e) => Self::lower_atomic(ctx, &e),
             ast::Expr::Application(_) => todo!("remove this from the ast"),
             ast::Expr::Infix(_) => todo!("remove this from the ast"),
-            ast::Expr::InfixOrApp(e) => Self::lower_infix_or_app(ctx, &e),
+            ast::Expr::InfixOrApp(_) => unreachable!("infix_or_app handled in Expr::lower"),
             ast::Expr::Typed(e) => Self::lower_typed(ctx, &e),
             ast::Expr::AndAlso(e) => Self::lower_andalso(ctx, &e),
             ast::Expr::OrElse(e) => Self::lower_orelse(ctx, &e),
@@ -216,10 +220,6 @@ impl Expr {
         e.expr()
             .map(|e| Self::to_kind(ctx, &e))
             .unwrap_or(ExprKind::Missing)
-    }
-
-    fn lower_infix_or_app(_ctx: &mut LoweringCtxt, _e: &ast::InfixOrAppExpr) -> ExprKind {
-        todo!()
     }
 
     fn lower_typed(ctx: &mut LoweringCtxt, e: &ast::TypedExpr) -> ExprKind {

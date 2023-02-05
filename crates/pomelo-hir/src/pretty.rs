@@ -87,21 +87,20 @@ impl HirPrettyPrint for Dec {
             DecKind::Fixity { fixity, vids } => {
                 let (dec_str, val_str) = match fixity {
                     Fixity::Left(v) => {
-                        let mut s = v.unwrap_or(0).to_string();
-                        s.push(' ');
+                        let s = v.unwrap_or(0).to_string();
                         ("infix", s)
                     }
                     Fixity::Right(v) => {
-                        let mut s = v.unwrap_or(0).to_string();
-                        s.push(' ');
+                        let s = v.unwrap_or(0).to_string();
                         ("infixr", s)
                     }
                     Fixity::Nonfix => ("nonfix", "".to_owned()),
                 };
                 format!(
-                    "{} {} {}",
+                    "{} {}{}{}",
                     dec_str,
                     val_str,
+                    if val_str.is_empty() { "" } else { " " },
                     boxed_seq(vids.iter().map(|v| &v.0), arena).join(" ")
                 )
             }
@@ -313,7 +312,7 @@ impl HirPrettyPrint for Expr {
             ExprKind::InfixOrApp { exprs } => boxed_seq(exprs.iter(), arena).join(" "),
             ExprKind::Infix { lhs, vid, rhs } => {
                 format!(
-                    "{} {} {}",
+                    "({} {} {})",
                     lhs.pretty(arena),
                     vid.0.pretty(arena),
                     rhs.pretty(arena)

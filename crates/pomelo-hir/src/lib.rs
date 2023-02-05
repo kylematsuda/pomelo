@@ -97,7 +97,7 @@ use crate::identifiers::{
 pub fn lower_ast_to_hir(ast: SyntaxTree) -> (File, Vec<Error>) {
     let errors = ast.errors().cloned();
     let node = ast::File::cast(ast.syntax()).unwrap();
-    let ctx = lower::LoweringCtxt::default();
+    let ctx = lower::LoweringCtxt::new();
     let (file, lowering_errs) = ctx.lower_file(&node);
     (file, errors.chain(lowering_errs.into_iter()).collect())
 }

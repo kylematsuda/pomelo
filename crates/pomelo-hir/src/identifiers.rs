@@ -166,6 +166,14 @@ impl LongVId {
     pub fn is_builtin(&self) -> bool {
         self.vid.is_builtin() && self.strids.is_empty()
     }
+
+    pub fn try_into_vid(self) -> Option<VId> {
+        if self.strids.is_empty() {
+            Some(self.vid)
+        } else {
+            None
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]

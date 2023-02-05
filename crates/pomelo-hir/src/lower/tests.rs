@@ -25,7 +25,7 @@ where
 
     let node = H::AstType::cast(tree.syntax());
 
-    let mut ctx = crate::lower::LoweringCtxt::default();
+    let mut ctx = crate::lower::LoweringCtxt::new();
     let actual = H::lower_opt(&mut ctx, node).pretty(ctx.arenas());
     expect.assert_eq(&actual);
 }
@@ -84,7 +84,7 @@ end";
     check::<Dec, _>(
         src,
         |p| p.parse_dec(),
-        expect!["abstype  AbsSet = absset of int list with val empty = absset nil end"],
+        expect!["abstype AbsSet = absset of int list with val empty = absset nil end"],
     )
 }
 
@@ -115,9 +115,95 @@ fn lower_unit_expr() {
 }
 
 #[test]
-fn lower_app_expr() {
+fn lower_basic_app_expr() {
     let src = "a b";
     check::<Expr, _>(src, |p| p.parse_expr(), expect![[r##"a b"##]])
+}
+
+#[test]
+fn lower_many_app_expr() {
+    let src = "a b c d e f g";
+    check::<Expr, _>(src, |p| p.parse_expr(), expect![[r##"a b c d e f g"##]])
+}
+
+#[test]
+fn lower_more_complicated_app_expr() {
+    let src = "1 + f 2 * 3 + 4";
+    check::<Expr, _>(
+        src,
+        |p| p.parse_expr(),
+        expect![[r##"((1 + (f 2 * 3)) + 4)"##]],
+    )
+}
+
+#[test]
+fn lower_infix_dec() {
+    let src = "val a = 1 + f 2 * 3 + 4 and b = 3 div 4 + 5";
+    check::<Dec, _>(
+        src,
+        |p| p.parse_dec(),
+        expect![[r##"val a = ((1 + (f 2 * 3)) + 4) and b = ((3 div 4) + 5)"##]],
+    )
+}
+
+#[test]
+fn lower_infix_with_op() {
+    let src = "op +(1, 2) + 3";
+    check::<Expr, _>(
+        src,
+        |p| p.parse_expr(),
+        expect![[r##"(op+ { 1=1, 2=2 } + 3)"##]],
+    )
+}
+
+#[test]
+fn lower_user_defined_fixity() {
+    let src = "infix 9 f; val a = b f c + 1";
+    check::<Dec, _>(
+        src,
+        |p| p.parse_dec(),
+        expect![[r##"infix 9 f; val a = ((b f c) + 1)"##]],
+    )
+}
+
+#[test]
+fn lower_user_defined_weak_fixity() {
+    let src = "infix 1 f; val a = b f c + 1";
+    check::<Dec, _>(
+        src,
+        |p| p.parse_dec(),
+        expect![[r##"infix 1 f; val a = (b f (c + 1))"##]],
+    )
+}
+
+#[test]
+fn lower_left_infix() {
+    let src = "infix 9 f; val a = b f c f d + 1";
+    check::<Dec, _>(
+        src,
+        |p| p.parse_dec(),
+        expect![[r##"infix 9 f; val a = (((b f c) f d) + 1)"##]],
+    )
+}
+
+#[test]
+fn lower_right_infix() {
+    let src = "infixr 9 f; val a = b f c f d + 1";
+    check::<Dec, _>(
+        src,
+        |p| p.parse_dec(),
+        expect![[r##"infixr 9 f; val a = ((b f (c f d)) + 1)"##]],
+    )
+}
+
+#[test]
+fn lower_nonfix() {
+    let src = "infix 9 f; nonfix f; val a = b f c f d";
+    check::<Dec, _>(
+        src,
+        |p| p.parse_dec(),
+        expect![[r##"infix 9 f; nonfix f; val a = b f c f d"##]],
+    )
 }
 
 #[test]
@@ -198,7 +284,7 @@ fn lower_list_expr() {
     check::<Expr, _>(
         src,
         |p| p.parse_expr(),
-        expect![[r##"1 :: 2 :: 3 :: nil"##]],
+        expect![[r##"(1 :: (2 :: (3 :: nil)))"##]],
     )
 }
 

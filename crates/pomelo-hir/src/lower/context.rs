@@ -4,10 +4,11 @@ use std::collections::HashMap;
 use pomelo_parse::{ast, language::SML, AstNode, Error};
 
 use crate::arena::Idx;
+use crate::lower::infix::BUILTINS;
 use crate::lower::HirLower;
 use crate::{
     AstId, Dec, DecKind, DefLoc, Expr, ExprKind, File, FileArena, FileAstIdx, Fixity, LongTyCon,
-    LongVId, NameInterner, Pat, Ty,
+    LongVId, NameInterner, Pat, Ty, VId,
 };
 
 /// Context needed while lowering.
@@ -16,7 +17,7 @@ use crate::{
 ///
 /// Maybe need to also have a `BodyLoweringCtxt` as well, just to keep track of weird nested infix stuff?
 /// That seems like an annoying corner case...
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 pub(crate) struct LoweringCtxt {
     res: Resolver,
     file: crate::File,
@@ -24,6 +25,13 @@ pub(crate) struct LoweringCtxt {
 }
 
 impl LoweringCtxt {
+    pub fn new() -> Self {
+        let res = Resolver::new();
+        let file = crate::File::default();
+        let errors = Vec::new();
+        Self { res, file, errors }
+    }
+
     pub(crate) fn lower_file(mut self, file: &ast::File) -> (crate::File, Vec<Error>) {
         for dec in file.declarations() {
             let index = Dec::lower(&mut self, dec);
@@ -176,7 +184,7 @@ impl LoweringCtxt {
 }
 
 /// Holds the results of early name resolution
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 pub struct Resolver {
     values: HashMap<LongVId, DefLoc>,
     fixity: HashMap<LongVId, Fixity>,
@@ -184,6 +192,19 @@ pub struct Resolver {
 }
 
 impl Resolver {
+    pub fn new() -> Self {
+        let mut fixity = HashMap::new();
+        for (name, f) in BUILTINS {
+            fixity.insert(LongVId::from_vid(VId::from_builtin(name)), f);
+        }
+
+        Self {
+            values: HashMap::new(),
+            fixity,
+            tys: HashMap::new(),
+        }
+    }
+
     pub fn def_vid(&mut self, vid: LongVId, loc: DefLoc) {
         self.values.insert(vid, loc);
     }
@@ -208,7 +229,7 @@ impl Resolver {
         self.tys.get(ty).copied().unwrap_or(DefLoc::Missing)
     }
 
-    pub fn lookup_fixity(&mut self, vid: &LongVId) -> Option<Fixity> {
+    pub fn lookup_fixity(&self, vid: &LongVId) -> Option<Fixity> {
         self.fixity.get(vid).copied()
     }
 }

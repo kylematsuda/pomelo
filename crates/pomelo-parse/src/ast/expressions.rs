@@ -102,6 +102,7 @@ impl_from!(Expr, AndAlso, AndAlsoExpr);
 impl_from!(Expr, Typed, TypedExpr);
 impl_from!(Expr, Infix, InfixExpr);
 impl_from!(Expr, Application, ApplicationExpr);
+impl_from!(Expr, InfixOrApp, InfixOrAppExpr);
 impl_from!(Expr, Atomic, AtomicExpr);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
