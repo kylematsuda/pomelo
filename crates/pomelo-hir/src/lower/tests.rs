@@ -4,10 +4,10 @@ use pomelo_parse::{AstNode, Parser, SyntaxTree};
 use expect_test::{expect, Expect};
 
 use crate::arena::Idx;
-use crate::body::pretty::HirPrettyPrint;
+use crate::pretty::HirPrettyPrint;
 use crate::{lower::HirLower, Dec, Expr, Pat, Ty};
 
-pub(crate) fn check<H, F>(src: &str, parse_with: F, expect: Expect)
+fn check<H, F>(src: &str, parse_with: F, expect: Expect)
 where
     H: HirLower + HirPrettyPrint,
     <H as HirLower>::AstType: AstNode<Language = SML>,

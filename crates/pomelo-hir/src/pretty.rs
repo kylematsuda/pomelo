@@ -1,11 +1,8 @@
 use crate::arena::Idx;
-use crate::body::FileArena;
-use crate::identifiers::{
-    Label, LongStrId, LongTyCon, LongVId, Name, NameInterner, StrId, TyCon, TyVar, VId,
-};
 use crate::{
-    ConBind, DataBind, Dec, DecKind, ExBind, ExpRow, Expr, ExprKind, Fixity, MRule, Pat, PatKind,
-    PatRow, Scon, Ty, TyKind, TyRow, TypBind, ValBind,
+    ConBind, DataBind, Dec, DecKind, ExBind, ExpRow, Expr, ExprKind, FileArena, Fixity, Label,
+    LongStrId, LongTyCon, LongVId, MRule, Name, NameInterner, Pat, PatKind, PatRow, Scon, StrId,
+    Ty, TyCon, TyKind, TyRow, TyVar, TypBind, VId, ValBind,
 };
 
 const MISSING: &str = "*missing*";

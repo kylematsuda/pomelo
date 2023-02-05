@@ -1,12 +1,14 @@
 //! Lowering context.
 use std::collections::HashMap;
 
-use pomelo_parse::{ast, language::SML, AstNode, AstPtr};
+use pomelo_parse::{ast, language::SML, AstNode, Error};
 
 use crate::arena::Idx;
-use crate::body::FileArena;
-use crate::identifiers::{LongTyCon, LongVId, NameInterner};
-use crate::{AstId, Dec, DecKind, DefLoc, Expr, ExprKind, File, FileAstIdx, Fixity, Pat, Ty};
+use crate::lower::HirLower;
+use crate::{
+    AstId, Dec, DecKind, DefLoc, Expr, ExprKind, File, FileArena, FileAstIdx, Fixity, LongTyCon,
+    LongVId, NameInterner, Pat, Ty,
+};
 
 /// Context needed while lowering.
 ///
@@ -15,21 +17,30 @@ use crate::{AstId, Dec, DecKind, DefLoc, Expr, ExprKind, File, FileAstIdx, Fixit
 /// Maybe need to also have a `BodyLoweringCtxt` as well, just to keep track of weird nested infix stuff?
 /// That seems like an annoying corner case...
 #[derive(Debug, Default, Clone)]
-pub struct LoweringCtxt {
+pub(crate) struct LoweringCtxt {
     res: Resolver,
     file: crate::File,
+    errors: Vec<Error>, // TODO: define a new error type...
 }
 
 impl LoweringCtxt {
-    pub fn resolver(&self) -> &Resolver {
+    pub(crate) fn lower_file(mut self, file: &ast::File) -> (crate::File, Vec<Error>) {
+        for dec in file.declarations() {
+            let index = Dec::lower(&mut self, dec);
+            self.file_mut().topdecs_mut().push(index);
+        }
+        (self.file, self.errors)
+    }
+
+    pub(super) fn resolver(&self) -> &Resolver {
         &self.res
     }
 
-    pub fn resolver_mut(&mut self) -> &mut Resolver {
+    fn resolver_mut(&mut self) -> &mut Resolver {
         &mut self.res
     }
 
-    pub fn enter_scope<T>(&mut self, mut f: impl FnMut(&mut Self) -> T) -> T {
+    pub(super) fn enter_scope<T>(&mut self, mut f: impl FnMut(&mut Self) -> T) -> T {
         // This is probably super inefficient...
         let saved_resolver = self.res.clone();
         let out = f(self);
@@ -37,11 +48,7 @@ impl LoweringCtxt {
         out
     }
 
-    pub fn file(&self) -> &File {
-        &self.file
-    }
-
-    pub fn file_mut(&mut self) -> &mut File {
+    fn file_mut(&mut self) -> &mut File {
         &mut self.file
     }
 
@@ -56,26 +63,8 @@ impl LoweringCtxt {
         self.arenas_mut().alloc_ast_id(ast)
     }
 
-    pub fn get_ast_id<N>(&self, index: FileAstIdx<N>) -> Option<AstPtr<N>>
-    where
-        N: AstNode<Language = SML>,
-    {
-        self.arenas().get_ast_id(index)
-    }
-
-    pub fn get_ast_span<N>(&self, index: FileAstIdx<N>) -> Option<(usize, usize)>
-    where
-        N: AstNode<Language = SML>,
-    {
-        self.arenas().get_ast_span(index)
-    }
-
     pub fn interner_mut(&mut self) -> &mut impl NameInterner {
         &mut self.file.arenas.name_interner
-    }
-
-    pub fn bound_names(&self, pat: Idx<Pat>) -> Vec<LongVId> {
-        self.arenas().get_pat(pat).bound_vids(self)
     }
 
     /// This is needed because some of the dec can have recursive bindings.
@@ -99,19 +88,14 @@ impl LoweringCtxt {
 
         // Updating the resolver
         self.register_bound_vids_dec(index);
+        self.register_bound_tycons_dec(index);
         self.register_fixities(index);
 
         index
     }
 
-    pub fn push_dec(&mut self, dec: Dec) -> Idx<Dec> {
-        let index = self.arenas_mut().alloc_dec(dec);
-        self.register_bound_vids_dec(index);
-        index
-    }
-
     pub fn register_rec_pat(&mut self, pat: Idx<Pat>, dec: Idx<Dec>) {
-        let bound_vids = self.arenas().get_pat(pat).bound_vids(self);
+        let bound_vids = self.arenas().get_pat(pat).bound_vids(self.arenas());
         for v in bound_vids {
             // TODO: surface an error
             assert!(!v.is_builtin());
@@ -121,7 +105,7 @@ impl LoweringCtxt {
 
     pub fn register_bound_vids_dec(&mut self, index: Idx<Dec>) {
         let dec = self.arenas().get_dec(index);
-        let bound_vids = dec.bound_vids(self);
+        let bound_vids = dec.bound_vids(self.arenas());
         for v in bound_vids {
             // TODO: surface an error
             assert!(!v.is_builtin());
@@ -131,7 +115,7 @@ impl LoweringCtxt {
 
     pub fn register_bound_tycons_dec(&mut self, index: Idx<Dec>) {
         let dec = self.arenas().get_dec(index);
-        let bound_tycons = dec.bound_tycons(self);
+        let bound_tycons = dec.bound_tycons(self.arenas());
         for v in bound_tycons {
             // TODO: surface an error
             assert!(!v.is_builtin());
@@ -158,7 +142,7 @@ impl LoweringCtxt {
 
     pub fn register_pat_names_in_match(&mut self, index: Idx<Pat>) {
         let pat = self.arenas().get_pat(index);
-        let bound_vids = pat.bound_vids(self);
+        let bound_vids = pat.bound_vids(self.arenas());
         for v in bound_vids {
             // TODO: surface an error
             assert!(!v.is_builtin());
@@ -174,15 +158,15 @@ impl LoweringCtxt {
         }
     }
 
-    pub fn push_expr(&mut self, expr: Expr) -> Idx<Expr> {
+    pub fn add_expr(&mut self, expr: Expr) -> Idx<Expr> {
         self.arenas_mut().alloc_expr(expr)
     }
 
-    pub fn push_pat(&mut self, pat: Pat) -> Idx<Pat> {
+    pub fn add_pat(&mut self, pat: Pat) -> Idx<Pat> {
         self.arenas_mut().alloc_pat(pat)
     }
 
-    pub fn push_ty(&mut self, ty: Ty) -> Idx<Ty> {
+    pub fn add_ty(&mut self, ty: Ty) -> Idx<Ty> {
         self.arenas_mut().alloc_ty(ty)
     }
 

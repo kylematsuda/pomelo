@@ -1,11 +1,10 @@
 use pomelo_parse::ast;
 
 use crate::arena::Idx;
-use crate::identifiers::{BuiltIn, NameInterner, VId};
 use crate::lower::{util, HirLower, HirLowerGenerated, LoweringCtxt};
 use crate::{
-    AstId, Dec, DecKind, DefLoc, ExpRow, Expr, ExprKind, Label, LongVId, MRule, NodeParent, Pat,
-    PatKind, PatRow, Scon, Ty, ValBind,
+    AstId, BuiltIn, Dec, DecKind, DefLoc, ExpRow, Expr, ExprKind, Label, LongVId, MRule,
+    NameInterner, NodeParent, Pat, PatKind, PatRow, Scon, Ty, VId, ValBind,
 };
 
 impl HirLower for Expr {
@@ -14,7 +13,7 @@ impl HirLower for Expr {
     fn lower(ctx: &mut LoweringCtxt, ast: Self::AstType) -> Idx<Self> {
         let kind = Self::to_kind(ctx, &ast);
         let ast_id = AstId::Node(ctx.alloc_ast_id(&ast));
-        ctx.push_expr(Self { kind, ast_id })
+        ctx.add_expr(Self { kind, ast_id })
     }
 
     fn missing(ctx: &mut LoweringCtxt) -> Idx<Self> {
@@ -22,7 +21,7 @@ impl HirLower for Expr {
             kind: ExprKind::Missing,
             ast_id: AstId::Missing,
         };
-        ctx.push_expr(e)
+        ctx.add_expr(e)
     }
 }
 
@@ -34,7 +33,7 @@ impl HirLowerGenerated for Expr {
             kind,
             ast_id: AstId::Generated(origin),
         };
-        ctx.push_expr(e)
+        ctx.add_expr(e)
     }
 }
 
@@ -408,7 +407,7 @@ impl Expr {
 }
 
 impl ExpRow {
-    pub fn lower(ctx: &mut LoweringCtxt, e: &ast::ExprRow) -> Self {
+    fn lower(ctx: &mut LoweringCtxt, e: &ast::ExprRow) -> Self {
         let expr = Expr::lower_opt(ctx, e.expr());
         let label = Label::from_token(ctx, e.label());
         Self { label, expr }

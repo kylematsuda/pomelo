@@ -19,7 +19,7 @@ impl HirLower for Ty {
             kind,
             ast_id: AstId::Node(ctx.alloc_ast_id(&ast)),
         };
-        ctx.push_ty(t)
+        ctx.add_ty(t)
     }
 
     fn missing(ctx: &mut LoweringCtxt) -> Idx<Self> {
@@ -27,7 +27,7 @@ impl HirLower for Ty {
             kind: TyKind::Missing,
             ast_id: AstId::Missing,
         };
-        ctx.push_ty(t)
+        ctx.add_ty(t)
     }
 }
 
@@ -39,7 +39,7 @@ impl HirLowerGenerated for Ty {
             kind,
             ast_id: crate::AstId::Generated(origin),
         };
-        ctx.push_ty(t)
+        ctx.add_ty(t)
     }
 }
 

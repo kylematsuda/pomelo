@@ -65,23 +65,263 @@
 //! creating a bunch of extra HIR nodes that will be useless -- not a huge problem, but currently
 //! the `Arena` does not have any way to deallocate nodes.
 pub mod arena;
-pub mod body;
-pub mod identifiers;
-pub mod lower;
 
+pub mod hir;
+pub use hir::*;
+
+pub mod identifiers;
+pub use identifiers::*;
+
+pub mod lower;
+pub mod pretty;
+
+use std::collections::HashMap;
 use std::marker::PhantomData;
 
 use pomelo_parse::{
-    ast::{self, AstNode},
+    ast::{self, AstNode, AstPtr},
     language::{SyntaxNodePtr, SML},
+    Error, SyntaxTree,
 };
 
-use crate::arena::Idx;
-use crate::body::{FileArena, FileArenaImpl};
+use crate::arena::{Arena, Idx};
 use crate::identifiers::{
     Label, LongStrId, LongTyCon, LongVId, NameInternerImpl, TyCon, TyVar, VId,
 };
-use crate::lower::LoweringCtxt;
+
+// TODO: define a new hir-error type.
+//
+// Figure out an error handling strategy during lowering.
+// This can probably be pretty simple to start, just accumulating errors in the `ctx`?
+
+pub fn lower_ast_to_hir(ast: SyntaxTree) -> (File, Vec<Error>) {
+    let errors = ast.errors().cloned();
+    let node = ast::File::cast(ast.syntax()).unwrap();
+    let ctx = lower::LoweringCtxt::default();
+    let (file, lowering_errs) = ctx.lower_file(&node);
+    (file, errors.chain(lowering_errs.into_iter()).collect())
+}
+
+/// Represents a desugared top-level declaration and its contents.
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+pub struct File {
+    arenas: FileArenaImpl<NameInternerImpl>,
+
+    // The actual outermost dec(s)
+    //
+    // `TopDec` maps to each real (syntactic) topdec.
+    // This is similar to `ItemTree` in r-a.
+    // However, when lowing to HIR (`Dec`, etc.), it makes sense to split multiple
+    // semantic declarations into their own `Dec` instances.
+    // For example, "val a = b and c = d" represents a single `TopDec`, but two
+    // `Dec`s.
+    topdecs: Vec<Idx<Dec>>,
+}
+
+impl File {
+    pub fn arenas(&self) -> &impl FileArena {
+        &self.arenas
+    }
+
+    pub fn arenas_mut(&mut self) -> &mut impl FileArena {
+        &mut self.arenas
+    }
+
+    pub fn topdecs(&self) -> &[Idx<Dec>] {
+        &self.topdecs
+    }
+
+    pub fn topdecs_mut(&mut self) -> &mut Vec<Idx<Dec>> {
+        &mut self.topdecs
+    }
+}
+
+pub trait FileArena: NameInterner {
+    fn alloc_pat(&mut self, pat: Pat) -> Idx<Pat>;
+    fn get_pat(&self, index: Idx<Pat>) -> &Pat;
+    fn get_pat_mut(&mut self, index: Idx<Pat>) -> &mut Pat;
+
+    fn alloc_expr(&mut self, expr: Expr) -> Idx<Expr>;
+    fn get_expr(&self, index: Idx<Expr>) -> &Expr;
+    fn get_expr_mut(&mut self, index: Idx<Expr>) -> &mut Expr;
+
+    fn alloc_dec(&mut self, dec: Dec) -> Idx<Dec>;
+    fn get_dec(&self, index: Idx<Dec>) -> &Dec;
+    fn get_dec_mut(&mut self, index: Idx<Dec>) -> &mut Dec;
+
+    fn alloc_ty(&mut self, ty: Ty) -> Idx<Ty>;
+    fn get_ty(&self, index: Idx<Ty>) -> &Ty;
+    fn get_ty_mut(&mut self, index: Idx<Ty>) -> &mut Ty;
+
+    fn alloc_ast_id<N>(&mut self, ast: &N) -> FileAstIdx<N>
+    where
+        N: AstNode<Language = SML>;
+
+    fn get_ast_id<N>(&self, index: FileAstIdx<N>) -> Option<AstPtr<N>>
+    where
+        N: AstNode<Language = SML>;
+
+    fn get_ast_span<N>(&self, index: FileAstIdx<N>) -> Option<(usize, usize)>
+    where
+        N: AstNode<Language = SML>;
+}
+
+pub trait NameInterner {
+    fn fresh(&mut self) -> u32;
+    fn alloc(&mut self, s: &str) -> Idx<String>;
+    fn get(&self, index: Idx<String>) -> &str;
+
+    fn fresh_vid(&mut self) -> VId {
+        VId::Name(Name::Generated(self.fresh()))
+    }
+
+    fn fresh_strid(&mut self) -> StrId {
+        StrId::Name(Name::Generated(self.fresh()))
+    }
+
+    fn fresh_tyvar(&mut self) -> TyVar {
+        TyVar::Name(Name::Generated(self.fresh()))
+    }
+
+    fn fresh_tycon(&mut self) -> TyCon {
+        TyCon::Name(Name::Generated(self.fresh()))
+    }
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
+pub(crate) struct FileArenaImpl<NameInterner> {
+    pub(crate) pats: Arena<Pat>,
+    pub(crate) exprs: Arena<Expr>,
+
+    // Inner decs, as in a "let ... in ... end" expr
+    pub(crate) decs: Arena<Dec>,
+    pub(crate) tys: Arena<Ty>,
+
+    pub(crate) name_interner: NameInterner,
+    pub(crate) ast_map: AstIdMap,
+}
+
+impl<I: NameInterner> NameInterner for FileArenaImpl<I> {
+    fn fresh(&mut self) -> u32 {
+        self.name_interner.fresh()
+    }
+
+    fn alloc(&mut self, s: &str) -> Idx<String> {
+        self.name_interner.alloc(s)
+    }
+
+    fn get(&self, index: Idx<String>) -> &str {
+        self.name_interner.get(index)
+    }
+}
+
+impl<I: NameInterner> FileArena for FileArenaImpl<I> {
+    fn alloc_pat(&mut self, pat: Pat) -> Idx<Pat> {
+        self.pats.alloc(pat)
+    }
+
+    fn get_pat(&self, index: Idx<Pat>) -> &Pat {
+        self.pats.get(index)
+    }
+
+    fn get_pat_mut(&mut self, index: Idx<Pat>) -> &mut Pat {
+        self.pats.get_mut(index)
+    }
+
+    fn alloc_expr(&mut self, expr: Expr) -> Idx<Expr> {
+        self.exprs.alloc(expr)
+    }
+
+    fn get_expr(&self, index: Idx<Expr>) -> &Expr {
+        self.exprs.get(index)
+    }
+
+    fn get_expr_mut(&mut self, index: Idx<Expr>) -> &mut Expr {
+        self.exprs.get_mut(index)
+    }
+
+    fn alloc_dec(&mut self, dec: Dec) -> Idx<Dec> {
+        self.decs.alloc(dec)
+    }
+
+    fn get_dec(&self, index: Idx<Dec>) -> &Dec {
+        self.decs.get(index)
+    }
+
+    fn get_dec_mut(&mut self, index: Idx<Dec>) -> &mut Dec {
+        self.decs.get_mut(index)
+    }
+
+    fn alloc_ty(&mut self, ty: Ty) -> Idx<Ty> {
+        self.tys.alloc(ty)
+    }
+
+    fn get_ty(&self, index: Idx<Ty>) -> &Ty {
+        self.tys.get(index)
+    }
+
+    fn get_ty_mut(&mut self, index: Idx<Ty>) -> &mut Ty {
+        self.tys.get_mut(index)
+    }
+
+    fn alloc_ast_id<N>(&mut self, ast: &N) -> FileAstIdx<N>
+    where
+        N: AstNode<Language = SML>,
+    {
+        self.ast_map.alloc(ast)
+    }
+
+    fn get_ast_id<N>(&self, index: FileAstIdx<N>) -> Option<AstPtr<N>>
+    where
+        N: AstNode<Language = SML>,
+    {
+        self.ast_map.get(index)
+    }
+
+    fn get_ast_span<N>(&self, index: FileAstIdx<N>) -> Option<(usize, usize)>
+    where
+        N: AstNode<Language = SML>,
+    {
+        self.ast_map.get_span(index)
+    }
+}
+
+// See r-a hir_expand
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
+struct AstIdMap {
+    arena: Arena<SyntaxNodePtr>,
+    backmap: HashMap<SyntaxNodePtr, Idx<SyntaxNodePtr>>,
+}
+
+impl AstIdMap {
+    pub fn alloc<N: AstNode<Language = SML>>(&mut self, ast: &N) -> FileAstIdx<N> {
+        let astptr = AstPtr::new(ast);
+        let syntax = astptr.syntax_node_ptr();
+
+        let index = self.arena.alloc(syntax.clone());
+        self.backmap.insert(syntax, index);
+
+        FileAstIdx {
+            index,
+            _ph: PhantomData,
+        }
+    }
+
+    pub fn get<N: AstNode<Language = SML>>(&self, index: FileAstIdx<N>) -> Option<AstPtr<N>> {
+        let ptr = self.arena.get(index.index).clone();
+        SyntaxNodePtr::cast(ptr)
+    }
+
+    /// FIXME: figure out how to properly handle text spans; this is duct tape for now
+    pub fn get_span<N>(&self, index: FileAstIdx<N>) -> Option<(usize, usize)>
+    where
+        N: AstNode<Language = SML>,
+    {
+        self.get(index)
+            .map(|id| id.syntax_node_ptr().text_range())
+            .map(|r| (r.start().into(), r.end().into()))
+    }
+}
 
 /// A pointer from the HIR node back to its corresponding AST node.
 ///
@@ -140,501 +380,4 @@ pub enum NodeParent {
     Dec(FileAstIdx<ast::Dec>),
     Expr(FileAstIdx<ast::Expr>),
     Pat(FileAstIdx<ast::Pat>),
-}
-
-/// Location where an identifier is bound.
-///
-/// The `Pat` variant should only be used inside of match statements.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum DefLoc {
-    Dec(Idx<Dec>),
-    Pat(Idx<Pat>),
-    Builtin,
-    Missing,
-}
-
-/// Represents a desugared top-level declaration and its contents.
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
-pub struct File {
-    arenas: FileArenaImpl<NameInternerImpl>,
-
-    // The actual outermost dec(s)
-    //
-    // `TopDec` maps to each real (syntactic) topdec.
-    // This is similar to `ItemTree` in r-a.
-    // However, when lowing to HIR (`Dec`, etc.), it makes sense to split multiple
-    // semantic declarations into their own `Dec` instances.
-    // For example, "val a = b and c = d" represents a single `TopDec`, but two
-    // `Dec`s.
-    topdecs: Vec<Idx<Dec>>,
-}
-
-impl File {
-    pub fn arenas(&self) -> &impl FileArena {
-        &self.arenas
-    }
-
-    pub fn arenas_mut(&mut self) -> &mut impl FileArena {
-        &mut self.arenas
-    }
-
-    pub fn topdecs(&self) -> &[Idx<Dec>] {
-        &self.topdecs
-    }
-
-    pub fn topdecs_mut(&mut self) -> &mut Vec<Idx<Dec>> {
-        &mut self.topdecs
-    }
-}
-
-/// HIR declaration node.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Dec {
-    pub kind: DecKind,
-    pub ast_id: AstId<ast::Dec>,
-}
-
-impl Dec {
-    pub fn bound_vids(&self, ctx: &LoweringCtxt) -> Vec<LongVId> {
-        self.kind.bound_vids(ctx)
-    }
-
-    pub fn bound_tycons(&self, ctx: &LoweringCtxt) -> Vec<LongTyCon> {
-        self.kind.bound_tycons(ctx)
-    }
-}
-
-/// Kinds of HIR declarations.
-///
-/// These correspond to the basic forms in Chapter 2 of the Definition, after
-/// desugaring the derived forms from Appendix A.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum DecKind {
-    Missing,
-    Seq {
-        decs: Box<[Idx<Dec>]>,
-    },
-    Val {
-        tyvarseq: Box<[TyVar]>,
-        bindings: Box<[ValBind]>,
-    },
-    Ty {
-        bindings: Box<[TypBind]>,
-    },
-    Datatype {
-        databinds: Box<[DataBind]>,
-    },
-    Replication {
-        lhs: TyCon,
-        rhs: (LongTyCon, DefLoc),
-    },
-    Abstype {
-        databinds: Box<[DataBind]>,
-        dec: Idx<Dec>,
-    },
-    Exception {
-        exbind: ExBind,
-    },
-    Local {
-        inner: Idx<Dec>,
-        outer: Idx<Dec>,
-    },
-    Open {
-        longstrids: Box<[LongStrId]>,
-    },
-    Fixity {
-        fixity: Fixity,
-        vids: Box<[(VId, DefLoc)]>,
-    },
-}
-
-impl DecKind {
-    pub fn bound_vids(&self, ctx: &LoweringCtxt) -> Vec<LongVId> {
-        match self {
-            DecKind::Missing
-            | DecKind::Ty { .. }
-            | DecKind::Replication { .. }
-                // Fixity is a weird one, need to figure out how to treat it
-            | DecKind::Fixity { .. } => vec![],
-            DecKind::Seq { decs } => {
-                let mut names = vec![];
-
-                for d in decs.iter() {
-                    let d = ctx.arenas().get_dec(*d).bound_vids(ctx);
-                    names.extend(d);
-                }
-
-                names
-            }
-            DecKind::Val { bindings, .. } => bindings
-                .iter()
-                .flat_map(|b| b.bound_vids(ctx).into_iter())
-                .collect(),
-            DecKind::Datatype { databinds } => databinds.iter().flat_map(|d| d.bound_vids().into_iter()).collect(),
-            DecKind::Abstype { databinds, dec } => {
-                let mut names = databinds
-                    .iter()
-                    .flat_map(|d| d.bound_vids().into_iter())
-                    .collect::<Vec<_>>();
-                names.extend(ctx.arenas().get_dec(*dec).bound_vids(ctx));
-                names
-            }
-            DecKind::Exception { exbind } => vec![exbind.bound_vid()],
-            DecKind::Local { outer, .. } => ctx.arenas().get_dec(*outer).bound_vids(ctx),
-            DecKind::Open { .. } => todo!(),
-        }
-    }
-
-    pub fn bound_tycons(&self, ctx: &LoweringCtxt) -> Vec<LongTyCon> {
-        match self {
-            DecKind::Missing
-            | DecKind::Val {  .. }
-            | DecKind::Exception { .. }
-                // Fixity is a weird one, need to figure out how to treat it
-            | DecKind::Fixity { .. } => vec![],
-            DecKind::Seq { decs } => {
-                let mut tycons = vec![];
-
-                for d in decs.iter() {
-                    let d = ctx.arenas().get_dec(*d).bound_tycons(ctx);
-                    tycons.extend(d);
-                }
-
-                tycons
-            },
-            DecKind::Ty { bindings } => bindings.iter().map(TypBind::bound_tycon).collect(),
-            DecKind::Datatype { databinds } => databinds.iter().map(DataBind::bound_tycon).collect(),
-            DecKind::Replication { lhs, .. } => vec![LongTyCon::from(*lhs)],
-            DecKind::Abstype { databinds, dec } => {
-                let mut tycons = databinds
-                    .iter()
-                    .map(DataBind::bound_tycon)
-                    .collect::<Vec<_>>();
-                tycons.extend(ctx.arenas().get_dec(*dec).bound_tycons(ctx));
-                tycons
-            }
-            DecKind::Local { outer, .. } => ctx.arenas().get_dec(*outer).bound_tycons(ctx),
-            DecKind::Open { .. } => todo!(),
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ValBind {
-    pub rec: bool,
-    pub pat: Idx<Pat>,
-    pub expr: Idx<Expr>,
-}
-
-impl ValBind {
-    pub fn bound_vids(&self, ctx: &LoweringCtxt) -> Vec<LongVId> {
-        ctx.arenas().get_pat(self.pat).bound_vids(ctx)
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TypBind {
-    pub tyvarseq: Box<[TyVar]>,
-    pub tycon: TyCon,
-    pub ty: Idx<Ty>,
-}
-
-impl TypBind {
-    pub fn bound_tycon(&self) -> LongTyCon {
-        LongTyCon::from(self.tycon)
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct DataBind {
-    pub tyvarseq: Box<[TyVar]>,
-    pub tycon: TyCon,
-    pub conbinds: Box<[ConBind]>,
-}
-
-impl DataBind {
-    pub fn bound_vids(&self) -> Vec<LongVId> {
-        self.conbinds
-            .iter()
-            .map(|b| LongVId::from_vid(b.vid))
-            .collect()
-    }
-
-    pub fn bound_tycon(&self) -> LongTyCon {
-        LongTyCon::from(self.tycon)
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ConBind {
-    op: bool,
-    vid: VId,
-    ty: Option<Idx<Ty>>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ExBind {
-    Name {
-        op: bool,
-        vid: VId,
-        ty: Option<(Idx<Ty>, DefLoc)>,
-    },
-    Assignment {
-        op_lhs: bool,
-        lhs: VId,
-        op_rhs: bool,
-        rhs: (LongVId, DefLoc),
-    },
-}
-
-impl ExBind {
-    pub fn bound_vid(&self) -> LongVId {
-        match self {
-            Self::Name { vid, .. } => LongVId::from_vid(*vid),
-            Self::Assignment { lhs, .. } => LongVId::from_vid(*lhs),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Fixity {
-    Left(Option<u8>),
-    Right(Option<u8>),
-    Nonfix,
-}
-
-/// HIR expression node.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Expr {
-    pub kind: ExprKind,
-    pub ast_id: AstId<ast::Expr>,
-}
-
-/// Kinds of HIR expressions.
-///
-/// These correspond to the basic forms in Chapter 2 of the Definition, after
-/// desugaring the derived forms from Appendix A.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ExprKind {
-    Missing,
-    Scon(Scon),
-    Seq {
-        exprs: Box<[Idx<Expr>]>,
-    },
-    VId {
-        op: bool,
-        longvid: (LongVId, DefLoc),
-    },
-    Record {
-        rows: Box<[ExpRow]>,
-    },
-    Let {
-        dec: Idx<Dec>,
-        expr: Idx<Expr>,
-    },
-    InfixOrApp {
-        exprs: Box<[Idx<Expr>]>,
-    },
-    Application {
-        expr: Idx<Expr>,
-        param: Idx<Expr>,
-    },
-    Infix {
-        lhs: Idx<Expr>,
-        vid: (VId, DefLoc),
-        rhs: Idx<Expr>,
-    },
-    Typed {
-        expr: Idx<Expr>,
-        ty: Idx<Ty>,
-    },
-    Handle {
-        expr: Idx<Expr>,
-        match_: Box<[MRule]>,
-    },
-    Raise {
-        expr: Idx<Expr>,
-    },
-    Fn {
-        match_: Box<[MRule]>,
-    },
-}
-
-/// HIR constant (literal).
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Scon {
-    Missing,
-    Int(i128),
-    Word(u128),
-    Real(FloatWrapper),
-    String(String),
-    Char(char),
-}
-
-/// Wrapper so we can derive `Eq`.
-///
-/// See `FloatTypeWrapper` in r-a/hir-def/src/expr.rs
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct FloatWrapper(u64);
-
-impl FloatWrapper {
-    pub fn new(value: f64) -> Self {
-        Self(value.to_bits())
-    }
-}
-
-impl std::fmt::Display for FloatWrapper {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", f64::from_bits(self.0))
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ExpRow {
-    pub label: Label,
-    pub expr: Idx<Expr>,
-}
-
-/// HIR pattern node.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Pat {
-    pub kind: PatKind,
-    pub ast_id: AstId<ast::Pat>,
-}
-
-impl Pat {
-    /// Names bound by this pattern
-    pub fn bound_vids(&self, ctx: &LoweringCtxt) -> Vec<LongVId> {
-        self.kind.bound_vids(ctx)
-    }
-}
-
-/// Kinds of HIR expressions.
-///
-/// These correspond to the basic forms in Chapter 2 of the Definition, after
-/// desugaring the derived forms from Appendix A.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum PatKind {
-    Missing,
-    Wildcard,
-    Scon(Scon),
-    VId {
-        op: bool,
-        // Note that `longvid` can bind a new variable, or it could refer to a variant of a
-        // datatype! If it's the latter, then we need to know where the variant was defined.
-        longvid: (LongVId, Option<DefLoc>),
-    },
-    Record {
-        rows: Box<[PatRow]>,
-    },
-    Constructed {
-        op: bool,
-        longvid: (LongVId, DefLoc),
-        pat: Idx<Pat>,
-    },
-    Infix {
-        lhs: Idx<Pat>,
-        vid: (VId, DefLoc),
-        rhs: Idx<Pat>,
-    },
-    Typed {
-        pat: Idx<Pat>,
-        ty: Idx<Ty>,
-    },
-    Layered {
-        op: bool,
-        vid: VId,
-        ty: Option<Idx<Ty>>,
-        pat: Idx<Pat>,
-    },
-}
-
-impl PatKind {
-    /// Names bound by this pattern
-    pub fn bound_vids(&self, ctx: &LoweringCtxt) -> Vec<LongVId> {
-        match &self {
-            PatKind::Missing | PatKind::Wildcard | PatKind::Scon(_) => vec![],
-            PatKind::VId {
-                longvid: (name, def),
-                ..
-            } => match def {
-                None => vec![name.clone()],
-                Some(_) => vec![],
-            },
-            PatKind::Record { rows } => {
-                let mut names = vec![];
-
-                for r in rows.iter() {
-                    if let PatRow::Pattern { pat, .. } = r {
-                        names.extend(ctx.arenas().get_pat(*pat).bound_vids(ctx));
-                    }
-                }
-                names
-            }
-            PatKind::Constructed { pat, .. } => ctx.arenas().get_pat(*pat).bound_vids(ctx),
-            PatKind::Infix { lhs, rhs, .. } => {
-                let arena = ctx.arenas();
-                let mut lhs = arena.get_pat(*lhs).bound_vids(ctx);
-                let rhs = arena.get_pat(*rhs).bound_vids(ctx);
-                lhs.extend(rhs);
-                lhs
-            }
-            PatKind::Typed { pat, .. } => ctx.arenas().get_pat(*pat).bound_vids(ctx),
-            PatKind::Layered { vid, pat, .. } => {
-                let mut names = vec![LongVId::from_vid(*vid)];
-                let pat_names = ctx.arenas().get_pat(*pat).bound_vids(ctx);
-                names.extend(pat_names);
-                names
-            }
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum PatRow {
-    Wildcard,
-    Pattern { label: Label, pat: Idx<Pat> },
-}
-
-pub type LabelIdx = Idx<Label>;
-
-/// HIR type node.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Ty {
-    pub kind: TyKind,
-    // None only if TyKind::Missing
-    pub ast_id: AstId<ast::Ty>,
-}
-
-/// Kinds of HIR types.
-///
-/// These correspond to the basic forms in Chapter 2 of the Definition, after
-/// desugaring the derived forms from Appendix A.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum TyKind {
-    Missing,
-    Var(TyVar),
-    Record {
-        tyrows: Box<[TyRow]>,
-    },
-    Constructed {
-        tyseq: Box<[Idx<Ty>]>,
-        longtycon: (LongTyCon, DefLoc),
-    },
-    Function {
-        domain: Idx<Ty>,
-        range: Idx<Ty>,
-    },
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct TyRow {
-    label: Label,
-    ty: Idx<Ty>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct MRule {
-    pub pat: Idx<Pat>,
-    pub expr: Idx<Expr>,
 }

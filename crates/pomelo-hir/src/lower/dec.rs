@@ -152,7 +152,7 @@ impl Dec {
 }
 
 impl ValBind {
-    pub fn lower(ctx: &mut LoweringCtxt, b: &ast::ValBind, dec_index: Idx<Dec>) -> Self {
+    fn lower(ctx: &mut LoweringCtxt, b: &ast::ValBind, dec_index: Idx<Dec>) -> Self {
         let rec = b.rec();
         let pat = Pat::lower_opt(ctx, b.pat());
 
@@ -167,7 +167,7 @@ impl ValBind {
 }
 
 impl DataBind {
-    pub fn lower(ctx: &mut LoweringCtxt, b: &ast::DataBind) -> Self {
+    fn lower(ctx: &mut LoweringCtxt, b: &ast::DataBind) -> Self {
         let tyvarseq = util::lower_tyvarseq(ctx, b.tyvarseq());
         let tycon = TyCon::from_token(ctx, b.tycon());
         let conbinds = b.conbinds().map(|c| ConBind::lower(ctx, &c)).collect();
@@ -177,18 +177,10 @@ impl DataBind {
             conbinds,
         }
     }
-
-    pub fn missing() -> Self {
-        Self {
-            tyvarseq: Box::default(),
-            tycon: TyCon::Missing,
-            conbinds: Box::default(),
-        }
-    }
 }
 
 impl ConBind {
-    pub fn lower(ctx: &mut LoweringCtxt, b: &ast::ConBind) -> Self {
+    fn lower(ctx: &mut LoweringCtxt, b: &ast::ConBind) -> Self {
         let op = b.op();
         let vid = VId::from_token(ctx, b.vid());
         let ty = b.ty().map(|t| Ty::lower(ctx, t));
@@ -197,7 +189,7 @@ impl ConBind {
 }
 
 impl TypBind {
-    pub fn lower(ctx: &mut LoweringCtxt, b: &ast::TyBind) -> Self {
+    fn lower(ctx: &mut LoweringCtxt, b: &ast::TyBind) -> Self {
         let tyvarseq = util::lower_tyvarseq(ctx, b.tyvarseq());
         let tycon = TyCon::from_token(ctx, b.tycon());
         let ty = Ty::lower_opt(ctx, b.ty());

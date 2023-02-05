@@ -1,11 +1,10 @@
 use pomelo_parse::ast;
 
 use crate::arena::Idx;
-use crate::body::FileArena;
-use crate::identifiers::BuiltIn;
 use crate::lower::{util, HirLower, HirLowerGenerated, LoweringCtxt};
 use crate::{
-    AstId, DecKind, DefLoc, Label, LongVId, NodeParent, Pat, PatKind, PatRow, Scon, Ty, VId,
+    AstId, BuiltIn, DecKind, DefLoc, FileArena, Label, LongVId, NodeParent, Pat, PatKind, PatRow,
+    Scon, Ty, VId,
 };
 
 impl HirLower for Pat {
@@ -22,7 +21,7 @@ impl HirLower for Pat {
         };
         let ast_id = AstId::Node(ctx.alloc_ast_id(&ast));
         let p = Self { kind, ast_id };
-        ctx.push_pat(p)
+        ctx.add_pat(p)
     }
 
     fn missing(ctx: &mut LoweringCtxt) -> Idx<Self> {
@@ -30,7 +29,7 @@ impl HirLower for Pat {
             kind: PatKind::Missing,
             ast_id: AstId::Missing,
         };
-        ctx.push_pat(p)
+        ctx.add_pat(p)
     }
 }
 
@@ -42,7 +41,7 @@ impl HirLowerGenerated for Pat {
             kind,
             ast_id: AstId::Generated(origin),
         };
-        ctx.push_pat(p)
+        ctx.add_pat(p)
     }
 }
 

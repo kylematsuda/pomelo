@@ -1,9 +1,10 @@
 use pomelo_parse::ast;
 
 use crate::arena::Idx;
-use crate::identifiers::{BuiltIn, LongVId, TyVar, VId};
 use crate::lower::{HirLower, HirLowerGenerated, LoweringCtxt};
-use crate::{DefLoc, Expr, FloatWrapper, MRule, NodeParent, Pat, Scon};
+use crate::{
+    BuiltIn, DefLoc, Expr, FloatWrapper, LongVId, MRule, NodeParent, Pat, Scon, TyVar, VId,
+};
 
 // Used to lower lists [a1, a2, ... ] to a1 :: a2 :: ... :: nil
 // Common code for both [`Expr`] and [`Pat`].
@@ -76,27 +77,14 @@ pub(super) fn lower_vids(
 }
 
 impl NodeParent {
-    pub fn from_expr(ctx: &mut LoweringCtxt, expr: &ast::Expr) -> Self {
+    pub(super) fn from_expr(ctx: &mut LoweringCtxt, expr: &ast::Expr) -> Self {
         let id = ctx.alloc_ast_id(expr);
         Self::Expr(id)
     }
 
-    pub fn from_pat(ctx: &mut LoweringCtxt, pat: &ast::Pat) -> Self {
+    pub(super) fn from_pat(ctx: &mut LoweringCtxt, pat: &ast::Pat) -> Self {
         let id = ctx.alloc_ast_id(pat);
         Self::Pat(id)
-    }
-
-    pub fn from_dec(ctx: &mut LoweringCtxt, dec: &ast::Dec) -> Self {
-        let id = ctx.alloc_ast_id(dec);
-        Self::Dec(id)
-    }
-
-    pub fn as_span(&self, ctx: &LoweringCtxt) -> Option<(usize, usize)> {
-        match self {
-            Self::Dec(d) => ctx.get_ast_span(*d),
-            Self::Expr(e) => ctx.get_ast_span(*e),
-            Self::Pat(p) => ctx.get_ast_span(*p),
-        }
     }
 }
 

@@ -3,33 +3,11 @@
 //! TODO: this is not very DRY, especially repetition between `VId`, `StrId`, `TyCon` and their
 //! `Long-` forms.
 use crate::arena::{Arena, Idx};
-
+use crate::NameInterner;
 use std::collections::HashMap;
 
-pub trait NameInterner {
-    fn fresh(&mut self) -> u32;
-    fn alloc(&mut self, s: &str) -> Idx<String>;
-    fn get(&self, index: Idx<String>) -> &str;
-
-    fn fresh_vid(&mut self) -> VId {
-        VId::Name(Name::Generated(self.fresh()))
-    }
-
-    fn fresh_strid(&mut self) -> StrId {
-        StrId::Name(Name::Generated(self.fresh()))
-    }
-
-    fn fresh_tyvar(&mut self) -> TyVar {
-        TyVar::Name(Name::Generated(self.fresh()))
-    }
-
-    fn fresh_tycon(&mut self) -> TyCon {
-        TyCon::Name(Name::Generated(self.fresh()))
-    }
-}
-
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
-pub struct NameInternerImpl {
+pub(crate) struct NameInternerImpl {
     names: Arena<String>,
     mapping: HashMap<String, Idx<String>>,
     generated: u32,
@@ -311,114 +289,5 @@ impl Label {
 
     pub fn missing() -> Self {
         Self::Missing
-    }
-}
-
-/// Utility trait for swapping from one interner to another.
-pub trait SwitchInterner: Sized {
-    fn switch_interner<O, N>(&self, old_interner: &O, new_interner: &mut N) -> Option<Self>
-    where
-        O: NameInterner,
-        N: NameInterner;
-}
-
-impl SwitchInterner for Name {
-    fn switch_interner<O, N>(&self, old_interner: &O, new_interner: &mut N) -> Option<Self>
-    where
-        O: NameInterner,
-        N: NameInterner,
-    {
-        if let Name::String(idx) = self {
-            let s = old_interner.get(*idx);
-            let new_idx = new_interner.alloc(s);
-            Some(Name::String(new_idx))
-        } else {
-            Some(*self)
-        }
-    }
-}
-
-impl SwitchInterner for VId {
-    fn switch_interner<O, N>(&self, old_interner: &O, new_interner: &mut N) -> Option<Self>
-    where
-        O: NameInterner,
-        N: NameInterner,
-    {
-        match self {
-            VId::Missing => None,
-            VId::Name(n) => n.switch_interner(old_interner, new_interner).map(VId::Name),
-        }
-    }
-}
-
-impl SwitchInterner for StrId {
-    fn switch_interner<O, N>(&self, old_interner: &O, new_interner: &mut N) -> Option<Self>
-    where
-        O: NameInterner,
-        N: NameInterner,
-    {
-        match self {
-            StrId::Missing => None,
-            StrId::Name(n) => n
-                .switch_interner(old_interner, new_interner)
-                .map(StrId::Name),
-        }
-    }
-}
-
-impl SwitchInterner for TyCon {
-    fn switch_interner<O, N>(&self, old_interner: &O, new_interner: &mut N) -> Option<Self>
-    where
-        O: NameInterner,
-        N: NameInterner,
-    {
-        match self {
-            TyCon::Missing => None,
-            TyCon::Name(n) => n
-                .switch_interner(old_interner, new_interner)
-                .map(TyCon::Name),
-        }
-    }
-}
-
-impl SwitchInterner for LongVId {
-    fn switch_interner<O, N>(&self, old_interner: &O, new_interner: &mut N) -> Option<Self>
-    where
-        O: NameInterner,
-        N: NameInterner,
-    {
-        let vid = self.vid.switch_interner(old_interner, new_interner)?;
-
-        let mut strids = vec![];
-        for strid in self.strids.iter() {
-            let strid = strid.switch_interner(old_interner, new_interner)?;
-            strids.push(strid);
-        }
-
-        Some(LongVId {
-            strids: strids.into_boxed_slice(),
-            vid,
-        })
-    }
-}
-
-impl SwitchInterner for LongTyCon {
-    fn switch_interner<O, N>(&self, old_interner: &O, new_interner: &mut N) -> Option<Self>
-    where
-        O: NameInterner,
-        N: NameInterner,
-    {
-        let tycon = self.tycon.switch_interner(old_interner, new_interner)?;
-
-        let mut strids = vec![];
-        for strid in self.strids.iter() {
-            let strid = strid.switch_interner(old_interner, new_interner)?;
-            strids.push(strid);
-        }
-
-        Some(LongTyCon {
-            strids: strids.into_boxed_slice(),
-            tycon,
-        })
     }
 }
