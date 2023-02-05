@@ -37,20 +37,56 @@ impl NameInterner for NameInternerImpl {
 
 /// Intern built-in identifiers
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum BuiltIn {
+pub enum Builtin {
+    // Values
     True,
     False,
-    Cons,
     Nil,
+    // Operators
+    Star,
+    Slash,
+    Div,
+    Mod,
+    Plus,
+    Minus,
+    Carat,
+    Cons,
+    At,
+    Eq,
+    Ineq,
+    Gtr,
+    GtrEq,
+    Less,
+    LessEq,
+    RefAssign,
+    O,
+    Before,
 }
 
-impl BuiltIn {
+impl Builtin {
     pub fn as_str(&self) -> &'static str {
         match self {
             Self::True => "true",
             Self::False => "false",
-            Self::Cons => "::",
             Self::Nil => "nil",
+            Self::Star => "*",
+            Self::Slash => "/",
+            Self::Div => "div",
+            Self::Mod => "mod",
+            Self::Plus => "+",
+            Self::Minus => "-",
+            Self::Carat => "^",
+            Self::Cons => "::",
+            Self::At => "@",
+            Self::Eq => "=",
+            Self::Ineq => "<>",
+            Self::Gtr => ">",
+            Self::GtrEq => ">=",
+            Self::Less => "<",
+            Self::LessEq => "<=",
+            Self::RefAssign => ":=",
+            Self::O => "o",
+            Self::Before => "before",
         }
     }
 
@@ -58,8 +94,25 @@ impl BuiltIn {
         match s {
             "true" => Some(Self::True),
             "false" => Some(Self::False),
-            "::" => Some(Self::Cons),
             "nil" => Some(Self::Nil),
+            "*" => Some(Self::Star),
+            "/" => Some(Self::Slash),
+            "div" => Some(Self::Div),
+            "mod" => Some(Self::Mod),
+            "+" => Some(Self::Plus),
+            "-" => Some(Self::Minus),
+            "^" => Some(Self::Carat),
+            "::" => Some(Self::Cons),
+            "@" => Some(Self::At),
+            "=" => Some(Self::Eq),
+            "<>" => Some(Self::Ineq),
+            ">" => Some(Self::Gtr),
+            ">=" => Some(Self::GtrEq),
+            "<" => Some(Self::Less),
+            "<=" => Some(Self::LessEq),
+            ":=" => Some(Self::RefAssign),
+            "o" => Some(Self::O),
+            "before" => Some(Self::Before),
             _ => None,
         }
     }
@@ -67,7 +120,7 @@ impl BuiltIn {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Name {
-    BuiltIn(BuiltIn),
+    BuiltIn(Builtin),
     String(Idx<String>),
     Generated(u32),
 }
@@ -77,12 +130,12 @@ impl Name {
         Self::String(interner.alloc(s))
     }
 
-    pub fn from_builtin(b: BuiltIn) -> Self {
+    pub fn from_builtin(b: Builtin) -> Self {
         Self::BuiltIn(b)
     }
 
     pub fn try_builtin<I: NameInterner>(s: &str, interner: &mut I) -> Self {
-        match BuiltIn::from_string(s) {
+        match Builtin::from_string(s) {
             Some(b) => Self::BuiltIn(b),
             None => Self::from_string(s, interner),
         }
@@ -126,7 +179,7 @@ impl VId {
         Self::Name(Name::from_string(name, interner))
     }
 
-    pub fn from_builtin(name: BuiltIn) -> Self {
+    pub fn from_builtin(name: Builtin) -> Self {
         Self::Name(Name::from_builtin(name))
     }
 
@@ -142,7 +195,7 @@ impl VId {
     }
 
     pub(crate) fn try_builtin<I: NameInterner>(name: &str, interner: &mut I) -> Self {
-        match BuiltIn::from_string(name) {
+        match Builtin::from_string(name) {
             Some(b) => Self::from_builtin(b),
             None => Self::from_string(name, interner),
         }
@@ -170,7 +223,7 @@ impl StrId {
         Self::Name(Name::from_string(name, interner))
     }
 
-    pub fn from_builtin(name: BuiltIn) -> Self {
+    pub fn from_builtin(name: Builtin) -> Self {
         Self::Name(Name::from_builtin(name))
     }
 
@@ -186,7 +239,7 @@ impl StrId {
     }
 
     pub(crate) fn try_builtin<I: NameInterner>(name: &str, interner: &mut I) -> Self {
-        match BuiltIn::from_string(name) {
+        match Builtin::from_string(name) {
             Some(b) => Self::from_builtin(b),
             None => Self::from_string(name, interner),
         }
@@ -248,7 +301,7 @@ impl TyCon {
         Self::Name(Name::from_string(name, interner))
     }
 
-    pub fn from_builtin(name: BuiltIn) -> Self {
+    pub fn from_builtin(name: Builtin) -> Self {
         Self::Name(Name::from_builtin(name))
     }
 
@@ -264,7 +317,7 @@ impl TyCon {
     }
 
     pub(crate) fn try_builtin<I: NameInterner>(name: &str, interner: &mut I) -> Self {
-        match BuiltIn::from_string(name) {
+        match Builtin::from_string(name) {
             Some(b) => Self::from_builtin(b),
             None => Self::from_string(name, interner),
         }

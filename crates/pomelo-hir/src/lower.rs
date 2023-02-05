@@ -6,6 +6,8 @@ pub mod expr;
 pub mod pat;
 pub mod token;
 pub mod ty;
+
+mod infix;
 mod util;
 
 #[cfg(test)]

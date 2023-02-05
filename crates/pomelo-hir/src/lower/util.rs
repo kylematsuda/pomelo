@@ -3,7 +3,7 @@ use pomelo_parse::ast;
 use crate::arena::Idx;
 use crate::lower::{HirLower, HirLowerGenerated, LoweringCtxt};
 use crate::{
-    BuiltIn, DefLoc, Expr, FloatWrapper, LongVId, MRule, NodeParent, Pat, Scon, TyVar, VId,
+    Builtin, DefLoc, Expr, FloatWrapper, LongVId, MRule, NodeParent, Pat, Scon, TyVar, VId,
 };
 
 // Used to lower lists [a1, a2, ... ] to a1 :: a2 :: ... :: nil
@@ -28,14 +28,14 @@ pub(super) fn lower_list<H: HirLowerGenerated>(
     rev_indexed.reverse();
 
     let nil = (
-        LongVId::from_vid(VId::from_builtin(BuiltIn::Nil)),
+        LongVId::from_vid(VId::from_builtin(Builtin::Nil)),
         DefLoc::Builtin,
     );
 
     if rev_indexed.is_empty() {
         vid_kind(nil)
     } else {
-        let cons = VId::from_builtin(BuiltIn::Cons);
+        let cons = VId::from_builtin(Builtin::Cons);
 
         // The list ends with a nil pat
         let nil_expr = H::generated(ctx, origin, vid_kind(nil.clone()));

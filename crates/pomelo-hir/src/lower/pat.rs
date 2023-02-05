@@ -3,7 +3,7 @@ use pomelo_parse::ast;
 use crate::arena::Idx;
 use crate::lower::{util, HirLower, HirLowerGenerated, LoweringCtxt};
 use crate::{
-    AstId, BuiltIn, DecKind, DefLoc, FileArena, Label, LongVId, NodeParent, Pat, PatKind, PatRow,
+    AstId, Builtin, DecKind, DefLoc, FileArena, Label, LongVId, NodeParent, Pat, PatKind, PatRow,
     Scon, Ty, VId,
 };
 
@@ -46,7 +46,7 @@ impl HirLowerGenerated for Pat {
 }
 
 impl Pat {
-    pub fn vid_builtin(b: BuiltIn) -> PatKind {
+    pub fn vid_builtin(b: Builtin) -> PatKind {
         PatKind::VId {
             op: false,
             longvid: (

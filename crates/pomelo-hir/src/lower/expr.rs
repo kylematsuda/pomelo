@@ -3,7 +3,7 @@ use pomelo_parse::ast;
 use crate::arena::Idx;
 use crate::lower::{util, HirLower, HirLowerGenerated, LoweringCtxt};
 use crate::{
-    AstId, BuiltIn, Dec, DecKind, DefLoc, ExpRow, Expr, ExprKind, Label, LongVId, MRule,
+    AstId, Builtin, Dec, DecKind, DefLoc, ExpRow, Expr, ExprKind, Label, LongVId, MRule,
     NameInterner, NodeParent, Pat, PatKind, PatRow, Scon, Ty, VId, ValBind,
 };
 
@@ -56,7 +56,7 @@ impl Expr {
         }
     }
 
-    fn builtin_vid(b: BuiltIn) -> ExprKind {
+    fn builtin_vid(b: Builtin) -> ExprKind {
         ExprKind::VId {
             op: false,
             longvid: (LongVId::from_vid(VId::from_builtin(b)), DefLoc::Builtin),
@@ -232,7 +232,7 @@ impl Expr {
         let origin = ast::Expr::from(e.clone());
         let parent = NodeParent::from_expr(ctx, &origin);
 
-        let false_expr = Self::generated(ctx, parent, Self::builtin_vid(BuiltIn::False));
+        let false_expr = Self::generated(ctx, parent, Self::builtin_vid(Builtin::False));
 
         let expr_1 = Self::lower_opt(ctx, e.expr_1());
         let expr_2 = Self::lower_opt(ctx, e.expr_2());
@@ -244,7 +244,7 @@ impl Expr {
         let origin = ast::Expr::from(e.clone());
         let parent = NodeParent::from_expr(ctx, &origin);
 
-        let true_expr = Self::generated(ctx, parent, Self::builtin_vid(BuiltIn::True));
+        let true_expr = Self::generated(ctx, parent, Self::builtin_vid(Builtin::True));
 
         let expr_1 = Self::lower_opt(ctx, e.expr_1());
         let expr_2 = Self::lower_opt(ctx, e.expr_2());
@@ -380,8 +380,8 @@ impl Expr {
         then_branch: Idx<Expr>,
         else_branch: Idx<Expr>,
     ) -> ExprKind {
-        let true_pat = Pat::generated(ctx, parent, Pat::vid_builtin(BuiltIn::True));
-        let false_pat = Pat::generated(ctx, parent, Pat::vid_builtin(BuiltIn::False));
+        let true_pat = Pat::generated(ctx, parent, Pat::vid_builtin(Builtin::True));
+        let false_pat = Pat::generated(ctx, parent, Pat::vid_builtin(Builtin::False));
 
         let match_arms = [(true_pat, then_branch), (false_pat, else_branch)]
             .into_iter()

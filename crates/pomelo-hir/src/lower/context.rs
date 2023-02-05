@@ -133,7 +133,7 @@ impl LoweringCtxt {
                 .map(|v| LongVId::from_vid(v.0))
                 .collect::<Vec<_>>();
             for v in longvids {
-                // TODO: surface an error
+                // TODO: this is actually allowed! But we should probably surface a warning.
                 assert!(!v.is_builtin());
                 self.resolver_mut().set_fixity(v, fixity);
             }
