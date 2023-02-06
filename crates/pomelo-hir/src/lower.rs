@@ -20,7 +20,7 @@ use crate::arena::Idx;
 use crate::NodeParent;
 
 trait HirLower: Sized {
-    type AstType: AstNode;
+    type AstType: AstNode + Clone;
 
     fn missing(ctx: &mut LoweringCtxt) -> Idx<Self>;
     fn lower(ctx: &mut LoweringCtxt, ast: Self::AstType) -> Idx<Self>;

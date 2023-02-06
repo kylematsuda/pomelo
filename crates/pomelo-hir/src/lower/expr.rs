@@ -44,17 +44,17 @@ impl HirLowerGenerated for Expr {
 impl Expr {
     fn to_kind(ctx: &mut LoweringCtxt, e: &ast::Expr) -> ExprKind {
         match &e {
-            ast::Expr::Atomic(e) => Self::lower_atomic(ctx, &e),
+            ast::Expr::Atomic(e) => Self::lower_atomic(ctx, e),
             ast::Expr::InfixOrApp(_) => unreachable!("infix_or_app handled in Expr::lower"),
-            ast::Expr::Typed(e) => Self::lower_typed(ctx, &e),
-            ast::Expr::AndAlso(e) => Self::lower_andalso(ctx, &e),
-            ast::Expr::OrElse(e) => Self::lower_orelse(ctx, &e),
-            ast::Expr::Handle(e) => Self::lower_handle(ctx, &e),
-            ast::Expr::Raise(e) => Self::lower_raise(ctx, &e),
-            ast::Expr::If(e) => Self::lower_if(ctx, &e),
-            ast::Expr::While(e) => Self::lower_while(ctx, &e),
-            ast::Expr::Case(e) => Self::lower_case(ctx, &e),
-            ast::Expr::Fn(e) => Self::lower_fn(ctx, &e),
+            ast::Expr::Typed(e) => Self::lower_typed(ctx, e),
+            ast::Expr::AndAlso(e) => Self::lower_andalso(ctx, e),
+            ast::Expr::OrElse(e) => Self::lower_orelse(ctx, e),
+            ast::Expr::Handle(e) => Self::lower_handle(ctx, e),
+            ast::Expr::Raise(e) => Self::lower_raise(ctx, e),
+            ast::Expr::If(e) => Self::lower_if(ctx, e),
+            ast::Expr::While(e) => Self::lower_while(ctx, e),
+            ast::Expr::Case(e) => Self::lower_case(ctx, e),
+            ast::Expr::Fn(e) => Self::lower_fn(ctx, e),
         }
     }
 
@@ -67,16 +67,16 @@ impl Expr {
 
     fn lower_atomic(ctx: &mut LoweringCtxt, e: &ast::AtomicExpr) -> ExprKind {
         match e {
-            ast::AtomicExpr::SCon(e) => Self::lower_scon(ctx, &e),
-            ast::AtomicExpr::VId(e) => Self::lower_vid(ctx, &e),
-            ast::AtomicExpr::Let(e) => Self::lower_let(ctx, &e),
-            ast::AtomicExpr::Seq(e) => Self::lower_seq(ctx, &e),
-            ast::AtomicExpr::Record(e) => Self::lower_record(ctx, &e),
-            ast::AtomicExpr::Tuple(e) => Self::lower_tuple(ctx, &e),
-            ast::AtomicExpr::Unit(e) => Self::lower_unit(ctx, &e),
-            ast::AtomicExpr::List(e) => Self::lower_list(ctx, &e),
-            ast::AtomicExpr::RecSel(e) => Self::lower_recsel(ctx, &e),
-            ast::AtomicExpr::Paren(e) => Self::lower_paren(ctx, &e),
+            ast::AtomicExpr::SCon(e) => Self::lower_scon(ctx, e),
+            ast::AtomicExpr::VId(e) => Self::lower_vid(ctx, e),
+            ast::AtomicExpr::Let(e) => Self::lower_let(ctx, e),
+            ast::AtomicExpr::Seq(e) => Self::lower_seq(ctx, e),
+            ast::AtomicExpr::Record(e) => Self::lower_record(ctx, e),
+            ast::AtomicExpr::Tuple(e) => Self::lower_tuple(ctx, e),
+            ast::AtomicExpr::Unit(e) => Self::lower_unit(ctx, e),
+            ast::AtomicExpr::List(e) => Self::lower_list(ctx, e),
+            ast::AtomicExpr::RecSel(e) => Self::lower_recsel(ctx, e),
+            ast::AtomicExpr::Paren(e) => Self::lower_paren(ctx, e),
         }
     }
 

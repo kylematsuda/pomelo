@@ -9,11 +9,11 @@ impl HirLower for Ty {
 
     fn lower(ctx: &mut LoweringCtxt, ast: Self::AstType) -> Idx<Self> {
         let kind = match &ast {
-            ast::Ty::Fun(t) => Self::lower_fun(ctx, &t),
-            ast::Ty::Cons(t) => Self::lower_cons(ctx, &t),
-            ast::Ty::Tuple(t) => Self::lower_tuple(ctx, &t),
-            ast::Ty::TyVar(t) => Self::lower_tyvar(ctx, &t),
-            ast::Ty::Record(t) => Self::lower_record(ctx, &t),
+            ast::Ty::Fun(t) => Self::lower_fun(ctx, t),
+            ast::Ty::Cons(t) => Self::lower_cons(ctx, t),
+            ast::Ty::Tuple(t) => Self::lower_tuple(ctx, t),
+            ast::Ty::TyVar(t) => Self::lower_tyvar(ctx, t),
+            ast::Ty::Record(t) => Self::lower_record(ctx, t),
         };
         let t = Self {
             kind,

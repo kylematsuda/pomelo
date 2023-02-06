@@ -12,10 +12,10 @@ impl HirLower for Pat {
 
     fn lower(ctx: &mut LoweringCtxt, ast: Self::AstType) -> Idx<Self> {
         let kind = match &ast {
-            ast::Pat::Atomic(p) => Self::lower_atomic(ctx, &p),
-            ast::Pat::Typed(p) => Self::lower_typed(ctx, &p),
+            ast::Pat::Atomic(p) => Self::lower_atomic(ctx, p),
+            ast::Pat::Typed(p) => Self::lower_typed(ctx, p),
             ast::Pat::ConsOrInfix(p) => return infix::fix_infix(ctx, p),
-            ast::Pat::Layered(p) => Self::lower_layered(ctx, &p),
+            ast::Pat::Layered(p) => Self::lower_layered(ctx, p),
         };
         let ast_id = AstId::Node(ctx.alloc_ast_id(&ast));
         let p = Self { kind, ast_id };
@@ -57,11 +57,11 @@ impl Pat {
     fn lower_atomic(ctx: &mut LoweringCtxt, p: &ast::AtomicPat) -> PatKind {
         match p {
             ast::AtomicPat::Wildcard(_) => PatKind::Wildcard,
-            ast::AtomicPat::SCon(p) => Self::lower_scon(ctx, &p),
-            ast::AtomicPat::VId(p) => Self::lower_vid(ctx, &p),
-            ast::AtomicPat::List(p) => Self::lower_list(ctx, &p),
-            ast::AtomicPat::Tuple(p) => Self::lower_tuple(ctx, &p),
-            ast::AtomicPat::Record(p) => Self::lower_record(ctx, &p),
+            ast::AtomicPat::SCon(p) => Self::lower_scon(ctx, p),
+            ast::AtomicPat::VId(p) => Self::lower_vid(ctx, p),
+            ast::AtomicPat::List(p) => Self::lower_list(ctx, p),
+            ast::AtomicPat::Tuple(p) => Self::lower_tuple(ctx, p),
+            ast::AtomicPat::Record(p) => Self::lower_record(ctx, p),
             ast::AtomicPat::Unit(_) => PatKind::Record { rows: Box::new([]) },
         }
     }

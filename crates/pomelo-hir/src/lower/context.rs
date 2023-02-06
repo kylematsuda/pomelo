@@ -171,8 +171,12 @@ impl LoweringCtxt {
     /// Horrible hack to make while loop lowering work...
     pub fn fixup_vid_expr_ref(&mut self, expr: Idx<Expr>, loc: DefLoc) {
         let expr = self.arenas_mut().get_expr_mut(expr);
-        if let ExprKind::VId { longvid, .. } = &mut expr.kind {
-            (*longvid).1 = loc;
+        if let ExprKind::VId {
+            longvid: (_, defloc),
+            ..
+        } = &mut expr.kind
+        {
+            *defloc = loc;
         }
     }
 

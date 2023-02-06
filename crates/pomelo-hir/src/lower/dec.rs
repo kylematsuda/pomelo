@@ -14,19 +14,19 @@ impl HirLower for Dec {
     fn lower(ctx: &mut LoweringCtxt, ast: Self::AstType) -> Idx<Self> {
         let ast_id = ctx.alloc_ast_id(&ast);
         ctx.make_rec_dec(AstId::Node(ast_id), |ctx, index| match &ast {
-            ast::Dec::Val(v) => Self::lower_val(ctx, &v, index),
-            ast::Dec::Fun(f) => Self::lower_fun(ctx, &f, index),
-            ast::Dec::Type(t) => Self::lower_type(ctx, &t),
-            ast::Dec::Datatype(d) => Self::lower_datatype(ctx, &d),
-            ast::Dec::DatatypeRep(r) => Self::lower_replication(ctx, &r),
-            ast::Dec::Abstype(a) => Self::lower_abstype(ctx, &a),
-            ast::Dec::Exception(e) => Self::lower_exception(ctx, &e),
-            ast::Dec::Local(l) => Self::lower_local(ctx, &l),
-            ast::Dec::Open(o) => Self::lower_open(ctx, &o),
-            ast::Dec::Infix(i) => Self::lower_infix(ctx, &i),
-            ast::Dec::Infixr(i) => Self::lower_infixr(ctx, &i),
-            ast::Dec::Nonfix(n) => Self::lower_nonfix(ctx, &n),
-            ast::Dec::Seq(s) => Self::lower_seq(ctx, &s),
+            ast::Dec::Val(v) => Self::lower_val(ctx, v, index),
+            ast::Dec::Fun(f) => Self::lower_fun(ctx, f, index),
+            ast::Dec::Type(t) => Self::lower_type(ctx, t),
+            ast::Dec::Datatype(d) => Self::lower_datatype(ctx, d),
+            ast::Dec::DatatypeRep(r) => Self::lower_replication(ctx, r),
+            ast::Dec::Abstype(a) => Self::lower_abstype(ctx, a),
+            ast::Dec::Exception(e) => Self::lower_exception(ctx, e),
+            ast::Dec::Local(l) => Self::lower_local(ctx, l),
+            ast::Dec::Open(o) => Self::lower_open(ctx, o),
+            ast::Dec::Infix(i) => Self::lower_infix(ctx, i),
+            ast::Dec::Infixr(i) => Self::lower_infixr(ctx, i),
+            ast::Dec::Nonfix(n) => Self::lower_nonfix(ctx, n),
+            ast::Dec::Seq(s) => Self::lower_seq(ctx, s),
         })
     }
 
