@@ -2,18 +2,57 @@
 //!
 //! Similar to the [HIR in Rust](https://rustc-dev-guide.rust-lang.org/hir.html), the HIR mainly
 //! serves to desugar some derived language constructs to simplify semantic analysis.
-//! Our HIR is also a simple graph in an index-based arena, which hopefully is a little more
-//! transparent to work with than the [`rowan`](https://docs.rs/rowan/latest/rowan/)-based AST that
-//! is outputted by the parsing stage.
+//! The lowering from the AST to HIR is implemented in [`lower`].
 //!
-//! # High-level notes
+//! The main entry point to the HIR is [`File`], which contains the list of top level
+//! declarations ([`Dec`]) in the file.
+//! Internally, the HIR is represented a graph in an index-based arena -- the idea is that this is
+//! hopefully  a little simpler to work with than the
+//! [`rowan`](https://docs.rs/rowan/latest/rowan/)-based AST that is outputted at the parsing stage.
+//! HIR nodes (notably [`Dec`], [`Expr`], [`Pat`], and [`Ty`]) are stored by a [`FileArena`].
+//! The syntactic kinds of nodes are represented by [`DecKind`], [`ExprKind`], [`PatKind`], and
+//! [`TyKind`].
+//! References between nodes are represented as indexes ([`Idx<T>`](crate::arena::Idx)) to nodes in
+//! the arena, which conveniently means that we don't have to worry about ownership problems (see
+//! later notes about the tradeoff here).
 //!
-//! Let's start by thinking in analogy to Rust, so we can take some inspiration
-//! from `rustc` and `rust-analyzer`.
-//! Both of these make a strong conceptual division between `Item`s and `Body`s.
+//! Basic semantic information is tracked and embedded in the HIR during lowering from the AST.
+//! For example, variable expressions are represented by an `ExprKind::Vid { longvid: (LongVId,
+//! DefLoc), .. }`, where [`LongVId`] represents an identifier and [`DefLoc`] is a reference to the
+//! declaration or pattern where the identifier is declared.
+//! Type constructors ([`TyCon`]) similarly come with a reference to their declaration.
+//! (Note: this needs to be tested a lot more!)
+//!
+//! The symbol table is held in the [`LoweringCtxt`](crate::lower::LoweringCtxt), accessible through calling
+//! [`LoweringCtxt::resolver`](crate::lower::LoweringCtxt::resolver).
+//! Besides being used to annotate the HIR with name resolution data, we also use this to distinguish
+//! between infix expressions vs function applications.
+//! This is not done in the parsing stage because it requires tracking which identifiers have been
+//! declared `infix`/`infixr`/`nonfix`.
+//! The implementation uses Pratt parsing and is located in the `lower::infix` module
+//! (also done to distinguish infix vs constructed patterns).
+//!
+//! The HIR does not currently have a way to go from a declaration to all of its references, which
+//! is something that will be important for common IDE actions.
+//! I'm planning on adding this as another pass to be done after the HIR is constructed.
+//!
+//! # Lowering strategy and tradeoffs
+//!
+//! Currently, the HIR is lowered in one pass and is contained all in a single graph.
+//! This is nice and simple, and also makes sense because the declarations in an SML
+//! file are sequential (in contrast to, e.g., a Rust module where the items may appear in any
+//! order).
+//!
+//! I was confused about this for a while, so it might be worth writing a little more (at least
+//! to help me remember why I did it this way).
+//! The monolithic structure of the HIR here is very different to how things are done in
+//! `rustc` and `rust-analyzer`, the two compilers I've spent the most time looking at for inspiration.
+//! Both `rustc` and `rust-analyzer` make a strong conceptual division between `Item`s and `Body`s.
 //! An [`Item`](https://doc.rust-lang.org/reference/items.html) is anything that can appear at the
 //! top level of a module (`fn`, `struct`, `enum`, `const`, `mod`, etc.), while a `Body` is the
 //! stuff inside of the `Item` that might need to be type checked (i.e., expressions live inside of bodies).
+//! As mentioned previously, the order of `Items` in a file doesn't affect the meaning of a
+//! Rust program (unlike in SML).
 //!
 //! For example, we might have the following Rust function declaration in a module,
 //! ```ignore
@@ -36,34 +75,22 @@
 //!
 //! This all means that there is a pretty natural split between item declarations and expressions
 //! in Rust.
-//! We try to emulate that here in constructing our IR for SML.
-//! An SML [`File`](crate::topdecs::File) consists of a list of [`Dec`](crate::core::Dec)s.
-//! Some of these `Dec`s may contain a [`Body`](crate::core::Body), which contains patterns or
-//! expressions.
-//! Lowering a file from the AST to the HIR should consist of lowering each `Dec` and
-//! storing its file-scope names (variable names it binds, etc.) in some sort of `LoweringCtxt`,
-//! to be used later in name resolution.
+//! If separate `Item`s are stored independently, then we take advantage of the fact that typing
+//! within one `Body` doesn't effect another `Body`, and not have to completely reanalyze the file
+//! every time it is edited.
+//! (Note however that changing an `Item` (e.g., changing the signature of a function) requires
+//! rechecking all references to that item.)
 //!
-//! After this is done, we can do name resolution (scoping) on the `Body`s and hopefully be in a
-//! good position to start working out type inference.
+//! However, this actually doesn't make too much sense for SML, since changing the order of top-level
+//! declarations in a file can substantially change the program's meaning.
+//! At the very least, we probably have to redo type-checking on the entire file below the
+//! point where it was edited, so it's probably not too much extra cost to redo the parsing and lowering of
+//! the entire file to HIR.
 //!
-//! ## Small wrinkle: infix vs function applications
+//! # TODO:
 //!
-//! A fun fact that I learned about SML (which is maybe obvious to anyone who has actually used
-//! an ML before) is that we actually need some semantic analysis to distinguish expressions or
-//! patterns that contain a bunch of names in a row.
-//! In that situation, we can't tell just from the expression itself whether it's supposed to be a
-//! sequence of function applications or if it might also contain infix operators
-//! -- any function `foo` that takes a 2-tuple of arguments, `foo (x, y)`, can be
-//! turned into an infix operator `x foo y` with an `infix` declaration.
-//! Currently, parsing just gives up and outputs an `InfixOrAppExpr` node, but of
-//! course we will need to know how to interpret these expressions when doing type inference.
-//!
-//! Currently, I think that the nicest way to resolve this is during the lowering stage.
-//! We can make the `LoweringCtxt` keep track of infix declarations as we lower the `File`.
-//! We could also do a pass to fix up these after the initial lowering stage, but then we'll end up
-//! creating a bunch of extra HIR nodes that will be useless -- not a huge problem, but currently
-//! the `Arena` does not have any way to deallocate nodes.
+//! Handle errors during HIR lowering.
+//! Figure out a good way to surface them.
 pub mod arena;
 
 pub mod hir;
@@ -94,6 +121,7 @@ use crate::identifiers::{
 // Figure out an error handling strategy during lowering.
 // This can probably be pretty simple to start, just accumulating errors in the `ctx`?
 
+/// Obtain the HIR from the AST.
 pub fn lower_ast_to_hir(ast: SyntaxTree) -> (File, Vec<Error>) {
     let errors = ast.errors().cloned();
     let node = ast::File::cast(ast.syntax()).unwrap();
@@ -136,6 +164,7 @@ impl File {
     }
 }
 
+/// Interface for building and navigating the HIR.
 pub trait FileArena: NameInterner {
     fn alloc_pat(&mut self, pat: Pat) -> Idx<Pat>;
     fn get_pat(&self, index: Idx<Pat>) -> &Pat;
@@ -166,6 +195,7 @@ pub trait FileArena: NameInterner {
         N: AstNode<Language = SML>;
 }
 
+/// Interface for interning and generating identifiers.
 pub trait NameInterner {
     fn fresh(&mut self) -> u32;
     fn alloc(&mut self, s: &str) -> Idx<String>;
@@ -286,7 +316,10 @@ impl<I: NameInterner> FileArena for FileArenaImpl<I> {
     }
 }
 
-// See r-a hir_expand
+/// Storage for links from the HIR back to the AST.
+///
+/// This will be particularly important for error messages, as we will want to refer to an error's
+/// original span in the AST (as opposed to whatever it is after lowering).
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 struct AstIdMap {
     arena: Arena<SyntaxNodePtr>,
@@ -324,9 +357,6 @@ impl AstIdMap {
 }
 
 /// A pointer from the HIR node back to its corresponding AST node.
-///
-/// This node may be missing, an exact 1-1 translation of the AST node,
-/// or a node that was generated during lowering (modeled by [`NodeParent`]).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AstId<N> {
     Missing,
@@ -353,7 +383,7 @@ impl<N: AstNode<Language = SML>> AstId<N> {
 
 /// A pointer to an AST node.
 ///
-/// Currently, this is needed because we only hold references to `SyntaxNodePtr`,
+/// Currently, this is needed because we only hold references to `SyntaxNodePtr`s,
 /// which know nothing about the type of the pointed-to AST node.
 /// This nice thing is that this allows us to allocate all of the `SyntaxNodePtr`s in the same
 /// arena (unlike if we used the typed `AstPtr`s).

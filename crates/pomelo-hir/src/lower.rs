@@ -1,11 +1,12 @@
-pub mod context;
+//! Lowering from AST to HIR.
+mod context;
 pub(crate) use context::LoweringCtxt;
 
-pub mod dec;
-pub mod expr;
-pub mod pat;
-pub mod token;
-pub mod ty;
+mod dec;
+mod expr;
+mod pat;
+mod token;
+mod ty;
 
 mod infix;
 mod util;

@@ -1,7 +1,12 @@
+//! Basic index-based arena for holding HIR nodes.
+//!
+//! This is basically just a copy of some of the [`la_arena`](https://docs.rs/la-arena/latest/la_arena/)
+//! crate used in `rust-analyzer`.
+
 use std::hash::{Hash, Hasher};
 use std::marker::PhantomData;
 
-/// Index into [`Arena`]
+/// An index into an [`Arena`].
 #[derive(Debug)]
 pub struct Idx<T> {
     inner: usize,
@@ -46,7 +51,7 @@ impl<T> Idx<T> {
     }
 }
 
-/// Vec-based arena type
+/// Basically a `Vec`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Arena<T> {
     inner: Vec<T>,

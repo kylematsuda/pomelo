@@ -6,6 +6,7 @@ use crate::arena::{Arena, Idx};
 use crate::NameInterner;
 use std::collections::HashMap;
 
+/// Holds information about identifiers in the HIR.
 #[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub(crate) struct NameInternerImpl {
     names: Arena<String>,
@@ -35,7 +36,9 @@ impl NameInterner for NameInternerImpl {
     }
 }
 
-/// Intern built-in identifiers
+/// Built-in identifiers in the HIR.
+///
+/// Check if this is complete...
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Builtin {
     // Values
@@ -118,6 +121,7 @@ impl Builtin {
     }
 }
 
+/// An interned name in the HIR.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Name {
     BuiltIn(Builtin),
@@ -142,6 +146,7 @@ impl Name {
     }
 }
 
+/// A long (structure-qualified) value identifier.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct LongVId {
     pub strids: Box<[StrId]>,
@@ -176,6 +181,7 @@ impl LongVId {
     }
 }
 
+/// A value identifier.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum VId {
     Missing,
@@ -214,12 +220,14 @@ impl VId {
     }
 }
 
+/// A long (structure-qualified) structure identifier.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LongStrId {
     pub strid_path: Box<[StrId]>,
     pub strid: StrId,
 }
 
+/// A structure identifier.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum StrId {
     Missing,
@@ -254,6 +262,10 @@ impl StrId {
     }
 }
 
+/// A type variable.
+///
+/// This must start with `'`.
+/// TODO: check if this is enforce during parsing.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TyVar {
     Missing,
@@ -270,6 +282,7 @@ impl TyVar {
     }
 }
 
+/// A long (structure-qualified) type constructor.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct LongTyCon {
     pub strids: Box<[StrId]>,
@@ -298,6 +311,7 @@ impl From<TyCon> for LongTyCon {
     }
 }
 
+/// A type constructor.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum TyCon {
     Missing,
@@ -336,6 +350,7 @@ impl TyCon {
     }
 }
 
+/// A label in a record type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Label {
     Missing,

@@ -102,6 +102,9 @@ impl LoweringCtxt {
         index
     }
 
+    /// Register patterns in `val rec` declarations.
+    ///
+    /// This is needed because the expression in the binding can refer to the names in `pat`.
     pub fn register_rec_pat(&mut self, pat: Idx<Pat>, dec: Idx<Dec>) {
         let bound_vids = self.arenas().get_pat(pat).bound_vids(self.arenas());
         for v in bound_vids {
@@ -111,6 +114,7 @@ impl LoweringCtxt {
         }
     }
 
+    /// Register identifiers bound in the current `Dec`.
     pub fn register_bound_vids_dec(&mut self, index: Idx<Dec>) {
         let dec = self.arenas().get_dec(index);
         let bound_vids = dec.bound_vids(self.arenas());
@@ -121,6 +125,7 @@ impl LoweringCtxt {
         }
     }
 
+    /// Register type constructors bound in the current `Dec`.
     pub fn register_bound_tycons_dec(&mut self, index: Idx<Dec>) {
         let dec = self.arenas().get_dec(index);
         let bound_tycons = dec.bound_tycons(self.arenas());
@@ -131,6 +136,7 @@ impl LoweringCtxt {
         }
     }
 
+    /// Register fixities bound in the current `Dec`.
     pub fn register_fixities(&mut self, index: Idx<Dec>) {
         let dec = self.arenas().get_dec(index);
 
@@ -148,6 +154,10 @@ impl LoweringCtxt {
         }
     }
 
+    /// Register identifiers declared in the the `Pat` of a pattern match.
+    ///
+    /// This needs to be done before lowering `Expr` on the RHS of the match,
+    /// otherwise any names declared here will not be in scope in the `Expr`.
     pub fn register_pat_names_in_match(&mut self, index: Idx<Pat>) {
         let pat = self.arenas().get_pat(index);
         let bound_vids = pat.bound_vids(self.arenas());

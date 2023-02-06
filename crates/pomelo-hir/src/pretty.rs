@@ -1,3 +1,4 @@
+//! Pretty print HIR nodes.
 use crate::arena::Idx;
 use crate::{
     ConBind, DataBind, Dec, DecKind, ExBind, ExpRow, Expr, ExprKind, FileArena, Fixity, Label,
@@ -6,6 +7,11 @@ use crate::{
 };
 
 const MISSING: &str = "*missing*";
+
+/// Interface for printing HIR nodes.
+pub(crate) trait HirPrettyPrint {
+    fn pretty<A: FileArena>(&self, arena: &A) -> String;
+}
 
 fn op_str(op: bool) -> &'static str {
     if op {
@@ -20,10 +26,6 @@ fn boxed_seq<'a, N: HirPrettyPrint + 'a, A: FileArena>(
     arena: &A,
 ) -> Vec<String> {
     nodes.map(|n| n.pretty(arena)).collect()
-}
-
-pub(crate) trait HirPrettyPrint {
-    fn pretty<A: FileArena>(&self, arena: &A) -> String;
 }
 
 impl HirPrettyPrint for Name {

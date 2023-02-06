@@ -1,4 +1,7 @@
-//! The hir
+//! Definition of the hir.
+//!
+//! This module's contents are exported at the crate root, this is just separated for some internal
+//! organization.
 use pomelo_parse::ast;
 
 use crate::arena::Idx;
@@ -148,6 +151,7 @@ impl DecKind {
     }
 }
 
+/// Binding of the names in a pattern to an expression.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ValBind {
     pub rec: bool,
@@ -161,6 +165,7 @@ impl ValBind {
     }
 }
 
+/// Binding of a type alias.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TypBind {
     pub tyvarseq: Box<[TyVar]>,
@@ -174,6 +179,7 @@ impl TypBind {
     }
 }
 
+/// Binding of a new datatype.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DataBind {
     pub tyvarseq: Box<[TyVar]>,
@@ -194,6 +200,7 @@ impl DataBind {
     }
 }
 
+/// Binding of a datatype constructor.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ConBind {
     pub op: bool,
@@ -201,6 +208,7 @@ pub struct ConBind {
     pub ty: Option<Idx<Ty>>,
 }
 
+/// Binding an exception.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ExBind {
     Name {
@@ -225,6 +233,7 @@ impl ExBind {
     }
 }
 
+/// Type of fixity, including whether it is left- or right-associative and its operator precedence.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Fixity {
     Left(Option<u8>),
@@ -300,9 +309,11 @@ pub enum Scon {
     Char(char),
 }
 
-/// Wrapper so we can derive `Eq`.
+/// Wrapper so we can derive `Eq` for [`Scon`].
 ///
-/// See `FloatTypeWrapper` in r-a/hir-def/src/expr.rs
+/// See
+/// [`FloatTypeWrapper`](https://github.com/rust-lang/rust-analyzer/blob/master/crates/hir-def/src/expr.rs)
+/// from `rust-analyzer`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FloatWrapper(u64);
 
@@ -318,6 +329,7 @@ impl std::fmt::Display for FloatWrapper {
     }
 }
 
+/// Record entry in an expression.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExpRow {
     pub label: Label,
@@ -418,13 +430,12 @@ impl PatKind {
     }
 }
 
+/// Record entry in a pattern.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PatRow {
     Wildcard,
     Pattern { label: Label, pat: Idx<Pat> },
 }
-
-pub type LabelIdx = Idx<Label>;
 
 /// HIR type node.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -455,12 +466,14 @@ pub enum TyKind {
     },
 }
 
+/// Record entry in a type.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TyRow {
     pub label: Label,
     pub ty: Idx<Ty>,
 }
 
+/// A rule in a match statement.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MRule {
     pub pat: Idx<Pat>,

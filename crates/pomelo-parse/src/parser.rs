@@ -115,7 +115,8 @@ impl fmt::Display for SyntaxTree {
 /// The main interface for manipulating the lexed source.
 ///
 /// This handles iterating over the lex tokens as well as building the syntax tree
-/// (see [`rowan::NodeBuilder`] for details).
+/// (see [`rowan::GreenNodeBuilder`](https://docs.rs/rowan/latest/rowan/struct.GreenNodeBuilder.html)
+/// for details).
 #[derive(Debug, Clone)]
 pub struct Parser<'a> {
     current_pos: usize,

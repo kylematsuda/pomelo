@@ -78,7 +78,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: doc 
-          args: --workspace --no-deps -p pomelo -p pomelo-*
+          args: --workspace --document-private-items --no-deps -p pomelo -p pomelo-*
           env: RUSTDOCFLAGS=--cfg="docsrs"
       - name: Fix index
         run: |
