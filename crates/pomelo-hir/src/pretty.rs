@@ -218,7 +218,7 @@ impl HirPrettyPrint for Pat {
             }
             PatKind::Infix { lhs, vid, rhs } => {
                 format!(
-                    "{} {} {}",
+                    "({} {} {})",
                     lhs.pretty(arena),
                     vid.0.pretty(arena),
                     rhs.pretty(arena)

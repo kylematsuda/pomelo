@@ -122,8 +122,6 @@ pub enum SyntaxKind {
     PAT_ROW,
     PAT_ROW_PAT,
 
-    CONS_PAT,
-    INFIX_CONS_PAT,
     TY_PAT,
     LAYERED_PAT,
 

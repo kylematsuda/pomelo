@@ -1,7 +1,7 @@
 use pomelo_parse::ast;
 
 use crate::arena::Idx;
-use crate::lower::{util, HirLower, HirLowerGenerated, LoweringCtxt};
+use crate::lower::{infix, util, HirLower, HirLowerGenerated, LoweringCtxt};
 use crate::{
     AstId, Builtin, DecKind, DefLoc, FileArena, Label, LongVId, NodeParent, Pat, PatKind, PatRow,
     Scon, Ty, VId,
@@ -14,9 +14,7 @@ impl HirLower for Pat {
         let kind = match &ast {
             ast::Pat::Atomic(p) => Self::lower_atomic(ctx, &p),
             ast::Pat::Typed(p) => Self::lower_typed(ctx, &p),
-            // TODO: merge these into one AST node
-            ast::Pat::Cons(p) => Self::lower_cons(ctx, &p),
-            ast::Pat::ConsInfix(p) => Self::lower_cons_infix(ctx, &p),
+            ast::Pat::ConsOrInfix(p) => return infix::fix_infix(ctx, p),
             ast::Pat::Layered(p) => Self::lower_layered(ctx, &p),
         };
         let ast_id = AstId::Node(ctx.alloc_ast_id(&ast));
@@ -141,19 +139,40 @@ impl Pat {
         PatKind::Typed { pat, ty }
     }
 
-    fn lower_cons(_ctx: &mut LoweringCtxt, _p: &ast::ConsPat) -> PatKind {
-        todo!()
-    }
-
-    fn lower_cons_infix(_ctx: &mut LoweringCtxt, _p: &ast::ConsInfixPat) -> PatKind {
-        todo!()
-    }
-
     fn lower_layered(ctx: &mut LoweringCtxt, p: &ast::LayeredPat) -> PatKind {
-        let op = p.op();
-        let vid = VId::from_token(ctx, p.vid());
-        let ty = p.ty().map(|t| Ty::lower(ctx, t));
-        let pat = Pat::lower_opt(ctx, p.pat());
+        // Currently because of an error in the parser, the first part is getting parsed as
+        // possibly a typed pat instead of its constituent parts.
+        let mut pats = p.pats();
+
+        let extract_vid = |p: Option<ast::Pat>| {
+            if let Some(ast::Pat::Atomic(ast::AtomicPat::VId(vid))) = p {
+                (vid.op(), vid.longvid())
+            } else {
+                (false, None)
+            }
+        };
+
+        // TODO: make this more DRY, it's kinda ugly now
+        let (op, vid, ty) = match pats.next() {
+            Some(ast::Pat::Typed(t)) => {
+                let ty = Ty::lower_opt(ctx, t.ty());
+                let (op, vid) = extract_vid(t.pat());
+                let vid = LongVId::from_opt_node(ctx, vid.as_ref())
+                    .try_into_vid()
+                    .unwrap_or(VId::Missing);
+                (op, vid, Some(ty))
+            }
+            Some(t) => {
+                let (op, vid) = extract_vid(Some(t));
+                let vid = LongVId::from_opt_node(ctx, vid.as_ref())
+                    .try_into_vid()
+                    .unwrap_or(VId::Missing);
+                (op, vid, None)
+            }
+            None => (false, VId::Missing, None),
+        };
+
+        let pat = Pat::lower_opt(ctx, pats.next());
         PatKind::Layered { op, vid, ty, pat }
     }
 }

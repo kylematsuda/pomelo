@@ -103,7 +103,33 @@ fn lower_tuple_pat() {
 #[test]
 fn lower_list_pat() {
     let src = "[a, b, c]";
-    check::<Pat, _>(src, |p| p.parse_pat(), expect![[r##"a :: b :: c :: nil"##]])
+    check::<Pat, _>(
+        src,
+        |p| p.parse_pat(),
+        expect![[r##"(a :: (b :: (c :: nil)))"##]],
+    )
+}
+
+#[test]
+fn lower_infix_pat() {
+    let src = "a :: b";
+    check::<Pat, _>(src, |p| p.parse_pat(), expect![[r##"(a :: b)"##]])
+}
+
+#[test]
+fn lower_layered_pat() {
+    let src = "x as a :: b";
+    check::<Pat, _>(src, |p| p.parse_pat(), expect![[r##"x as (a :: b)"##]])
+}
+
+#[test]
+fn lower_constructed_pat() {
+    let src = "datatype 'a test = Yes of 'a | No ; val Yes x = y ; val a :: Yes b = c";
+    check::<Dec, _>(
+        src,
+        |p| p.parse_dec(),
+        expect![[r##"datatype 'a test = Yes of 'a | No; val Yes x = y; val (a :: Yes b) = c"##]],
+    )
 }
 
 /// TODO: test pattrow lowering

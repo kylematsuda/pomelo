@@ -7,24 +7,10 @@ use SyntaxKind::*;
 use std::fmt;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct InfixOrAppPat {
-    syntax: SyntaxNode,
-}
-
-impl_ast_node!(InfixOrAppPat, INFIX_OR_APP_PAT);
-
-impl InfixOrAppPat {
-    pub fn pats(&self) -> impl Iterator<Item = ast::Pat> {
-        support::children(self.syntax())
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Pat {
     Layered(LayeredPat),
     Typed(TypedPat),
-    ConsInfix(ConsInfixPat),
-    Cons(ConsPat),
+    ConsOrInfix(ConsOrInfixPat),
     Atomic(AtomicPat),
 }
 
@@ -32,8 +18,7 @@ impl AstNode for Pat {
     type Language = crate::language::SML;
 
     fn can_cast(kind: SyntaxKind) -> bool {
-        matches!(kind, LAYERED_PAT | TY_PAT | INFIX_CONS_PAT | CONS_PAT)
-            || AtomicPat::can_cast(kind)
+        matches!(kind, LAYERED_PAT | TY_PAT | INFIX_OR_APP_PAT) || AtomicPat::can_cast(kind)
     }
 
     fn cast(node: SyntaxNode) -> Option<Self>
@@ -43,8 +28,7 @@ impl AstNode for Pat {
         let out = match node.kind() {
             LAYERED_PAT => Self::Layered(LayeredPat::cast(node)?),
             TY_PAT => Self::Typed(TypedPat::cast(node)?),
-            INFIX_CONS_PAT => Self::ConsInfix(ConsInfixPat::cast(node)?),
-            CONS_PAT => Self::Cons(ConsPat::cast(node)?),
+            INFIX_OR_APP_PAT => Self::ConsOrInfix(ConsOrInfixPat::cast(node)?),
             _ => Self::Atomic(AtomicPat::cast(node)?),
         };
         Some(out)
@@ -54,8 +38,7 @@ impl AstNode for Pat {
         match self {
             Self::Layered(inner) => inner.syntax(),
             Self::Typed(inner) => inner.syntax(),
-            Self::ConsInfix(inner) => inner.syntax(),
-            Self::Cons(inner) => inner.syntax(),
+            Self::ConsOrInfix(inner) => inner.syntax(),
             Self::Atomic(inner) => inner.syntax(),
         }
     }
@@ -69,8 +52,7 @@ impl fmt::Display for Pat {
 
 impl_from!(Pat, Layered, LayeredPat);
 impl_from!(Pat, Typed, TypedPat);
-impl_from!(Pat, ConsInfix, ConsInfixPat);
-impl_from!(Pat, Cons, ConsPat);
+impl_from!(Pat, ConsOrInfix, ConsOrInfixPat);
 impl_from!(Pat, Atomic, AtomicPat);
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -81,20 +63,8 @@ pub struct LayeredPat {
 impl_ast_node!(LayeredPat, LAYERED_PAT);
 
 impl LayeredPat {
-    pub fn op(&self) -> bool {
-        support::token(self.syntax(), OP_KW).is_some()
-    }
-
-    pub fn vid(&self) -> Option<ast::VId> {
-        support::tokens(self.syntax()).next()
-    }
-
-    pub fn ty(&self) -> Option<ast::Ty> {
-        support::child(self.syntax())
-    }
-
-    pub fn pat(&self) -> Option<ast::Pat> {
-        support::child(self.syntax())
+    pub fn pats(&self) -> impl Iterator<Item = ast::Pat> {
+        support::children(self.syntax())
     }
 }
 
@@ -116,44 +86,15 @@ impl TypedPat {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ConsInfixPat {
-    pub syntax: SyntaxNode,
+pub struct ConsOrInfixPat {
+    syntax: SyntaxNode,
 }
 
-impl_ast_node!(ConsInfixPat, INFIX_CONS_PAT);
+impl_ast_node!(ConsOrInfixPat, INFIX_OR_APP_PAT);
 
-impl ConsInfixPat {
-    pub fn pat_1(&self) -> Option<ast::Pat> {
-        support::child(self.syntax())
-    }
-
-    pub fn vid(&self) -> Option<ast::VId> {
-        support::tokens(self.syntax()).next()
-    }
-
-    pub fn pat_2(&self) -> Option<ast::Pat> {
-        support::children(self.syntax()).nth(1)
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ConsPat {
-    pub syntax: SyntaxNode,
-}
-
-impl_ast_node!(ConsPat, CONS_PAT);
-
-impl ConsPat {
-    pub fn op(&self) -> bool {
-        support::token(self.syntax(), OP_KW).is_some()
-    }
-
-    pub fn longvid(&self) -> Option<ast::LongVId> {
-        support::child(self.syntax())
-    }
-
-    pub fn atpat(&self) -> Option<ast::AtomicPat> {
-        support::child(self.syntax())
+impl ConsOrInfixPat {
+    pub fn pats(&self) -> impl Iterator<Item = ast::Pat> {
+        support::children(self.syntax())
     }
 }
 
