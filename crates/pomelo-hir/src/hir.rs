@@ -165,7 +165,7 @@ impl ValBind {
     }
 }
 
-/// Binding of a type alias.
+/// Binding of a type constructor.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TypBind {
     pub tyvarseq: Box<[TyVar]>,

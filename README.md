@@ -4,9 +4,13 @@
 [![](https://github.com/kylematsuda/pomelo/workflows/Test/badge.svg)](https://github.com/kylematsuda/pomelo/actions?query=workflow:Test)
 [![](https://img.shields.io/badge/license-MIT-green)](https://github.com/kylematsuda/pomelo/blob/main/LICENSE.md)
 
-`pomelo` is a (hobby, WIP) lexer and parser for Standard ML (SML) '97 implemented in Rust.
+`pomelo` is a (hobby, WIP) compiler for Standard ML (SML) '97 implemented in Rust.
+
+So far, I've implemented basic lexing, parsing, and lowering to an intermediate representation (essentially just desugaring derived forms and doing name resolution).
 My goal is to eventually extend this to implement a Language Server and interpreter.
 This is extremely rough and incomplete and I'm learning a lot as I go!
+
+Please see the [docs](https://kylematsuda.github.io/pomelo/pomelo/) for more detailed information.
 
 ## Name
 
@@ -51,6 +55,9 @@ At this stage, the design is heavily influenced by [`rust-analyzer`](https://git
 1. I'd like to eventually turn this into a language server, and
 2. Rust is probably the language that I read best, and the code in `rust-analyzer` seemed a little more approachable than `rustc` initially.
 
+The following is a summary of what I've done so far.
+Please see the [docs](https://kylematsuda.github.io/pomelo/pomelo/) for more detailed information.
+
 ### Lexer
 
 [`pomelo-lex`](https://kylematsuda.github.io/pomelo/pomelo_lex/index.html) contains a very basic lexer, very influenced by [`rustc_lexer`](https://github.com/rust-lang/rust/blob/master/compiler/rustc_lexer).
@@ -67,5 +74,10 @@ The HIR is very similar to the AST, except all of the derived forms (see Appendi
 Pomelo's HIR is represented as a graph stored in an arena (essentially a wrapper around a `Vec`, see `pomelo-hir::arena` or [`la_arena`](https://docs.rs/la-arena/latest/la_arena/)).
 
 This module also contains the code for lowering from the AST.
-Eventually, this will also contain some semantic analysis, probably something like `rustc`'s [`TyCtxt`](https://doc.rust-lang.org/nightly/nightly-rustc/rustc_middle/ty/struct.TyCtxt.html) but way more basic.
-Currently, I do not plan to use [`salsa`](https://github.com/salsa-rs/salsa) or any other kind of fancy system for caching completed queries, but this could be added later for more fun/learning/perf.
+It also contains some basic name resolution -- usages of variables or type constructors are annotated 
+with references to the location in the HIR where their identifiers are defined.
+
+### Next steps - type inference
+
+This is the part I've been looking forward to the most! Currently reading up on Hindley-Milner, etc.
+As of now, I do not plan to use [`salsa`](https://github.com/salsa-rs/salsa) or any other kind of fancy system for caching completed queries, but this could be added later for more fun/learning/perf.
