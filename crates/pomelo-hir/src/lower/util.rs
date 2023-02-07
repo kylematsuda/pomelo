@@ -93,7 +93,6 @@ pub(crate) fn lower_match(ctx: &mut LoweringCtxt, match_expr: &ast::Match) -> Bo
 }
 
 impl MRule {
-    // FIXME: we need to register the bindings in the pat
     fn lower(ctx: &mut LoweringCtxt, mrule: &ast::Mrule) -> Self {
         ctx.enter_scope(|ctx| {
             let pat = Pat::lower_opt(ctx, mrule.pat());

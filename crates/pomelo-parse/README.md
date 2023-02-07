@@ -1,5 +1,7 @@
 # pomelo-parse
 
+Please see the [docs](https://kylematsuda.github.io/pomelo/pomelo_parse/index.html) for more details.
+
 - [x] Fix labels (can take numeric values)
 - [x] Correctly restrict TyCon to have no stars
 - [x] Remove Real constants from patterns

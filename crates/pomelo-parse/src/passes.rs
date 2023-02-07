@@ -1,6 +1,11 @@
 //! Validation passes to run after the AST is constructed.
 //!
 //! This doesn't do anything yet...
+//!
+//! TODO: add some passes for several things
+//! - Checking record type labels to be numeric (+ positive), etc.
+//! - Checking infix precedence is a single digit
+//! - Checking unterminated strs, etc.
 use crate::SyntaxTree;
 
 /// Apply validation passes, etc.
