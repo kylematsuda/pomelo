@@ -2,8 +2,8 @@
 use crate::arena::Idx;
 use crate::{
     ConBind, DataBind, Dec, DecKind, ExBind, ExpRow, Expr, ExprKind, FileArena, Fixity, Label,
-    LongStrId, LongTyCon, LongVId, MRule, Name, NameInterner, Pat, PatKind, PatRow, Scon, StrId,
-    Ty, TyCon, TyKind, TyRow, TyVar, TypBind, VId, ValBind,
+    LongStrId, LongTyCon, LongVId, MRule, Name, Pat, PatKind, PatRow, Scon, StrId, Ty, TyCon,
+    TyKind, TyRow, TyVar, TypBind, VId, ValBind,
 };
 
 const MISSING: &str = "*missing*";
@@ -31,7 +31,7 @@ fn boxed_seq<'a, N: HirPrettyPrint + 'a, A: FileArena>(
 impl HirPrettyPrint for Name {
     fn pretty<A: FileArena>(&self, arena: &A) -> String {
         match self {
-            Self::String(index) => <A as NameInterner>::get(arena, *index).to_owned(),
+            Self::String(index) => arena.get_name(*index).to_owned(),
             Self::Generated(n) => format!("_temp{n}"),
             Self::BuiltIn(b) => b.as_str().to_owned(),
         }
@@ -172,7 +172,7 @@ impl HirPrettyPrint for ExBind {
         match self {
             ExBind::Name { op, vid, ty } => {
                 let ty = ty
-                    .map(|t| t.0.pretty(arena))
+                    .map(|t| t.pretty(arena))
                     .map(|ty| format!("of {ty}"))
                     .unwrap_or_else(String::new);
                 format!("{}{} {ty}", op_str(*op), vid.pretty(arena))
@@ -311,7 +311,6 @@ impl HirPrettyPrint for Expr {
             ExprKind::Let { dec, expr } => {
                 format!("let {} in {} end", dec.pretty(arena), expr.pretty(arena))
             }
-            ExprKind::InfixOrApp { exprs } => boxed_seq(exprs.iter(), arena).join(" "),
             ExprKind::Infix { lhs, vid, rhs } => {
                 format!(
                     "({} {} {})",

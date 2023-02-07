@@ -112,9 +112,6 @@ use pomelo_parse::{
 };
 
 use crate::arena::{Arena, Idx};
-use crate::identifiers::{
-    Label, LongStrId, LongTyCon, LongVId, NameInternerImpl, TyCon, TyVar, VId,
-};
 
 // TODO: define a new hir-error type.
 //
@@ -151,7 +148,7 @@ impl File {
         &self.arenas
     }
 
-    pub fn arenas_mut(&mut self) -> &mut impl FileArena {
+    pub fn arenas_mut(&mut self) -> &mut impl FileArenaExt {
         &mut self.arenas
     }
 
@@ -164,22 +161,27 @@ impl File {
     }
 }
 
-/// Interface for building and navigating the HIR.
-pub trait FileArena: NameInterner {
-    fn alloc_pat(&mut self, pat: Pat) -> Idx<Pat>;
+/// Interface for navigating the HIR.
+pub trait FileArena {
     fn get_pat(&self, index: Idx<Pat>) -> &Pat;
+    fn get_expr(&self, index: Idx<Expr>) -> &Expr;
+    fn get_dec(&self, index: Idx<Dec>) -> &Dec;
+    fn get_ty(&self, index: Idx<Ty>) -> &Ty;
+    fn get_name(&self, index: Idx<String>) -> &str;
+}
+
+/// Interface for building the HIR.
+pub trait FileArenaExt: FileArena + NameInterner {
+    fn alloc_pat(&mut self, pat: Pat) -> Idx<Pat>;
     fn get_pat_mut(&mut self, index: Idx<Pat>) -> &mut Pat;
 
     fn alloc_expr(&mut self, expr: Expr) -> Idx<Expr>;
-    fn get_expr(&self, index: Idx<Expr>) -> &Expr;
     fn get_expr_mut(&mut self, index: Idx<Expr>) -> &mut Expr;
 
     fn alloc_dec(&mut self, dec: Dec) -> Idx<Dec>;
-    fn get_dec(&self, index: Idx<Dec>) -> &Dec;
     fn get_dec_mut(&mut self, index: Idx<Dec>) -> &mut Dec;
 
     fn alloc_ty(&mut self, ty: Ty) -> Idx<Ty>;
-    fn get_ty(&self, index: Idx<Ty>) -> &Ty;
     fn get_ty_mut(&mut self, index: Idx<Ty>) -> &mut Ty;
 
     fn alloc_ast_id<N>(&mut self, ast: &N) -> FileAstIdx<N>
@@ -246,12 +248,30 @@ impl<I: NameInterner> NameInterner for FileArenaImpl<I> {
 }
 
 impl<I: NameInterner> FileArena for FileArenaImpl<I> {
-    fn alloc_pat(&mut self, pat: Pat) -> Idx<Pat> {
-        self.pats.alloc(pat)
-    }
-
     fn get_pat(&self, index: Idx<Pat>) -> &Pat {
         self.pats.get(index)
+    }
+
+    fn get_expr(&self, index: Idx<Expr>) -> &Expr {
+        self.exprs.get(index)
+    }
+
+    fn get_dec(&self, index: Idx<Dec>) -> &Dec {
+        self.decs.get(index)
+    }
+
+    fn get_ty(&self, index: Idx<Ty>) -> &Ty {
+        self.tys.get(index)
+    }
+
+    fn get_name(&self, index: Idx<String>) -> &str {
+        self.name_interner.get(index)
+    }
+}
+
+impl<I: NameInterner> FileArenaExt for FileArenaImpl<I> {
+    fn alloc_pat(&mut self, pat: Pat) -> Idx<Pat> {
+        self.pats.alloc(pat)
     }
 
     fn get_pat_mut(&mut self, index: Idx<Pat>) -> &mut Pat {
@@ -262,10 +282,6 @@ impl<I: NameInterner> FileArena for FileArenaImpl<I> {
         self.exprs.alloc(expr)
     }
 
-    fn get_expr(&self, index: Idx<Expr>) -> &Expr {
-        self.exprs.get(index)
-    }
-
     fn get_expr_mut(&mut self, index: Idx<Expr>) -> &mut Expr {
         self.exprs.get_mut(index)
     }
@@ -274,20 +290,12 @@ impl<I: NameInterner> FileArena for FileArenaImpl<I> {
         self.decs.alloc(dec)
     }
 
-    fn get_dec(&self, index: Idx<Dec>) -> &Dec {
-        self.decs.get(index)
-    }
-
     fn get_dec_mut(&mut self, index: Idx<Dec>) -> &mut Dec {
         self.decs.get_mut(index)
     }
 
     fn alloc_ty(&mut self, ty: Ty) -> Idx<Ty> {
         self.tys.alloc(ty)
-    }
-
-    fn get_ty(&self, index: Idx<Ty>) -> &Ty {
-        self.tys.get(index)
     }
 
     fn get_ty_mut(&mut self, index: Idx<Ty>) -> &mut Ty {

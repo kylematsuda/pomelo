@@ -7,8 +7,8 @@ use crate::arena::Idx;
 use crate::lower::infix::BUILTINS;
 use crate::lower::HirLower;
 use crate::{
-    AstId, Dec, DecKind, DefLoc, Expr, ExprKind, File, FileArena, FileAstIdx, Fixity, LongTyCon,
-    LongVId, NameInterner, Pat, Ty, VId,
+    AstId, Dec, DecKind, DefLoc, Expr, ExprKind, File, FileArena, FileArenaExt, FileAstIdx, Fixity,
+    LongTyCon, LongVId, NameInterner, Pat, Ty, VId,
 };
 
 /// Context needed while lowering.
@@ -192,7 +192,7 @@ impl LoweringCtxt {
         self.arenas_mut().alloc_ty(ty)
     }
 
-    fn arenas_mut(&mut self) -> &mut impl FileArena {
+    fn arenas_mut(&mut self) -> &mut impl FileArenaExt {
         &mut self.file.arenas
     }
 }
@@ -200,6 +200,7 @@ impl LoweringCtxt {
 /// Holds the results of early name resolution
 #[derive(Debug, Clone)]
 pub struct Resolver {
+    // TODO: use this to track exception definitions too!
     values: HashMap<LongVId, DefLoc>,
     fixity: HashMap<LongVId, Fixity>,
     tys: HashMap<LongTyCon, DefLoc>,

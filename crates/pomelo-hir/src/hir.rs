@@ -214,7 +214,7 @@ pub enum ExBind {
     Name {
         op: bool,
         vid: VId,
-        ty: Option<(Idx<Ty>, DefLoc)>,
+        ty: Option<Idx<Ty>>,
     },
     Assignment {
         op_lhs: bool,
@@ -269,9 +269,6 @@ pub enum ExprKind {
     Let {
         dec: Idx<Dec>,
         expr: Idx<Expr>,
-    },
-    InfixOrApp {
-        exprs: Box<[Idx<Expr>]>,
     },
     Application {
         expr: Idx<Expr>,
@@ -452,6 +449,7 @@ pub struct Ty {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TyKind {
     Missing,
+    // TODO: make a `TyVar` also refer to it's `DefLoc`?
     Var(TyVar),
     Record {
         tyrows: Box<[TyRow]>,
