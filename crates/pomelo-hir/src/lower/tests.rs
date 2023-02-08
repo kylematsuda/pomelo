@@ -5,7 +5,7 @@ use expect_test::{expect, Expect};
 
 use crate::arena::Idx;
 use crate::pretty::HirPrettyPrint;
-use crate::{lower::HirLower, Dec, Expr, Pat, Ty};
+use crate::{lower::HirLower, Dec, DefLoc, Expr, FileArena, Pat, Ty};
 
 fn check<H, F>(src: &str, parse_with: F, expect: Expect)
 where
@@ -322,4 +322,110 @@ fn lower_product_ty() {
         |p| p.parse_type(),
         expect![[r##"{ 1:ty1, 2:ty2, 3:ty3, 4:ty4 }"##]],
     )
+}
+
+#[test]
+fn vid_references() {
+    let src = r#"
+        val a = 1;
+        val b = a;
+        val a = b;
+        val rec c = fn x => c x;
+    "#;
+
+    let ast = Parser::new(src).parse();
+    let (hir, errs) = crate::lower_ast_to_hir(ast);
+    assert!(errs.is_empty());
+    let topdecs = hir.topdecs();
+
+    // "val b = a"
+    let index = topdecs[1];
+    // Get valbind "b = a"
+    let (_, valbind) = hir.get_dec(index).val().unwrap();
+    // Get vid expr "a"
+    let (_, (_, loc)) = hir.get_expr(valbind[0].expr).vid().unwrap();
+    assert!(*loc == DefLoc::Dec(topdecs[0]));
+
+    // "val a = b"
+    let index = topdecs[2];
+    // Get valbind "a = b"
+    let (_, valbind) = hir.get_dec(index).val().unwrap();
+    // Get vid expr "b"
+    let (_, (_, loc)) = hir.get_expr(valbind[0].expr).vid().unwrap();
+    assert!(*loc == DefLoc::Dec(topdecs[1]));
+
+    let index = topdecs[3];
+    let (_, valbind) = hir.get_dec(index).val().unwrap();
+    let fn_expr = hir.get_expr(valbind[0].expr).fn_expr().unwrap();
+    let (match_expr, _) = hir.get_expr(fn_expr[0].expr).application().unwrap();
+    let (_, (_, loc)) = hir.get_expr(match_expr).vid().unwrap();
+    assert!(*loc == DefLoc::Dec(topdecs[3]));
+}
+
+#[test]
+fn shadowed_references() {
+    let src = r#"
+        val a = 1;
+        val b = let val a = a in a end;
+        val c = a;
+    "#;
+
+    let ast = Parser::new(src).parse();
+    let (hir, errs) = crate::lower_ast_to_hir(ast);
+
+    for e in errs.iter() {
+        println!("{e}");
+    }
+
+    assert!(errs.is_empty());
+    let topdecs = hir.topdecs();
+
+    let index = topdecs[1];
+    let (_, valbind) = hir.get_dec(index).val().unwrap();
+    let (dec, expr) = hir.get_expr(valbind[0].expr).let_expr().unwrap();
+    let (_, (_, loc)) = hir.get_expr(expr).vid().unwrap();
+    assert!(*loc == DefLoc::Dec(dec));
+
+    let index = topdecs[2];
+    let (_, valbind) = hir.get_dec(index).val().unwrap();
+    let (_, (_, loc)) = hir.get_expr(valbind[0].expr).vid().unwrap();
+    assert!(*loc == DefLoc::Dec(topdecs[0]));
+}
+
+#[test]
+fn data_constructor_refs() {
+    let src = r#"
+        datatype 'a option = None | Some of 'a;
+        val zero = fn None => None 
+                    | Some _ => Some 0;
+    "#;
+
+    let ast = Parser::new(src).parse();
+    let (hir, errs) = crate::lower_ast_to_hir(ast);
+
+    for e in errs.iter() {
+        println!("{e}");
+    }
+
+    assert!(errs.is_empty());
+    let topdecs = hir.topdecs();
+
+    let index = topdecs[1];
+    let (_, valbind) = hir.get_dec(index).val().unwrap();
+    let match_ = hir.get_expr(valbind[0].expr).fn_expr().unwrap();
+
+    // Check first match arm
+    let (pat, expr) = (hir.get_pat(match_[0].pat), hir.get_expr(match_[0].expr));
+    let (_, (_, loc)) = pat.vid().unwrap();
+    assert!(*loc == Some(DefLoc::Dec(topdecs[0])));
+    let (_, (_, loc)) = expr.vid().unwrap();
+    assert!(*loc == DefLoc::Dec(topdecs[0]));
+
+    // Check second match arm
+    let (pat, expr) = (hir.get_pat(match_[1].pat), hir.get_expr(match_[1].expr));
+    let (_, (_, loc), _) = pat.cons().unwrap();
+    assert!(*loc == DefLoc::Dec(topdecs[0]));
+    let (expr, _) = expr.application().unwrap();
+    let (_, (_, loc)) = hir.get_expr(expr).vid().unwrap();
+    assert!(*loc == DefLoc::Dec(topdecs[0]));
 }
