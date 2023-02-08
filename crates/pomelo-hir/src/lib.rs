@@ -91,6 +91,12 @@
 //!
 //! Handle errors during HIR lowering.
 //! Figure out a good way to surface them.
+//!
+//! Figure out if validation passes should be run on HIR or AST.
+//!
+//! Figure out if each HIR node needs to hold the index of its parent node.
+//!
+//! Figure out logging for this stage and probably parsing too.
 pub mod arena;
 
 pub mod builtins;
