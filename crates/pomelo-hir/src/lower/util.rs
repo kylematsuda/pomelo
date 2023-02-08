@@ -94,7 +94,7 @@ pub(crate) fn lower_match(ctx: &mut LoweringCtxt, match_expr: &ast::Match) -> Bo
 
 impl MRule {
     fn lower(ctx: &mut LoweringCtxt, mrule: &ast::Mrule) -> Self {
-        ctx.enter_scope(|ctx| {
+        ctx.in_inner_scope(|ctx| {
             let pat = Pat::lower_opt(ctx, mrule.pat());
             ctx.register_pat_names_in_match(pat);
             let expr = Expr::lower_opt(ctx, mrule.expr());

@@ -48,11 +48,10 @@ impl LoweringCtxt {
         &mut self.res
     }
 
-    pub(super) fn enter_scope<T>(&mut self, mut f: impl FnMut(&mut Self) -> T) -> T {
-        // This is probably super inefficient...
-        let saved_resolver = self.res.clone();
+    pub(super) fn in_inner_scope<T>(&mut self, mut f: impl FnMut(&mut Self) -> T) -> T {
+        self.resolver_mut().enter_scope();
         let out = f(self);
-        self.res = saved_resolver;
+        self.resolver_mut().exit_scope();
         out
     }
 
@@ -198,9 +197,9 @@ impl LoweringCtxt {
 #[derive(Debug, Clone)]
 pub struct Resolver {
     // TODO: use this to track exception definitions too!
-    values: HashMap<LongVId, DefLoc>,
-    fixity: HashMap<LongVId, Fixity>,
-    tys: HashMap<LongTyCon, DefLoc>,
+    values: ScopedMap<LongVId, DefLoc>,
+    fixity: ScopedMap<LongVId, Fixity>,
+    tys: ScopedMap<LongTyCon, DefLoc>,
 }
 
 impl Resolver {
@@ -209,14 +208,16 @@ impl Resolver {
             .into_iter()
             .map(|(name, f)| (LongVId::from(VId::from_builtin(name)), f))
             .collect();
+        let fixity = ScopedMap::from_map(fixity);
 
         let tys = builtins::BUILTIN_TYCONS
             .into_iter()
             .map(|name| (LongTyCon::from(TyCon::from_builtin(name)), DefLoc::Builtin))
             .collect();
+        let tys = ScopedMap::from_map(tys);
 
         Self {
-            values: HashMap::new(),
+            values: ScopedMap::from_map(HashMap::new()),
             fixity,
             tys,
         }
@@ -240,15 +241,81 @@ impl Resolver {
 
     // TODO: add some kind of logging
     pub fn lookup_vid(&self, vid: &LongVId) -> DefLoc {
-        self.values.get(vid).copied().unwrap_or(DefLoc::Missing)
+        self.values.lookup(vid).copied().unwrap_or(DefLoc::Missing)
     }
 
     // TODO: add some kind of logging
     pub fn lookup_ty(&self, ty: &LongTyCon) -> DefLoc {
-        self.tys.get(ty).copied().unwrap_or(DefLoc::Missing)
+        self.tys.lookup(ty).copied().unwrap_or(DefLoc::Missing)
     }
 
     pub fn lookup_fixity(&self, vid: &LongVId) -> Option<Fixity> {
-        self.fixity.get(vid).copied()
+        self.fixity.lookup(vid).copied()
+    }
+
+    pub fn enter_scope(&mut self) {
+        self.values.enter_scope();
+        self.tys.enter_scope();
+        self.fixity.enter_scope();
+    }
+
+    pub fn exit_scope(&mut self) {
+        self.values.exit_scope();
+        self.tys.exit_scope();
+        self.fixity.exit_scope();
+    }
+}
+
+/// Store names in scope and handle rollback when exiting an inner scope.
+#[derive(Debug, Clone)]
+struct ScopedMap<K, V> {
+    map: HashMap<K, V>,
+    scope_stack: Vec<usize>,
+    edits: Vec<(K, Option<V>)>,
+}
+
+impl<K, V> ScopedMap<K, V>
+where
+    K: Clone + PartialEq + Eq + std::hash::Hash,
+    V: Clone,
+{
+    pub fn from_map(map: HashMap<K, V>) -> Self {
+        Self {
+            map,
+            scope_stack: Vec::new(),
+            edits: Vec::new(),
+        }
+    }
+
+    pub fn insert(&mut self, k: K, v: V) -> Option<V> {
+        let out = self.map.insert(k.clone(), v);
+        self.edits.push((k, out.clone()));
+        out
+    }
+
+    pub fn lookup(&self, k: &K) -> Option<&V> {
+        self.map.get(k)
+    }
+
+    pub fn remove(&mut self, k: &K) {
+        self.map.remove(k);
+    }
+
+    pub fn enter_scope(&mut self) {
+        self.scope_stack.push(self.edits.len());
+    }
+
+    pub fn exit_scope(&mut self) {
+        let scope_start = self.scope_stack.pop().unwrap();
+
+        let revert = self.edits.split_off(scope_start);
+        for (k, v) in revert.into_iter() {
+            // Revert the edit, or remove the item if it wasn't previously in the map.
+            if let Some(v) = v {
+                self.map.insert(k, v);
+            } else {
+                self.map.remove(&k);
+            }
+        }
     }
 }

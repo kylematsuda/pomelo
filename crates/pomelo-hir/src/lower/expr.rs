@@ -96,7 +96,7 @@ impl Expr {
     }
 
     fn lower_let(ctx: &mut LoweringCtxt, e: &ast::LetExpr) -> ExprKind {
-        ctx.enter_scope(|ctx| {
+        ctx.in_inner_scope(|ctx| {
             let dec = Dec::lower_opt(ctx, e.dec());
 
             let exprs = e.exprs().map(|e| Self::lower(ctx, e)).collect();
@@ -163,7 +163,7 @@ impl Expr {
         // See pg. 70 of the Definition.
         //
         // We use `enter_scope` because we want to restrict the scope of `newvid` to this generated match.
-        ctx.enter_scope(|ctx| {
+        ctx.in_inner_scope(|ctx| {
             // Generate inner vid pattern for the patrow
             let vid_pat = Pat::generated(
                 ctx,
