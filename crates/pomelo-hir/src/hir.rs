@@ -189,10 +189,7 @@ pub struct DataBind {
 
 impl DataBind {
     pub fn bound_vids(&self) -> Vec<LongVId> {
-        self.conbinds
-            .iter()
-            .map(|b| LongVId::from_vid(b.vid))
-            .collect()
+        self.conbinds.iter().map(|b| LongVId::from(b.vid)).collect()
     }
 
     pub fn bound_tycon(&self) -> LongTyCon {
@@ -227,8 +224,8 @@ pub enum ExBind {
 impl ExBind {
     pub fn bound_vid(&self) -> LongVId {
         match self {
-            Self::Name { vid, .. } => LongVId::from_vid(*vid),
-            Self::Assignment { lhs, .. } => LongVId::from_vid(*lhs),
+            Self::Name { vid, .. } => LongVId::from(*vid),
+            Self::Assignment { lhs, .. } => LongVId::from(*lhs),
         }
     }
 }
@@ -418,7 +415,7 @@ impl PatKind {
             }
             PatKind::Typed { pat, .. } => arena.get_pat(*pat).bound_vids(arena),
             PatKind::Layered { vid, pat, .. } => {
-                let mut names = vec![LongVId::from_vid(*vid)];
+                let mut names = vec![LongVId::from(*vid)];
                 let pat_names = arena.get_pat(*pat).bound_vids(arena);
                 names.extend(pat_names);
                 names

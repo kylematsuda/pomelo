@@ -142,10 +142,7 @@ impl LoweringCtxt {
 
         if let DecKind::Fixity { fixity, vids } = &dec.kind {
             let fixity = *fixity;
-            let longvids = vids
-                .iter()
-                .map(|v| LongVId::from_vid(v.0))
-                .collect::<Vec<_>>();
+            let longvids = vids.iter().map(|v| LongVId::from(v.0)).collect::<Vec<_>>();
             for v in longvids {
                 // TODO: this is actually allowed! But we should probably surface a warning.
                 assert!(!v.is_builtin());
@@ -210,7 +207,7 @@ impl Resolver {
     pub fn new() -> Self {
         let fixity = builtins::BUILTIN_INFIX
             .into_iter()
-            .map(|(name, f)| (LongVId::from_vid(VId::from_builtin(name)), f))
+            .map(|(name, f)| (LongVId::from(VId::from_builtin(name)), f))
             .collect();
 
         let tys = builtins::BUILTIN_TYCONS

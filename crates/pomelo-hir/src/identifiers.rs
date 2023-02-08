@@ -77,13 +77,6 @@ impl LongVId {
         }
     }
 
-    pub fn from_vid(vid: VId) -> Self {
-        Self {
-            strids: Box::new([]),
-            vid,
-        }
-    }
-
     pub fn is_builtin(&self) -> bool {
         self.vid.is_builtin() && self.strids.is_empty()
     }
@@ -94,6 +87,21 @@ impl LongVId {
         } else {
             None
         }
+    }
+}
+
+impl From<VId> for LongVId {
+    fn from(vid: VId) -> Self {
+        Self {
+            strids: Box::new([]),
+            vid,
+        }
+    }
+}
+
+impl From<Builtin> for LongVId {
+    fn from(builtin: Builtin) -> Self {
+        Self::from(VId::from(builtin))
     }
 }
 
@@ -110,7 +118,7 @@ impl VId {
     }
 
     pub fn from_builtin(name: Builtin) -> Self {
-        Self::Name(Name::from_builtin(name))
+        name.into()
     }
 
     pub fn missing() -> Self {
@@ -136,11 +144,26 @@ impl VId {
     }
 }
 
+impl From<Builtin> for VId {
+    fn from(name: Builtin) -> Self {
+        Self::Name(Name::from_builtin(name))
+    }
+}
+
 /// A long (structure-qualified) structure identifier.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LongStrId {
     pub strid_path: Box<[StrId]>,
     pub strid: StrId,
+}
+
+impl From<StrId> for LongStrId {
+    fn from(strid: StrId) -> Self {
+        Self {
+            strid_path: Box::new([]),
+            strid,
+        }
+    }
 }
 
 /// A structure identifier.
@@ -156,7 +179,7 @@ impl StrId {
     }
 
     pub fn from_builtin(name: Builtin) -> Self {
-        Self::Name(Name::from_builtin(name))
+        name.into()
     }
 
     pub fn missing() -> Self {
@@ -178,10 +201,16 @@ impl StrId {
     }
 }
 
+impl From<Builtin> for StrId {
+    fn from(value: Builtin) -> Self {
+        Self::Name(Name::from_builtin(value))
+    }
+}
+
 /// A type variable.
 ///
 /// This must start with `'`.
-/// TODO: check if this is enforce during parsing.
+/// TODO: check if this is enforced during parsing.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TyVar {
     Missing,
@@ -240,7 +269,7 @@ impl TyCon {
     }
 
     pub fn from_builtin(name: Builtin) -> Self {
-        Self::Name(Name::from_builtin(name))
+        name.into()
     }
 
     pub fn missing() -> Self {
@@ -263,6 +292,12 @@ impl TyCon {
 
     pub fn is_builtin(&self) -> bool {
         matches!(self, Self::Name(Name::BuiltIn(_)))
+    }
+}
+
+impl From<Builtin> for TyCon {
+    fn from(value: Builtin) -> Self {
+        Self::Name(Name::from_builtin(value))
     }
 }
 

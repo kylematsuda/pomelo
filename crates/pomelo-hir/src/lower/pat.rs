@@ -47,10 +47,7 @@ impl Pat {
     pub fn vid_builtin(b: Builtin) -> PatKind {
         PatKind::VId {
             op: false,
-            longvid: (
-                LongVId::from_vid(VId::from_builtin(b)),
-                Some(DefLoc::Builtin),
-            ),
+            longvid: (b.into(), Some(DefLoc::Builtin)),
         }
     }
 

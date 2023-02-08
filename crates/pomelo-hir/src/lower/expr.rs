@@ -4,7 +4,7 @@ use crate::arena::Idx;
 use crate::lower::{infix, util, HirLower, HirLowerGenerated, LoweringCtxt};
 use crate::{
     AstId, Builtin, Dec, DecKind, DefLoc, ExpRow, Expr, ExprKind, Label, LongVId, MRule,
-    NameInterner, NodeParent, Pat, PatKind, PatRow, Scon, Ty, VId, ValBind,
+    NameInterner, NodeParent, Pat, PatKind, PatRow, Scon, Ty, ValBind,
 };
 
 impl HirLower for Expr {
@@ -61,7 +61,7 @@ impl Expr {
     fn builtin_vid(b: Builtin) -> ExprKind {
         ExprKind::VId {
             op: false,
-            longvid: (LongVId::from_vid(VId::from_builtin(b)), DefLoc::Builtin),
+            longvid: (b.into(), DefLoc::Builtin),
         }
     }
 
@@ -157,7 +157,7 @@ impl Expr {
         let parent = NodeParent::from_expr(ctx, &origin);
 
         let label = Label::from_token(ctx, e.label());
-        let newvid = LongVId::from_vid(ctx.interner_mut().fresh_vid());
+        let newvid = LongVId::from(ctx.interner_mut().fresh_vid());
 
         // This is a bit nasty... we need to generate an fn match on a record pattern.
         // See pg. 70 of the Definition.
@@ -281,7 +281,7 @@ impl Expr {
 
         let origin = ast::Expr::from(e.clone());
         let parent = NodeParent::from_expr(ctx, &origin);
-        let newvid = LongVId::from_vid(ctx.interner_mut().fresh_vid());
+        let newvid = LongVId::from(ctx.interner_mut().fresh_vid());
 
         let unitexpr = Self::generated(ctx, parent, ExprKind::Record { rows: Box::new([]) });
         // Horrible hack: set the reference to the def of `newvid` as missing.

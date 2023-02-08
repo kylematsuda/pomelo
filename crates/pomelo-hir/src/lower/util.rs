@@ -28,7 +28,7 @@ pub(super) fn lower_list<H: HirLowerGenerated>(
     rev_indexed.reverse();
 
     let nil = (
-        LongVId::from_vid(VId::from_builtin(Builtin::Nil)),
+        LongVId::from(VId::from_builtin(Builtin::Nil)),
         DefLoc::Builtin,
     );
 
@@ -70,7 +70,7 @@ pub(super) fn lower_vids(
 ) -> Box<[(VId, DefLoc)]> {
     vids.map(|v| {
         let vid = VId::from_token(ctx, Some(v));
-        let loc = ctx.resolver().lookup_vid(&LongVId::from_vid(vid));
+        let loc = ctx.resolver().lookup_vid(&LongVId::from(vid));
         (vid, loc)
     })
     .collect()
