@@ -3,6 +3,7 @@
 //! TODO: this is not very DRY, especially repetition between `VId`, `StrId`, `TyCon` and their
 //! `Long-` forms.
 use crate::arena::{Arena, Idx};
+use crate::builtins::Builtin;
 use crate::NameInterner;
 use std::collections::HashMap;
 
@@ -33,91 +34,6 @@ impl NameInterner for NameInternerImpl {
 
     fn get(&self, index: Idx<String>) -> &str {
         self.names.get(index).as_str()
-    }
-}
-
-/// Built-in identifiers in the HIR.
-///
-/// Check if this is complete...
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum Builtin {
-    // Values
-    True,
-    False,
-    Nil,
-    // Operators
-    Star,
-    Slash,
-    Div,
-    Mod,
-    Plus,
-    Minus,
-    Carat,
-    Cons,
-    At,
-    Eq,
-    Ineq,
-    Gtr,
-    GtrEq,
-    Less,
-    LessEq,
-    RefAssign,
-    O,
-    Before,
-}
-
-impl Builtin {
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            Self::True => "true",
-            Self::False => "false",
-            Self::Nil => "nil",
-            Self::Star => "*",
-            Self::Slash => "/",
-            Self::Div => "div",
-            Self::Mod => "mod",
-            Self::Plus => "+",
-            Self::Minus => "-",
-            Self::Carat => "^",
-            Self::Cons => "::",
-            Self::At => "@",
-            Self::Eq => "=",
-            Self::Ineq => "<>",
-            Self::Gtr => ">",
-            Self::GtrEq => ">=",
-            Self::Less => "<",
-            Self::LessEq => "<=",
-            Self::RefAssign => ":=",
-            Self::O => "o",
-            Self::Before => "before",
-        }
-    }
-
-    pub fn from_string(s: &str) -> Option<Self> {
-        match s {
-            "true" => Some(Self::True),
-            "false" => Some(Self::False),
-            "nil" => Some(Self::Nil),
-            "*" => Some(Self::Star),
-            "/" => Some(Self::Slash),
-            "div" => Some(Self::Div),
-            "mod" => Some(Self::Mod),
-            "+" => Some(Self::Plus),
-            "-" => Some(Self::Minus),
-            "^" => Some(Self::Carat),
-            "::" => Some(Self::Cons),
-            "@" => Some(Self::At),
-            "=" => Some(Self::Eq),
-            "<>" => Some(Self::Ineq),
-            ">" => Some(Self::Gtr),
-            ">=" => Some(Self::GtrEq),
-            "<" => Some(Self::Less),
-            "<=" => Some(Self::LessEq),
-            ":=" => Some(Self::RefAssign),
-            "o" => Some(Self::O),
-            "before" => Some(Self::Before),
-            _ => None,
-        }
     }
 }
 

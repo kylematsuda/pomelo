@@ -4,11 +4,11 @@ use std::collections::HashMap;
 use pomelo_parse::{ast, language::SML, AstNode, Error};
 
 use crate::arena::Idx;
-use crate::lower::infix::BUILTINS;
+use crate::builtins;
 use crate::lower::HirLower;
 use crate::{
     AstId, Dec, DecKind, DefLoc, Expr, ExprKind, File, FileArena, FileArenaExt, FileAstIdx, Fixity,
-    LongTyCon, LongVId, NameInterner, Pat, Ty, VId,
+    LongTyCon, LongVId, NameInterner, Pat, Ty, TyCon, VId,
 };
 
 /// Context needed while lowering.
@@ -208,15 +208,20 @@ pub struct Resolver {
 
 impl Resolver {
     pub fn new() -> Self {
-        let mut fixity = HashMap::new();
-        for (name, f) in BUILTINS {
-            fixity.insert(LongVId::from_vid(VId::from_builtin(name)), f);
-        }
+        let fixity = builtins::BUILTIN_INFIX
+            .into_iter()
+            .map(|(name, f)| (LongVId::from_vid(VId::from_builtin(name)), f))
+            .collect();
+
+        let tys = builtins::BUILTIN_TYCONS
+            .into_iter()
+            .map(|name| (LongTyCon::from(TyCon::from_builtin(name)), DefLoc::Builtin))
+            .collect();
 
         Self {
             values: HashMap::new(),
             fixity,
-            tys: HashMap::new(),
+            tys,
         }
     }
 
@@ -236,10 +241,12 @@ impl Resolver {
         }
     }
 
+    // TODO: add some kind of logging
     pub fn lookup_vid(&self, vid: &LongVId) -> DefLoc {
         self.values.get(vid).copied().unwrap_or(DefLoc::Missing)
     }
 
+    // TODO: add some kind of logging
     pub fn lookup_ty(&self, ty: &LongTyCon) -> DefLoc {
         self.tys.get(ty).copied().unwrap_or(DefLoc::Missing)
     }

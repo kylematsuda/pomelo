@@ -93,6 +93,9 @@
 //! Figure out a good way to surface them.
 pub mod arena;
 
+pub mod builtins;
+pub use builtins::*;
+
 pub mod hir;
 pub use hir::*;
 
