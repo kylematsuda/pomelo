@@ -34,6 +34,94 @@ impl Dec {
     pub fn bound_tycons<A: FileArena>(&self, arena: &A) -> Vec<LongTyCon> {
         self.kind.bound_tycons(arena)
     }
+
+    pub fn kind(&self) -> &DecKind {
+        &self.kind
+    }
+
+    pub fn missing(&self) -> bool {
+        matches!(self.kind(), DecKind::Missing)
+    }
+
+    pub fn seq(&self) -> Option<&[Idx<Dec>]> {
+        if let DecKind::Seq { decs } = self.kind() {
+            Some(decs)
+        } else {
+            None
+        }
+    }
+
+    pub fn val(&self) -> Option<(&[TyVar], &[ValBind])> {
+        if let DecKind::Val { tyvarseq, bindings } = self.kind() {
+            Some((tyvarseq, bindings))
+        } else {
+            None
+        }
+    }
+
+    pub fn ty(&self) -> Option<&[TypBind]> {
+        if let DecKind::Ty { bindings } = self.kind() {
+            Some(bindings)
+        } else {
+            None
+        }
+    }
+
+    pub fn datatype(&self) -> Option<&[DataBind]> {
+        if let DecKind::Datatype { databinds } = self.kind() {
+            Some(databinds)
+        } else {
+            None
+        }
+    }
+
+    pub fn replication(&self) -> Option<(&TyCon, &(LongTyCon, DefLoc))> {
+        if let DecKind::Replication { lhs, rhs } = self.kind() {
+            Some((lhs, rhs))
+        } else {
+            None
+        }
+    }
+
+    pub fn abstype(&self) -> Option<(&[DataBind], Idx<Dec>)> {
+        if let DecKind::Abstype { databinds, dec } = self.kind() {
+            Some((databinds, *dec))
+        } else {
+            None
+        }
+    }
+
+    pub fn exception(&self) -> Option<&ExBind> {
+        if let DecKind::Exception { exbind } = self.kind() {
+            Some(exbind)
+        } else {
+            None
+        }
+    }
+
+    pub fn local(&self) -> Option<(Idx<Dec>, Idx<Dec>)> {
+        if let DecKind::Local { inner, outer } = self.kind() {
+            Some((*inner, *outer))
+        } else {
+            None
+        }
+    }
+
+    pub fn open(&self) -> Option<&[LongStrId]> {
+        if let DecKind::Open { longstrids } = self.kind() {
+            Some(longstrids)
+        } else {
+            None
+        }
+    }
+
+    pub fn fixity(&self) -> Option<(&Fixity, &[(VId, DefLoc)])> {
+        if let DecKind::Fixity { fixity, vids } = self.kind() {
+            Some((fixity, vids))
+        } else {
+            None
+        }
+    }
 }
 
 /// Kinds of HIR declarations.
@@ -245,6 +333,105 @@ pub struct Expr {
     pub ast_id: AstId<ast::Expr>,
 }
 
+impl Expr {
+    pub fn kind(&self) -> &ExprKind {
+        &self.kind
+    }
+
+    pub fn missing(&self) -> bool {
+        matches!(self.kind(), ExprKind::Missing)
+    }
+
+    pub fn scon(&self) -> Option<&Scon> {
+        if let ExprKind::Scon(s) = self.kind() {
+            Some(s)
+        } else {
+            None
+        }
+    }
+
+    pub fn seq(&self) -> Option<&[Idx<Expr>]> {
+        if let ExprKind::Seq { exprs } = self.kind() {
+            Some(exprs)
+        } else {
+            None
+        }
+    }
+
+    pub fn vid(&self) -> Option<(bool, &(LongVId, DefLoc))> {
+        if let ExprKind::VId { op, longvid } = self.kind() {
+            Some((*op, longvid))
+        } else {
+            None
+        }
+    }
+
+    pub fn record(&self) -> Option<&[ExpRow]> {
+        if let ExprKind::Record { rows } = self.kind() {
+            Some(rows)
+        } else {
+            None
+        }
+    }
+
+    pub fn let_expr(&self) -> Option<(Idx<Dec>, Idx<Expr>)> {
+        if let ExprKind::Let { dec, expr } = self.kind() {
+            Some((*dec, *expr))
+        } else {
+            None
+        }
+    }
+
+    pub fn application(&self) -> Option<(Idx<Expr>, Idx<Expr>)> {
+        if let ExprKind::Application { expr, param } = self.kind() {
+            Some((*expr, *param))
+        } else {
+            None
+        }
+    }
+
+    #[allow(clippy::type_complexity)]
+    pub fn infix(&self) -> Option<(Idx<Expr>, (VId, DefLoc), Idx<Expr>)> {
+        if let ExprKind::Infix { lhs, vid, rhs } = self.kind() {
+            Some((*lhs, *vid, *rhs))
+        } else {
+            None
+        }
+    }
+
+    pub fn typed(&self) -> Option<(Idx<Expr>, Idx<Ty>)> {
+        if let ExprKind::Typed { expr, ty } = self.kind() {
+            Some((*expr, *ty))
+        } else {
+            None
+        }
+    }
+
+    pub fn handle(&self) -> Option<(Idx<Expr>, &[MRule])> {
+        if let ExprKind::Handle { expr, match_ } = self.kind() {
+            Some((*expr, match_))
+        } else {
+            None
+        }
+    }
+
+    pub fn raise(&self) -> Option<Idx<Expr>> {
+        if let ExprKind::Raise { expr } = self.kind() {
+            Some(*expr)
+        } else {
+            None
+        }
+    }
+
+    pub fn fn_expr(&self) -> Option<&[MRule]> {
+        if let ExprKind::Fn { match_ } = self.kind() {
+            Some(match_)
+        } else {
+            None
+        }
+    }
+}
+
 /// Kinds of HIR expressions.
 ///
 /// These correspond to the basic forms in Chapter 2 of the Definition, after
@@ -342,6 +529,76 @@ impl Pat {
     pub fn bound_vids<A: FileArena>(&self, arena: &A) -> Vec<LongVId> {
         self.kind.bound_vids(arena)
     }
+
+    pub fn kind(&self) -> &PatKind {
+        &self.kind
+    }
+
+    pub fn missing(&self) -> bool {
+        matches!(self.kind(), PatKind::Missing)
+    }
+
+    pub fn wildcard(&self) -> bool {
+        matches!(self.kind(), PatKind::Wildcard)
+    }
+
+    pub fn scon(&self) -> Option<&Scon> {
+        if let PatKind::Scon(s) = self.kind() {
+            Some(s)
+        } else {
+            None
+        }
+    }
+
+    pub fn vid(&self) -> Option<(bool, &(LongVId, Option<DefLoc>))> {
+        if let PatKind::VId { op, longvid } = self.kind() {
+            Some((*op, longvid))
+        } else {
+            None
+        }
+    }
+
+    pub fn record(&self) -> Option<&[PatRow]> {
+        if let PatKind::Record { rows } = self.kind() {
+            Some(rows)
+        } else {
+            None
+        }
+    }
+
+    pub fn cons(&self) -> Option<(bool, &(LongVId, DefLoc), Idx<Pat>)> {
+        if let PatKind::Constructed { op, longvid, pat } = self.kind() {
+            Some((*op, longvid, *pat))
+        } else {
+            None
+        }
+    }
+
+    #[allow(clippy::type_complexity)]
+    pub fn infix(&self) -> Option<(Idx<Pat>, &(VId, DefLoc), Idx<Pat>)> {
+        if let PatKind::Infix { lhs, vid, rhs } = self.kind() {
+            Some((*lhs, vid, *rhs))
+        } else {
+            None
+        }
+    }
+
+    pub fn typed(&self) -> Option<(Idx<Pat>, Idx<Ty>)> {
+        if let PatKind::Typed { pat, ty } = self.kind() {
+            Some((*pat, *ty))
+        } else {
+            None
+        }
+    }
+
+    #[allow(clippy::type_complexity)]
+    pub fn layered(&self) -> Option<(bool, &VId, Option<Idx<Ty>>, Idx<Pat>)> {
+        if let PatKind::Layered { op, vid, ty, pat } = self.kind() {
+            Some((*op, vid, *ty, *pat))
+        } else {
+            None
+        }
+    }
 }
 
 /// Kinds of HIR expressions.
@@ -437,6 +694,49 @@ pub struct Ty {
     pub kind: TyKind,
     // None only if TyKind::Missing
     pub ast_id: AstId<ast::Ty>,
+}
+
+impl Ty {
+    pub fn kind(&self) -> &TyKind {
+        &self.kind
+    }
+
+    pub fn missing(&self) -> bool {
+        matches!(self.kind(), TyKind::Missing)
+    }
+
+    pub fn tyvar(&self) -> Option<TyVar> {
+        if let TyKind::Var(v) = self.kind() {
+            Some(*v)
+        } else {
+            None
+        }
+    }
+
+    pub fn record(&self) -> Option<&[TyRow]> {
+        if let TyKind::Record { tyrows } = self.kind() {
+            Some(tyrows)
+        } else {
+            None
+        }
+    }
+
+    #[allow(clippy::type_complexity)]
+    pub fn cons(&self) -> Option<(&[Idx<Ty>], &(LongTyCon, DefLoc))> {
+        if let TyKind::Constructed { tyseq, longtycon } = self.kind() {
+            Some((tyseq, longtycon))
+        } else {
+            None
+        }
+    }
+
+    pub fn fn_ty(&self) -> Option<(Idx<Ty>, Idx<Ty>)> {
+        if let TyKind::Function { domain, range } = self.kind() {
+            Some((*domain, *range))
+        } else {
+            None
+        }
+    }
 }
 
 /// Kinds of HIR types.

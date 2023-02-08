@@ -164,6 +164,24 @@ impl File {
     }
 }
 
+impl FileArena for File {
+    fn get_pat(&self, index: Idx<Pat>) -> &Pat {
+        self.arenas.get_pat(index)
+    }
+    fn get_expr(&self, index: Idx<Expr>) -> &Expr {
+        self.arenas.get_expr(index)
+    }
+    fn get_dec(&self, index: Idx<Dec>) -> &Dec {
+        self.arenas.get_dec(index)
+    }
+    fn get_ty(&self, index: Idx<Ty>) -> &Ty {
+        self.arenas.get_ty(index)
+    }
+    fn get_name(&self, index: Idx<String>) -> &str {
+        self.arenas.get_name(index)
+    }
+}
+
 /// Interface for navigating the HIR.
 pub trait FileArena {
     fn get_pat(&self, index: Idx<Pat>) -> &Pat;
