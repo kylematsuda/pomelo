@@ -73,7 +73,7 @@ impl Expr {
             ast::AtomicExpr::Seq(e) => Self::lower_seq(ctx, e),
             ast::AtomicExpr::Record(e) => Self::lower_record(ctx, e),
             ast::AtomicExpr::Tuple(e) => Self::lower_tuple(ctx, e),
-            ast::AtomicExpr::Unit(e) => Self::lower_unit(ctx, e),
+            ast::AtomicExpr::Unit(_) => Self::lower_unit(),
             ast::AtomicExpr::List(e) => Self::lower_list(ctx, e),
             ast::AtomicExpr::RecSel(e) => Self::lower_recsel(ctx, e),
             ast::AtomicExpr::Paren(e) => Self::lower_paren(ctx, e),
@@ -99,20 +99,32 @@ impl Expr {
         ctx.in_inner_scope(|ctx| {
             let dec = Dec::lower_opt(ctx, e.dec());
 
-            let exprs = e.exprs().map(|e| Self::lower(ctx, e)).collect();
-            let kind = ExprKind::Seq { exprs };
+            let exprs: Box<[Idx<Expr>]> = e.exprs().map(|e| Self::lower(ctx, e)).collect();
 
-            let origin = ast::Expr::from(ast::AtomicExpr::from(e.clone()));
-            let parent = NodeParent::from_expr(ctx, &origin);
-            let expr = Self::generated(ctx, parent, kind);
+            // Avoid unnecessary nesting
+            let expr = if exprs.len() == 1 {
+                exprs[0]
+            } else {
+                let kind = ExprKind::Seq { exprs };
+                let origin = ast::Expr::from(ast::AtomicExpr::from(e.clone()));
+                let parent = NodeParent::from_expr(ctx, &origin);
+                Self::generated(ctx, parent, kind)
+            };
 
             ExprKind::Let { dec, expr }
         })
     }
 
     fn lower_seq(ctx: &mut LoweringCtxt, e: &ast::SeqExpr) -> ExprKind {
-        let exprs = e.exprs().map(|e| Self::lower(ctx, e)).collect();
-        ExprKind::Seq { exprs }
+        // Avoid unnecessary nesting
+        match e.exprs().count() {
+            0 => Self::lower_unit(),
+            1 => Self::to_kind(ctx, &e.exprs().next().unwrap()),
+            _ => {
+                let exprs = e.exprs().map(|e| Self::lower(ctx, e)).collect();
+                ExprKind::Seq { exprs }
+            }
+        }
     }
 
     fn lower_record(ctx: &mut LoweringCtxt, e: &ast::RecordExpr) -> ExprKind {
@@ -136,7 +148,7 @@ impl Expr {
         }
     }
 
-    fn lower_unit(_ctx: &mut LoweringCtxt, _e: &ast::UnitExpr) -> ExprKind {
+    fn lower_unit() -> ExprKind {
         ExprKind::Record { rows: Box::new([]) }
     }
 
