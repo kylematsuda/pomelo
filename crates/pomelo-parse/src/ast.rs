@@ -163,7 +163,11 @@ mod tests {
         let tree = parser.parse();
         let file = File::cast(tree.syntax()).unwrap();
 
-        let actual: String = file.declarations().map(|d| format!("{}", d)).collect();
+        let actual: String = file
+            .declarations()
+            .map(|d| format!("{}", d))
+            .collect::<Vec<String>>()
+            .join("; ");
         expect.assert_eq(&actual);
 
         assert_eq!(tree.has_errors(), should_error);

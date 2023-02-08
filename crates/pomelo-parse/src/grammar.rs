@@ -34,7 +34,12 @@ pub(crate) fn source_file(p: &mut Parser) {
         match p.peek_next_nontrivia(0) {
             k if k.is_dec_kw() => {
                 p.eat_trivia();
-                declaration(p);
+                declaration_inner(p);
+                p.eat_trivia();
+            }
+            SEMICOLON => {
+                p.eat_trivia();
+                assert!(p.eat(SEMICOLON));
                 p.eat_trivia();
             }
             EOF => {

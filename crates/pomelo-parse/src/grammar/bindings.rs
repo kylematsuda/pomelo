@@ -7,32 +7,20 @@ use SyntaxKind::*;
 pub fn valbind(p: &mut Parser) {
     let _ng = p.start_node(VAL_BIND);
 
-    // Optionally eat a REC
-    // TODO: a "val rec" can only bind to an "fn" expression.
-    // Should probably handle this correctly... once we parse "fn"s
-    let rec = p.eat(REC_KW);
+    // Optional `rec`
+    p.eat(REC_KW);
     p.eat_trivia();
 
-    valbind_inner(p, rec);
-}
-
-fn valbind_inner(p: &mut Parser, rec: bool) {
     grammar::pattern(p);
     p.eat_trivia();
 
     p.expect(EQ);
     p.eat_trivia();
 
-    if !rec {
-        grammar::expression(p);
-    } else {
-        // We may only eat an fn-match expression
-        if p.peek() != FN_KW {
-            p.error("val rec can only take bindings of form <pat> = fn <match>");
-        } else {
-            grammar::fn_match(p);
-        }
-    }
+    // If this is a `val rec`, this must be an `fn` expr.
+    // However, it's probably too restrictive to do this here.. save it for a validation pass
+    // on the AST.
+    grammar::expression(p);
 }
 
 pub fn fvalbind(p: &mut Parser) {

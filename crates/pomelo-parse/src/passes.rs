@@ -1,11 +1,17 @@
 //! Validation passes to run after the AST is constructed.
 //!
+//! Or maybe this is better done on the HIR?
+//!
 //! This doesn't do anything yet...
 //!
 //! TODO: add some passes for several things
 //! - Checking record type labels to be numeric (+ positive), etc.
 //! - Checking infix precedence is a single digit
 //! - Checking unterminated strs, etc.
+//! - Checking `val rec` always binds an `fn` expr
+//! - No repetition of record labels in the same record
+//! - No repetition of vids in a binding
+//! - No repetition of tyvars in a binding
 use crate::SyntaxTree;
 
 /// Apply validation passes, etc.
