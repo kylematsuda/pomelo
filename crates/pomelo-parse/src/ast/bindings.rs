@@ -47,6 +47,10 @@ impl FvalBindRow {
         support::token(self.syntax(), SyntaxKind::OP_KW).is_some()
     }
 
+    pub fn vid(&self) -> Option<ast::VId> {
+        support::tokens(self.syntax()).next()
+    }
+
     pub fn atpats(&self) -> impl Iterator<Item = ast::AtomicPat> {
         support::children(self.syntax())
     }

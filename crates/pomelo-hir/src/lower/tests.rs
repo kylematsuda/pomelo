@@ -47,6 +47,41 @@ fn lower_valdec_rec() {
 }
 
 #[test]
+fn lower_fun_dec() {
+    let src = r#"
+        fun myfun 0 0 = 0
+          | myfun _ _ = 1
+    "#;
+    // TODO: format this better...?
+    check::<Dec, _>(src, |p| p.parse_dec(), expect!["val rec myfun = (fn _temp0 => (fn _temp1 => (fn { 1=0, 2=0 } => 0 | { 1=_, 2=_ } => 1) { 1=_temp0, 2=_temp1 }))"])
+}
+
+#[test]
+fn lower_fun_dec_1_arg() {
+    let src = r#"
+        fun myfun 0 = 1
+          | myfun x = x
+    "#;
+    // TODO: format this better...?
+    check::<Dec, _>(
+        src,
+        |p| p.parse_dec(),
+        expect!["val rec myfun = (fn _temp0 => (fn 0 => 1 | x => x) { 1=_temp0 })"],
+    )
+}
+
+#[test]
+fn lower_fun_dec_3_arg() {
+    let src = r#"
+        fun myfun 0 _ _ = 0
+          | myfun _ 1 _ = 1
+          | myfun _ _ 2 = 2
+    "#;
+    // TODO: format this better...?
+    check::<Dec, _>(src, |p| p.parse_dec(), expect!["val rec myfun = (fn _temp0 => (fn _temp1 => (fn _temp2 => (fn { 1=0, 2=_, 3=_ } => 0 | { 1=_, 2=1, 3=_ } => 1 | { 1=_, 2=_, 3=2 } => 2) { 1=_temp0, 2=_temp1, 3=_temp2 })))"])
+}
+
+#[test]
 fn lower_datatype_no_data() {
     let src = "datatype direction = NORTH | SOUTH | EAST | WEST";
     check::<Dec, _>(

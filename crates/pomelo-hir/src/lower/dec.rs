@@ -4,8 +4,8 @@ use crate::arena::Idx;
 use crate::lower::util;
 use crate::lower::{HirLower, HirLowerGenerated, LoweringCtxt};
 use crate::{
-    AstId, ConBind, DataBind, Dec, DecKind, Expr, Fixity, LongStrId, LongTyCon, NodeParent, Pat,
-    Ty, TyCon, TypBind, VId, ValBind,
+    AstId, ConBind, DataBind, Dec, DecKind, DefLoc, Expr, ExprKind, Fixity, LongStrId, LongTyCon,
+    LongVId, MRule, NameInterner, NodeParent, Pat, PatKind, Ty, TyCon, TypBind, VId, ValBind,
 };
 
 impl HirLower for Dec {
@@ -61,8 +61,14 @@ impl Dec {
         DecKind::Val { tyvarseq, bindings }
     }
 
-    fn lower_fun(_ctx: &mut LoweringCtxt, _dec: &ast::FunDec, _index: Idx<Dec>) -> DecKind {
-        todo!() // this one is horrible...
+    fn lower_fun(ctx: &mut LoweringCtxt, dec: &ast::FunDec, index: Idx<Dec>) -> DecKind {
+        let parent = NodeParent::from_dec(ctx, &ast::Dec::from(dec.clone()));
+        let tyvarseq = util::lower_tyvarseq(ctx, dec.tyvarseq());
+        let bindings = dec
+            .bindings()
+            .map(|b| ValBind::lower_fvalbind(ctx, parent, &b, index))
+            .collect();
+        DecKind::Val { tyvarseq, bindings }
     }
 
     fn lower_type(ctx: &mut LoweringCtxt, dec: &ast::TypeDec) -> DecKind {
@@ -163,6 +169,216 @@ impl ValBind {
 
         let expr = Expr::lower_opt(ctx, b.expr());
         ValBind { rec, pat, expr }
+    }
+
+    fn lower_fvalbind(
+        ctx: &mut LoweringCtxt,
+        parent: NodeParent,
+        b: &ast::FvalBind,
+        _dec_index: Idx<Dec>,
+    ) -> Self {
+        let mut mrules = vec![];
+        let mut op = None;
+        let mut vid = None;
+        let mut n_parameters = None;
+
+        // TODO: surface error instead of panicking
+        if b.rows().count() == 0 {
+            panic!("fvalbind with no rows")
+        }
+
+        // Each `FvalBindRow` generates a pattern match
+        for row in b.rows() {
+            // Ensure all rows have the same `<op>` keyword.
+            Self::check_row_op(&mut op, row.op());
+
+            // Ensure all rows bind the same `vid`
+            Self::check_row_vid(&mut vid, VId::from_token(ctx, row.vid()));
+
+            // Ensure all rows have the same number of parameters
+            Self::check_row_arity(&mut n_parameters, row.atpats().count());
+
+            // Make the match expression
+            let pat = Self::make_row_pat(ctx, parent, &row, n_parameters.unwrap());
+            let expr = Self::make_row_expr(ctx, parent, &row);
+            mrules.push(MRule { pat, expr });
+        }
+
+        // The part below is a little confusing...
+        // A multi argument function desugars to a chain of `fn`s,
+        // e.g., `fun x y` becomes `fn x => (fn y => case (x, y) of .. )`.
+        //
+        // Since each `fn`'s expr is the next `fn`, we need to generate exprs in reverse order
+        // (final case expr, then work backwards toward the first `fn`).
+        // Each generated expr refers to one of the vid patterns in the chain of `fn`s,
+        // so we have to generate those patterns first.
+
+        // Generate the patterns `x`, `y` in each `fn` and the tuple expr `(x, y)`.
+        let (fn_pats, tuple_expr) =
+            Self::make_fresh_vids_and_outer_pat(ctx, parent, n_parameters.unwrap());
+
+        // Create the `case` expr at the end of the chain of `fn`s.
+        let kind = Expr::desugar_case(ctx, parent, tuple_expr, mrules.into_boxed_slice());
+        let desugared_case_expr = Expr::generated(ctx, parent, kind);
+
+        // Make the chain of `fn` pats. This function returns the `Idx` of the first `fn` in the
+        // chain.
+        let expr = Self::make_fn_chain(ctx, parent, fn_pats, desugared_case_expr);
+
+        // Make the pat that binds the function name
+        let vid_pat = Pat::generated(
+            ctx,
+            parent,
+            PatKind::VId {
+                op: op.unwrap(),
+                longvid: (LongVId::from(vid.unwrap()), None),
+            },
+        );
+
+        ValBind {
+            rec: true,
+            pat: vid_pat,
+            expr,
+        }
+    }
+
+    fn check_row_op(prev_op: &mut Option<bool>, row_op: bool) {
+        // TODO: surface error here instead of panicking
+        if let Some(op) = prev_op {
+            assert_eq!(row_op, *op);
+        } else {
+            *prev_op = Some(row_op);
+        }
+    }
+
+    fn check_row_vid(prev_vid: &mut Option<VId>, row_vid: VId) {
+        // TODO: surface error here instead of panicking
+        if let Some(vid) = prev_vid {
+            assert_eq!(*vid, row_vid);
+        } else {
+            *prev_vid = Some(row_vid);
+        }
+    }
+
+    fn check_row_arity(prev_n: &mut Option<usize>, row_n: usize) {
+        // TODO: surface error here instead of panicking
+        if let Some(n_parameters) = prev_n {
+            assert_eq!(*n_parameters, row_n);
+        } else {
+            *prev_n = Some(row_n);
+        }
+    }
+
+    fn make_row_pat(
+        ctx: &mut LoweringCtxt,
+        parent: NodeParent,
+        row: &ast::FvalBindRow,
+        n_parameters: usize,
+    ) -> Idx<Pat> {
+        if n_parameters == 1 {
+            let p = row.atpats().next().unwrap();
+            Pat::lower(ctx, ast::Pat::from(p))
+        } else {
+            let it = row
+                .atpats()
+                .map(|p| Pat::lower(ctx, ast::Pat::from(p)))
+                .collect::<Vec<_>>();
+            Pat::generated(ctx, parent, Pat::make_tuple(it.into_iter()))
+        }
+    }
+
+    fn make_row_expr(
+        ctx: &mut LoweringCtxt,
+        parent: NodeParent,
+        row: &ast::FvalBindRow,
+    ) -> Idx<Expr> {
+        let expr = Expr::lower_opt(ctx, row.expr());
+        if let Some(ty) = row.ty() {
+            let ty = Ty::lower(ctx, ty);
+            Expr::generated(ctx, parent, ExprKind::Typed { expr, ty })
+        } else {
+            expr
+        }
+    }
+
+    /// Returns:
+    ///
+    /// (1) list of pats referring to fresh vids to be used in the chain of `fn`s
+    /// (2) tuple expr referring to all of these fresh vids to be consumed by the generated case
+    /// expr
+    fn make_fresh_vids_and_outer_pat(
+        ctx: &mut LoweringCtxt,
+        parent: NodeParent,
+        n_parameters: usize,
+    ) -> (Vec<Idx<Pat>>, Idx<Expr>) {
+        // Make `n_parameters` fresh vids
+        let new_vids: Vec<_> = (0..n_parameters)
+            .into_iter()
+            .map(|_| LongVId::from(ctx.interner_mut().fresh_vid()))
+            .collect();
+
+        // Generate `vid` pats referencing the fresh vids
+        let mut fn_pats = vec![];
+        for new_vid in new_vids.iter() {
+            let kind = PatKind::VId {
+                op: false,
+                longvid: (new_vid.clone(), None),
+            };
+            fn_pats.push(Pat::generated(ctx, parent, kind));
+        }
+
+        let tuple_expr = new_vids
+            .iter()
+            .enumerate()
+            .map(|(i, vid)| {
+                Expr::generated(
+                    ctx,
+                    parent,
+                    ExprKind::VId {
+                        op: false,
+                        longvid: (vid.clone(), DefLoc::Pat(fn_pats[i])),
+                    },
+                )
+            })
+            .collect::<Vec<_>>();
+        let tuple_expr = Expr::generated(ctx, parent, Expr::make_tuple(tuple_expr.into_iter()));
+
+        (fn_pats, tuple_expr)
+    }
+
+    fn make_fn_chain(
+        ctx: &mut LoweringCtxt,
+        parent: NodeParent,
+        mut fn_pats: Vec<Idx<Pat>>,
+        case_expr: Idx<Expr>,
+    ) -> Idx<Expr> {
+        // Make the last `fn` pat which uses the case expression.
+        //
+        // Note: this pops the last vid pat off of `fn_pats` so we
+        // can just reverse iterate in the next block.
+        let mut expr = Expr::generated(
+            ctx,
+            parent,
+            ExprKind::Fn {
+                match_: Box::new([MRule {
+                    pat: fn_pats.pop().unwrap(),
+                    expr: case_expr,
+                }]),
+            },
+        );
+
+        // Working backward up the chain of `fn`s, each new `fn` uses the previous `expr`.
+        for pat in fn_pats.iter().rev() {
+            let mrule = MRule { pat: *pat, expr };
+            expr = Expr::generated(
+                ctx,
+                parent,
+                ExprKind::Fn {
+                    match_: Box::new([mrule]),
+                },
+            );
+        }
+        expr
     }
 }
 

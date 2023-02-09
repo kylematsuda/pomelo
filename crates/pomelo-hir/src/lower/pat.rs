@@ -51,6 +51,18 @@ impl Pat {
         }
     }
 
+    /// Other lowering stages need to make tuple pats
+    pub fn make_tuple(pats: impl Iterator<Item = Idx<Pat>>) -> PatKind {
+        let mut rows = vec![];
+        for (i, pat) in pats.enumerate() {
+            let label = Label::Numeric((i + 1) as u32);
+            rows.push(PatRow::Pattern { label, pat });
+        }
+        PatKind::Record {
+            rows: rows.into_boxed_slice(),
+        }
+    }
+
     fn lower_atomic(ctx: &mut LoweringCtxt, p: &ast::AtomicPat) -> PatKind {
         match p {
             ast::AtomicPat::Wildcard(_) => PatKind::Wildcard,
@@ -112,17 +124,8 @@ impl Pat {
     }
 
     fn lower_tuple(ctx: &mut LoweringCtxt, p: &ast::TuplePat) -> PatKind {
-        let mut rows = vec![];
-
-        for (i, p) in p.pats().enumerate() {
-            let pat = Pat::lower(ctx, p);
-            let label = Label::Numeric((i + 1) as u32);
-            rows.push(PatRow::Pattern { label, pat });
-        }
-
-        PatKind::Record {
-            rows: rows.into_boxed_slice(),
-        }
+        let pats = p.pats().map(|p| Self::lower(ctx, p)).collect::<Vec<_>>();
+        Self::make_tuple(pats.into_iter())
     }
 
     fn lower_record(ctx: &mut LoweringCtxt, p: &ast::RecordPat) -> PatKind {

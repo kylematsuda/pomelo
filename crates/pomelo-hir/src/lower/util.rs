@@ -86,6 +86,11 @@ impl NodeParent {
         let id = ctx.alloc_ast_id(pat);
         Self::Pat(id)
     }
+
+    pub(super) fn from_dec(ctx: &mut LoweringCtxt, dec: &ast::Dec) -> Self {
+        let id = ctx.alloc_ast_id(dec);
+        Self::Dec(id)
+    }
 }
 
 pub(crate) fn lower_match(ctx: &mut LoweringCtxt, match_expr: &ast::Match) -> Box<[MRule]> {

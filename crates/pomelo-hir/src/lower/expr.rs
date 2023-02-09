@@ -42,6 +42,18 @@ impl HirLowerGenerated for Expr {
 }
 
 impl Expr {
+    /// Other lowering stages need to make tuple pats
+    pub fn make_tuple(exprs: impl Iterator<Item = Idx<Expr>>) -> ExprKind {
+        let mut rows = vec![];
+        for (i, expr) in exprs.enumerate() {
+            let label = Label::Numeric((i + 1) as u32);
+            rows.push(ExpRow { label, expr });
+        }
+        ExprKind::Record {
+            rows: rows.into_boxed_slice(),
+        }
+    }
+
     fn to_kind(ctx: &mut LoweringCtxt, e: &ast::Expr) -> ExprKind {
         match &e {
             ast::Expr::Atomic(e) => Self::lower_atomic(ctx, e),
@@ -401,7 +413,7 @@ impl Expr {
         Self::desugar_case(ctx, parent, condition, match_arms)
     }
 
-    fn desugar_case(
+    pub(crate) fn desugar_case(
         ctx: &mut LoweringCtxt,
         parent: NodeParent,
         test: Idx<Expr>,
