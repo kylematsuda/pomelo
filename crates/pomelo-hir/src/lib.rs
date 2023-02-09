@@ -4,10 +4,23 @@
 //! serves to desugar some derived language constructs to simplify semantic analysis.
 //! The lowering from the AST to HIR is implemented in [`lower`].
 //!
+//! ### A note about immutability
+//!
+//! Currently, this only covers the pure functional subset of Core SML.
+//! This is convenient because immutability makes it easy to have the HIR be static single assignment (SSA).
+//! Each variable usage (syntactically a [`VId`]) is annotated with a [`DefLoc`] that points to its
+//! declaration.
+//! The combination `(VId, DefLoc)` is a unique identifier that points to only one place in the
+//! HIR.
+//! If we ever try to extend this to include imperative features, it will be interesting to see how
+//! challenging it is to adapt the HIR.
+//!
+//! # Structure of the HIR
+//!
 //! The main entry point to the HIR is [`File`], which contains the list of top level
 //! declarations ([`Dec`]) in the file.
-//! Internally, the HIR is represented a graph in an index-based arena -- the idea is that this is
-//! hopefully  a little simpler to work with than the
+//! Internally, the HIR is represented as a tree in an index-based arena -- the idea is that this is
+//! hopefully a little simpler to work with than the
 //! [`rowan`](https://docs.rs/rowan/latest/rowan/)-based AST that is outputted at the parsing stage.
 //! HIR nodes (notably [`Dec`], [`Expr`], [`Pat`], and [`Ty`]) are stored by a [`FileArena`].
 //! The syntactic kinds of nodes are represented by [`DecKind`], [`ExprKind`], [`PatKind`], and
@@ -34,7 +47,9 @@
 //!
 //! The HIR does not currently have a way to go from a declaration to all of its references, which
 //! is something that will be important for common IDE actions.
-//! I'm planning on adding this as another pass to be done after the HIR is constructed.
+//! This could be baked in at the lowering stage as well by annotating variable declarations with
+//! a list of usages.
+//! For now, this is implemented separately in [`pomelo_ty`](../pomelo_ty/index.html).
 //!
 //! # Lowering strategy and tradeoffs
 //!
@@ -42,6 +57,8 @@
 //! This is nice and simple, and also makes sense because the declarations in an SML
 //! file are sequential (in contrast to, e.g., a Rust module where the items may appear in any
 //! order).
+//!
+//! ### Comparison to `rustc` and `rust-analyzer`
 //!
 //! I was confused about this for a while, so it might be worth writing a little more (at least
 //! to help me remember why I did it this way).
@@ -76,10 +93,8 @@
 //! This all means that there is a pretty natural split between item declarations and expressions
 //! in Rust.
 //! If separate `Item`s are stored independently, then we take advantage of the fact that typing
-//! within one `Body` doesn't effect another `Body`, and not have to completely reanalyze the file
+//! within one `Body` doesn't effect another `Body`, and we don't have to completely reanalyze the file
 //! every time it is edited.
-//! (Note however that changing an `Item` (e.g., changing the signature of a function) requires
-//! rechecking all references to that item.)
 //!
 //! However, this actually doesn't make too much sense for SML, since changing the order of top-level
 //! declarations in a file can substantially change the program's meaning.

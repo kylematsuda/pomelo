@@ -28,7 +28,7 @@ The ML family has a lot of really cool stuff:
 so lots of opportunities for me to learn (/get really confused)!
 
 For now, I don't plan to touch modules or imperative stuff (see [Scope](https://github.com/kylematsuda/pomelo#scope) below).
-However, just trying to implement the Core semantics is plenty for me at this point.
+However, just trying to implement the Core is plenty for me at this point.
 
 ### Some SML resources
 
@@ -51,16 +51,12 @@ Core SML language (so no modules). Also, no imperative stuff except for maybe ba
 
 ## General design
 
-At this stage, the design is heavily influenced by [`rust-analyzer`](https://github.com/rust-lang/rust-analyzer). This is mainly because:
-1. I'd like to eventually turn this into a language server, and
-2. Rust is probably the language that I read best, and the code in `rust-analyzer` seemed a little more approachable than `rustc` initially.
-
 The following is a summary of what I've done so far.
 Please see the [docs](https://kylematsuda.github.io/pomelo/pomelo/) for more detailed information.
 
 ### Lexer
 
-[`pomelo-lex`](https://kylematsuda.github.io/pomelo/pomelo_lex/index.html) contains a very basic lexer, very influenced by [`rustc_lexer`](https://github.com/rust-lang/rust/blob/master/compiler/rustc_lexer).
+[`pomelo-lex`](https://kylematsuda.github.io/pomelo/pomelo_lex/index.html) contains a basic lexer, influenced by [`rustc_lexer`](https://github.com/rust-lang/rust/blob/master/compiler/rustc_lexer).
 
 ### Parser 
 
@@ -71,10 +67,11 @@ This is modeled off of [`rust-analyzer`'s parser](https://github.com/rust-lang/r
 
 [`pomelo-hir`](https://kylematsuda.github.io/pomelo/pomelo_hir/index.html) defines the high-level intermediate representation (HIR).
 The HIR is very similar to the AST, except all of the derived forms (see Appendix A of the Definition) are desugared to their more basic equivalent form (similar to how loops, etc. are desugared away in `rustc`'s [HIR](https://rustc-dev-guide.rust-lang.org/hir.html)).
-Pomelo's HIR is represented as a graph stored in an arena (essentially a wrapper around a `Vec`, see `pomelo-hir::arena` or [`la_arena`](https://docs.rs/la-arena/latest/la_arena/)).
+Pomelo's HIR is represented as a tree stored in an arena. 
+The arena is basically just a wrapper around a `Vec`, see `pomelo-hir::arena` or [`la_arena`](https://docs.rs/la-arena/latest/la_arena/).
 
 This module also contains the code for lowering from the AST.
-It also contains some basic name resolution -- usages of variables or type constructors are annotated 
+It also contains some name resolution -- usages of variables or type constructors are annotated 
 with references to the location in the HIR where their identifiers are defined.
 
 ### Next steps - type inference

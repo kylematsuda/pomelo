@@ -7,7 +7,7 @@
 //! and uses [`rowan`](https://docs.rs/rowan/latest/rowan/) to construct the syntax tree.
 //! It is also influenced by
 //! [`apollo_parser`](https://docs.rs/apollo-parser/latest/apollo_parser/), a GraphQL parser in
-//! Rust that also draws heavily from `rust-analyzer`.
+//! Rust that also draws from `rust-analyzer`.
 //!
 //! TODO: Maybe add some examples here?
 
