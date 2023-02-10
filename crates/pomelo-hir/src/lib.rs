@@ -4,17 +4,6 @@
 //! serves to desugar some derived language constructs to simplify semantic analysis.
 //! The lowering from the AST to HIR is implemented in [`lower`].
 //!
-//! ### A note about immutability
-//!
-//! Currently, this only covers the pure functional subset of Core SML.
-//! This is convenient because immutability makes it easy to have the HIR be static single assignment (SSA).
-//! Each variable usage (syntactically a [`VId`]) is annotated with a [`DefLoc`] that points to its
-//! declaration.
-//! The combination `(VId, DefLoc)` is a unique identifier that points to only one place in the
-//! HIR.
-//! If we ever try to extend this to include imperative features, it will be interesting to see how
-//! challenging it is to adapt the HIR.
-//!
 //! # Structure of the HIR
 //!
 //! The main entry point to the HIR is [`File`], which contains the list of top level
@@ -101,6 +90,17 @@
 //! At the very least, we probably have to redo type-checking on the entire file below the
 //! point where it was edited, so it's probably not too much extra cost to redo the parsing and lowering of
 //! the entire file to HIR.
+//!
+//! ### A note about immutability
+//!
+//! Currently, this only covers the pure functional subset of Core SML.
+//! This is convenient because immutability makes it easy to have the HIR be static single assignment (SSA).
+//! Each variable usage (syntactically a [`VId`]) is annotated with a [`DefLoc`] that points to its
+//! declaration.
+//! The combination `(VId, DefLoc)` is a unique identifier that points to only one place in the
+//! HIR.
+//! If we ever try to extend this to include imperative features, it will be interesting to see how
+//! challenging it is to adapt the HIR.
 //!
 //! # TODO:
 //!
