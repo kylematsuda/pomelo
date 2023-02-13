@@ -6,8 +6,9 @@ use std::collections::VecDeque;
 
 use crate::buffer::Buffer;
 
+pub const LINE_WIDTH: usize = 80;
+
 const INFINITY: isize = 0xFFFF;
-const LINE_WIDTH: usize = 80;
 const NEWLINE: &str = "\n";
 
 const MAX_BLANKS: usize = 0xFFFF;
@@ -15,7 +16,6 @@ const LINEBREAK: Token = Token::Break {
     blank_spaces: MAX_BLANKS,
     overflow_indent: 0,
 };
-
 
 /// Determines formatting for a group.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

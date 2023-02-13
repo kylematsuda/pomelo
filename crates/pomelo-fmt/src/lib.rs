@@ -19,3 +19,23 @@
 
 mod buffer;
 mod printer;
+
+mod dec;
+mod expr;
+mod pat;
+mod ty;
+
+use pomelo_parse::{ast, SyntaxTree, AstNode};
+
+/// Pretty print the AST.
+pub fn print(ast: SyntaxTree) -> String {    
+    // TODO: handle errors
+    let _errors = ast.errors().cloned();
+    let node = ast::File::cast(ast.syntax()).unwrap();
+
+    let mut output = String::new();
+    for dec in node.declarations() {
+        output.push_str(&dec::print_dec(&dec)); 
+    }
+    output
+}
