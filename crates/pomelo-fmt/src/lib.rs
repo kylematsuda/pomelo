@@ -17,4 +17,5 @@
 //!
 //! Not much done yet!
 
+mod buffer;
 mod printer;

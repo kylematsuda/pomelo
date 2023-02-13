@@ -3,20 +3,29 @@
 //! See crate-level docs for some helpful resources.
 use std::borrow::Cow;
 use std::collections::VecDeque;
-use std::ops::{Index, IndexMut};
 
+use crate::buffer::Buffer;
+
+const INFINITY: isize = 0xFFFF;
 const LINE_WIDTH: usize = 80;
 const NEWLINE: &str = "\n";
 
+const MAX_BLANKS: usize = 0xFFFF;
+const LINEBREAK: Token = Token::Break {
+    blank_spaces: MAX_BLANKS,
+    overflow_indent: 0,
+};
+
+
 /// Determines formatting for a group.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Breaks {
+enum Breaks {
     Consistent,
     Inconsistent,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Token {
+enum Token {
     Text(Cow<'static, str>),
     Break {
         /// Spaces to insert if not a linebreak
@@ -34,81 +43,11 @@ pub enum Token {
 }
 
 impl Token {
-    pub fn len(&self) -> Option<usize> {
+    fn len(&self) -> Option<usize> {
         match self {
             Self::Text(s) => Some(s.len()),
             _ => None,
         }
-    }
-}
-
-const MAX_BLANKS: usize = 0xFFFF;
-const LINEBREAK: Token = Token::Break {
-    blank_spaces: MAX_BLANKS,
-    overflow_indent: 0,
-};
-
-#[derive(Debug, Clone)]
-pub struct Buffer<T> {
-    offset: usize,
-    storage: VecDeque<T>,
-}
-
-impl<T> Buffer<T> {
-    pub fn new() -> Self {
-        Self {
-            offset: 0,
-            storage: VecDeque::new(),
-        }
-    }
-
-    pub fn push_right(&mut self, elem: T) -> usize {
-        let index = self.offset + self.storage.len();
-        self.storage.push_back(elem);
-        index
-    }
-
-    pub fn right_elem(&self) -> Option<&T> {
-        self.storage.back()
-    }
-
-    pub fn left(&self) -> usize {
-        self.offset
-    }
-
-    pub fn left_elem(&self) -> Option<&T> {
-        self.storage.front()
-    }
-
-    pub fn pop_left(&mut self) -> Option<T> {
-        self.offset += 1;
-        self.storage.pop_front()
-    }
-
-    pub fn clear(&mut self) {
-        self.storage.clear();
-    }
-
-    pub fn len(&self) -> usize {
-        self.storage.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.storage.is_empty()
-    }
-}
-
-impl<T> Index<usize> for Buffer<T> {
-    type Output = T;
-
-    fn index(&self, index: usize) -> &Self::Output {
-        &self.storage[index.checked_sub(self.offset).unwrap()]
-    }
-}
-
-impl<T> IndexMut<usize> for Buffer<T> {
-    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-        &mut self.storage[index.checked_sub(self.offset).unwrap()]
     }
 }
 
@@ -157,8 +96,6 @@ pub struct Printer {
 }
 
 impl Printer {
-    const INFINITY: isize = 0xFFFF;
-
     pub fn new(line_width: usize) -> Self {
         Self {
             margin: line_width as isize,
@@ -172,136 +109,45 @@ impl Printer {
         }
     }
 
-    pub fn advance_left(&mut self) {
-        if self.buffer.left_elem().unwrap().size < 0 {
-            return;
-        }
-
-        let BufElt { token, size } = self.buffer.pop_left().unwrap();
-        self.left_total += match &token {
-            Token::Break { blank_spaces, .. } => *blank_spaces as isize,
-            Token::Text(_) => size,
-            _ => 0,
-        };
-        self.print(token, size);
-
-        if !self.buffer.is_empty() {
+    pub fn output(mut self) -> String {
+        if !self.scan_stack.is_empty() {
+            self.check_stack(0);
             self.advance_left();
         }
+        self.output
     }
 
-    pub fn indent(&mut self, n: usize) {
-        for _ in 0..n {
-            self.output.push(' ');
-        }
+    pub fn text(&mut self, s: impl Into<Cow<'static, str>>) {
+        self.scan(Token::Text(s.into()))
     }
 
-    pub fn newline(&mut self) {
-        self.output.push_str(NEWLINE);
+    pub fn cgroup(&mut self, indent: usize) {
+        self.scan(Token::Begin { indent, breaks: Breaks::Consistent })
     }
 
-    pub fn add_space_break(&mut self, blank_spaces: usize) {
-        self.space -= blank_spaces as isize;
-        self.indent(blank_spaces);
+    pub fn igroup(&mut self, indent: usize) {
+        self.scan(Token::Begin { indent, breaks: Breaks::Inconsistent })
     }
 
-    pub fn add_line_break(&mut self, print_stack_offset: usize, overflow_indent: usize) {
-        self.space = print_stack_offset as isize - overflow_indent as isize;
-        self.newline();
-        self.indent((self.margin - self.space) as usize);
+    pub fn endgroup(&mut self) {
+        self.scan(Token::End)
     }
 
-    pub fn print(&mut self, token: Token, size: isize) {
-        match token {
-            Token::Begin { indent, breaks } => {
-                if size > self.space {
-                    self.print_stack
-                        .push((self.space as usize - indent, Some(breaks)).into());
-                } else {
-                    self.print_stack.push((0, None).into());
-                }
-            }
-            Token::End => {
-                self.print_stack.pop();
-            }
-            Token::Break {
-                blank_spaces,
-                overflow_indent,
-            } => {
-                let stack_top = self.print_stack.last().expect("print_stack is nonempty");
-                match stack_top.breaks {
-                    None => self.add_space_break(blank_spaces),
-                    Some(Breaks::Consistent) => {
-                        self.add_line_break(stack_top.offset, overflow_indent)
-                    }
-                    Some(Breaks::Inconsistent) => {
-                        if size > self.space {
-                            self.add_line_break(stack_top.offset, overflow_indent)
-                        } else {
-                            self.add_space_break(blank_spaces)
-                        }
-                    }
-                }
-            }
-            Token::Text(s) => {
-                // TODO: don't panic here!
-                if size > self.space {
-                    panic!("line too long")
-                }
-                self.space -= size;
-                self.output.push_str(&s);
-            }
-        }
+    pub fn linebreak(&mut self) {
+        self.scan(LINEBREAK)
     }
 
-    pub fn scan_tokens(&mut self, tokens: impl Iterator<Item = Token>) {}
-
-    pub fn check_stack(&mut self, k: isize) {
-        if self.scan_stack.is_empty() {
-            return;
-        }
-
-        let x = self.scan_stack.back().unwrap();
-        match self.buffer[*x].token {
-            Token::Begin { .. } => {
-                if k > 0 {
-                    let x = self.scan_stack.pop_back().unwrap();
-                    self.buffer[x].size += self.right_total;
-                    self.check_stack(k - 1);
-                }
-            }
-            Token::End => {
-                let x = self.scan_stack.pop_back().unwrap();
-                self.buffer[x].size = 1;
-                self.check_stack(k + 1);
-            }
-            Token::Break { .. } => {
-                let x = self.scan_stack.pop_back().unwrap();
-                self.buffer[x].size += self.right_total;
-                if k > 0 {
-                    self.check_stack(k);
-                }
-            }
-            Token::Text(_) => unreachable!(),
-        }
+    pub fn zerobreak(&mut self) {
+        self.scan(Token::Break { blank_spaces: 0, overflow_indent: 0 })
     }
 
-    pub fn check_stream(&mut self) {
-        if self.right_total - self.left_total > self.space {
-            if let Some(left) = self.scan_stack.front() {
-                if *left == self.buffer.left() {
-                    let left = self.scan_stack.pop_front().unwrap();
-                    self.buffer[left].size = Self::INFINITY;
-                }
-            }
-            self.advance_left();
-            if !self.buffer.is_empty() {
-                self.check_stream();
-            }
-        }
+    pub fn space(&mut self) {
+        self.scan(Token::Break { blank_spaces: 1, overflow_indent: 0 })
     }
+}
 
-    pub fn scan_token(&mut self, t: Token) {
+impl Printer {
+    fn scan(&mut self, t: Token) {
         match t {
             Token::Begin { .. } => {
                 if self.scan_stack.is_empty() {
@@ -344,12 +190,130 @@ impl Printer {
         }
     }
 
-    pub fn finish(mut self) -> String {
-        if !self.scan_stack.is_empty() {
-            self.check_stack(0);
+    fn print(&mut self, token: Token, size: isize) {
+        match token {
+            Token::Begin { indent, breaks } => {
+                if size > self.space {
+                    self.print_stack
+                        .push((self.space as usize - indent, Some(breaks)).into());
+                } else {
+                    self.print_stack.push((0, None).into());
+                }
+            }
+            Token::End => {
+                self.print_stack.pop();
+            }
+            Token::Break {
+                blank_spaces,
+                overflow_indent,
+            } => {
+                let stack_top = self.print_stack.last().expect("print_stack is nonempty");
+                match stack_top.breaks {
+                    None => self.add_space_break(blank_spaces),
+                    Some(Breaks::Consistent) => {
+                        self.add_line_break(stack_top.offset, overflow_indent)
+                    }
+                    Some(Breaks::Inconsistent) => {
+                        if size > self.space {
+                            self.add_line_break(stack_top.offset, overflow_indent)
+                        } else {
+                            self.add_space_break(blank_spaces)
+                        }
+                    }
+                }
+            }
+            Token::Text(s) => {
+                // TODO: don't panic here!
+                if size > self.space {
+                    panic!("line too long")
+                }
+                self.space -= size;
+                self.output.push_str(&s);
+            }
+        }
+    }
+
+    fn advance_left(&mut self) {
+        if self.buffer.left_elem().unwrap().size < 0 {
+            return;
+        }
+
+        let BufElt { token, size } = self.buffer.pop_left().unwrap();
+        self.left_total += match &token {
+            Token::Break { blank_spaces, .. } => *blank_spaces as isize,
+            Token::Text(_) => size,
+            _ => 0,
+        };
+        self.print(token, size);
+
+        if !self.buffer.is_empty() {
             self.advance_left();
         }
-        self.output
+    }
+
+    fn check_stack(&mut self, mut k: isize) {
+        while let Some(&x) = self.scan_stack.back() {
+            let mut elt = &mut self.buffer[x];
+            match elt.token {
+                Token::Begin { .. } => {
+                    if k <= 0 {
+                        break;
+                    }
+                    self.scan_stack.pop_back().unwrap();
+                    elt.size += self.right_total;
+                    k -= 1;
+                }
+                Token::End => {
+                    self.scan_stack.pop_back().unwrap();
+                    elt.size = 1;
+                    k += 1;
+                }
+                Token::Break { .. } => {
+                    self.scan_stack.pop_back().unwrap();
+                    elt.size += self.right_total;
+                    if k <= 0 {
+                        break;
+                    }
+                }
+                Token::Text(_) => unreachable!(),
+            }
+        }
+    }
+
+    fn check_stream(&mut self) {
+        while self.right_total - self.left_total > self.space {
+            if let Some(left) = self.scan_stack.front() {
+                if *left == self.buffer.left() {
+                    let left = self.scan_stack.pop_front().unwrap();
+                    self.buffer[left].size = INFINITY;
+                }
+            }
+            self.advance_left();
+            if self.buffer.is_empty() {
+                break;
+            }
+        }
+    }
+
+    fn add_space_break(&mut self, blank_spaces: usize) {
+        self.space -= blank_spaces as isize;
+        self.insert_indent(blank_spaces);
+    }
+
+    fn add_line_break(&mut self, print_stack_offset: usize, overflow_indent: usize) {
+        self.space = print_stack_offset as isize - overflow_indent as isize;
+        self.insert_newline();
+        self.insert_indent((self.margin - self.space) as usize);
+    }
+
+    fn insert_indent(&mut self, n: usize) {
+        for _ in 0..n {
+            self.output.push(' ');
+        }
+    }
+
+    fn insert_newline(&mut self) {
+        self.output.push_str(NEWLINE);
     }
 }
 
@@ -445,26 +409,24 @@ mod tests {
         ];
 
         let mut printer = Printer::new(20);
-
         let expected = expect![[r#"
             f(a, b, c, d)
               + g(a, b, c, d)"#]];
 
         for tok in src.clone() {
-            printer.scan_token(tok);
+            printer.scan(tok);
         }
-        let result = printer.finish();
+        let result = printer.output();
         expected.assert_eq(&result);
 
         let mut printer = Printer::new(40);
-
         let expected = expect![[r#"
             f(a, b, c, d) + g(a, b, c, d)"#]];
 
         for tok in src {
-            printer.scan_token(tok);
+            printer.scan(tok);
         }
-        let result = printer.finish();
+        let result = printer.output();
         expected.assert_eq(&result);
     }
 }
