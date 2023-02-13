@@ -7,3 +7,6 @@ edition = "2021"
 
 [dependencies]
 pomelo-parse = { path = "../pomelo-parse" }
+
+[dev-dependencies]
+expect-test = "1.4"

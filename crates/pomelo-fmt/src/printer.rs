@@ -62,16 +62,14 @@ impl<T> Buffer<T> {
         }
     }
 
-    pub fn push_right(&mut self, elem: T) {
-        self.storage.push_back(elem)
+    pub fn push_right(&mut self, elem: T) -> usize {
+        let index = self.offset + self.storage.len();
+        self.storage.push_back(elem);
+        index
     }
 
     pub fn right_elem(&self) -> Option<&T> {
         self.storage.back()
-    }
-
-    pub fn right(&self) -> usize {
-        self.storage.len() - 1
     }
 
     pub fn left(&self) -> usize {
@@ -88,12 +86,15 @@ impl<T> Buffer<T> {
     }
 
     pub fn clear(&mut self) {
-        self.offset = 0;
         self.storage.clear();
     }
 
     pub fn len(&self) -> usize {
         self.storage.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.storage.is_empty()
     }
 }
 
@@ -179,14 +180,12 @@ impl Printer {
         let BufElt { token, size } = self.buffer.pop_left().unwrap();
         self.left_total += match &token {
             Token::Break { blank_spaces, .. } => *blank_spaces as isize,
-            Token::Text(s) => s.len() as isize,
-            // TODO: figure out what to do here?
-            // probably just a size of 0?
-            _ => unreachable!(),
+            Token::Text(_) => size,
+            _ => 0,
         };
         self.print(token, size);
 
-        if self.buffer.len() != 0 {
+        if !self.buffer.is_empty() {
             self.advance_left();
         }
     }
@@ -243,11 +242,11 @@ impl Printer {
                         }
                     }
                 }
-            },
+            }
             Token::Text(s) => {
                 // TODO: don't panic here!
                 if size > self.space {
-                    panic!("line to long")
+                    panic!("line too long")
                 }
                 self.space -= size;
                 self.output.push_str(&s);
@@ -255,30 +254,35 @@ impl Printer {
         }
     }
 
+    pub fn scan_tokens(&mut self, tokens: impl Iterator<Item = Token>) {}
+
     pub fn check_stack(&mut self, k: isize) {
-        if !self.scan_stack.is_empty() {
+        if self.scan_stack.is_empty() {
             return;
         }
 
-        // Try to understand why this is top() and not pop() in the Oppen paper..
-        let x = self.scan_stack.pop_back().unwrap();
-        match self.buffer[x].token {
+        let x = self.scan_stack.back().unwrap();
+        match self.buffer[*x].token {
             Token::Begin { .. } => {
                 if k > 0 {
+                    let x = self.scan_stack.pop_back().unwrap();
                     self.buffer[x].size += self.right_total;
                     self.check_stack(k - 1);
                 }
             }
             Token::End => {
+                let x = self.scan_stack.pop_back().unwrap();
                 self.buffer[x].size = 1;
                 self.check_stack(k + 1);
             }
-            _ => {
+            Token::Break { .. } => {
+                let x = self.scan_stack.pop_back().unwrap();
                 self.buffer[x].size += self.right_total;
                 if k > 0 {
                     self.check_stack(k);
                 }
             }
+            Token::Text(_) => unreachable!(),
         }
     }
 
@@ -291,18 +295,13 @@ impl Printer {
                 }
             }
             self.advance_left();
-            if self.buffer.len() != 0 {
+            if !self.buffer.is_empty() {
                 self.check_stream();
             }
         }
     }
 
-    pub fn print_token(&mut self, token: Option<Token>) {
-        if token.is_none() {
-            todo!()
-        }
-
-        let t = token.unwrap();
+    pub fn scan_token(&mut self, t: Token) {
         match t {
             Token::Begin { .. } => {
                 if self.scan_stack.is_empty() {
@@ -310,15 +309,15 @@ impl Printer {
                     self.right_total = 1;
                     self.buffer.clear();
                 }
-                self.buffer.push_right((t, -self.right_total).into());
-                self.scan_stack.push_back(self.buffer.right());
+                let right = self.buffer.push_right((t, -self.right_total).into());
+                self.scan_stack.push_back(right);
             }
             Token::End => {
                 if self.scan_stack.is_empty() {
                     self.print(t, 0);
                 } else {
-                    self.buffer.push_right((t, -1).into());
-                    self.scan_stack.push_back(self.buffer.right());
+                    let right = self.buffer.push_right((t, -1).into());
+                    self.scan_stack.push_back(right);
                 }
             }
             Token::Break { blank_spaces, .. } => {
@@ -328,8 +327,8 @@ impl Printer {
                     self.buffer.clear();
                 }
                 self.check_stack(0);
-                self.scan_stack.push_back(self.buffer.right());
-                self.buffer.push_right((t, -self.right_total).into());
+                let right = self.buffer.push_right((t, -self.right_total).into());
+                self.scan_stack.push_back(right);
                 self.right_total += blank_spaces as isize;
             }
             Token::Text(_) => {
@@ -344,9 +343,128 @@ impl Printer {
             }
         }
     }
+
+    pub fn finish(mut self) -> String {
+        if !self.scan_stack.is_empty() {
+            self.check_stack(0);
+            self.advance_left();
+        }
+        self.output
+    }
 }
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn basic_test() {
+        use super::*;
+        use expect_test::expect;
 
+        let src = [
+            Token::Begin {
+                indent: 0,
+                breaks: Breaks::Consistent,
+            },
+            Token::Begin {
+                indent: 0,
+                breaks: Breaks::Consistent,
+            },
+            Token::Text("f(".into()),
+            Token::Break {
+                blank_spaces: 0,
+                overflow_indent: 2,
+            },
+            Token::Text("a,".into()),
+            Token::Break {
+                blank_spaces: 1,
+                overflow_indent: 2,
+            },
+            Token::Text("b,".into()),
+            Token::Break {
+                blank_spaces: 1,
+                overflow_indent: 2,
+            },
+            Token::Text("c,".into()),
+            Token::Break {
+                blank_spaces: 1,
+                overflow_indent: 2,
+            },
+            Token::Text("d".into()),
+            Token::Break {
+                blank_spaces: 0,
+                overflow_indent: 0,
+            },
+            Token::Text(")".into()),
+            Token::End,
+            Token::Break {
+                blank_spaces: 1,
+                overflow_indent: 2,
+            },
+            Token::Begin {
+                indent: 2,
+                breaks: Breaks::Inconsistent,
+            },
+            Token::Text("+".into()),
+            Token::Break {
+                blank_spaces: 1,
+                overflow_indent: 2,
+            },
+            Token::Begin {
+                indent: 0,
+                breaks: Breaks::Consistent,
+            },
+            Token::Text("g(".into()),
+            Token::Break {
+                blank_spaces: 0,
+                overflow_indent: 2,
+            },
+            Token::Text("a,".into()),
+            Token::Break {
+                blank_spaces: 1,
+                overflow_indent: 2,
+            },
+            Token::Text("b,".into()),
+            Token::Break {
+                blank_spaces: 1,
+                overflow_indent: 2,
+            },
+            Token::Text("c,".into()),
+            Token::Break {
+                blank_spaces: 1,
+                overflow_indent: 2,
+            },
+            Token::Text("d".into()),
+            Token::Break {
+                blank_spaces: 0,
+                overflow_indent: 0,
+            },
+            Token::Text(")".into()),
+            Token::End,
+            Token::End,
+            Token::End,
+        ];
+
+        let mut printer = Printer::new(20);
+
+        let expected = expect![[r#"
+            f(a, b, c, d)
+              + g(a, b, c, d)"#]];
+
+        for tok in src.clone() {
+            printer.scan_token(tok);
+        }
+        let result = printer.finish();
+        expected.assert_eq(&result);
+
+        let mut printer = Printer::new(40);
+
+        let expected = expect![[r#"
+            f(a, b, c, d) + g(a, b, c, d)"#]];
+
+        for tok in src {
+            printer.scan_token(tok);
+        }
+        let result = printer.finish();
+        expected.assert_eq(&result);
+    }
 }
