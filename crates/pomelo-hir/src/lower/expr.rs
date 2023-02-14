@@ -110,19 +110,7 @@ impl Expr {
     fn lower_let(ctx: &mut LoweringCtxt, e: &ast::LetExpr) -> ExprKind {
         ctx.in_inner_scope(|ctx| {
             let dec = Dec::lower_opt(ctx, e.dec());
-
-            let exprs: Box<[Idx<Expr>]> = e.exprs().map(|e| Self::lower(ctx, e)).collect();
-
-            // Avoid unnecessary nesting
-            let expr = if exprs.len() == 1 {
-                exprs[0]
-            } else {
-                let kind = ExprKind::Seq { exprs };
-                let origin = ast::Expr::from(ast::AtomicExpr::from(e.clone()));
-                let parent = NodeParent::from_expr(ctx, &origin);
-                Self::generated(ctx, parent, kind)
-            };
-
+            let expr = Expr::lower_opt(ctx, e.expr());
             ExprKind::Let { dec, expr }
         })
     }

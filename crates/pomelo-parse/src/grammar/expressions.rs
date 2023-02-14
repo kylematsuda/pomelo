@@ -7,7 +7,7 @@ use crate::{
 use SyntaxKind::*;
 
 pub fn expression(p: &mut Parser) {
-    expr_bp(p, 0)
+    expr_bp(p, 0);
 }
 
 // Pratt parser following this blog post:
@@ -315,7 +315,8 @@ fn let_dec(p: &mut Parser) {
     p.expect(IN_KW);
     p.eat_trivia();
 
-    grammar::sequential(p, expression, SEMICOLON);
+    grammar::expression(p);
+    // grammar::sequential(p, expression, SEMICOLON);
     p.eat_trivia();
 
     p.expect(END_KW)

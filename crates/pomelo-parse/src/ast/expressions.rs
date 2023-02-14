@@ -474,8 +474,8 @@ impl LetExpr {
         support::child(self.syntax())
     }
 
-    pub fn exprs(&self) -> impl Iterator<Item = ast::Expr> {
-        support::children(self.syntax())
+    pub fn expr(&self) -> Option<ast::Expr> {
+        support::child(self.syntax())
     }
 }
 
