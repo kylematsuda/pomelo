@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":[["Dec",""]],"struct":[["AbstypeDec",""],["DatatypeDec",""],["DatatypeRepDec",""],["ExceptionDec",""],["Fixity",""],["FunDec",""],["InfixDec",""],["InfixrDec",""],["LocalDec",""],["NonfixDec",""],["OpenDec",""],["SeqDec",""],["TypeDec",""],["ValDec",""]]};

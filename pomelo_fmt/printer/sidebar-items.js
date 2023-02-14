@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":[["INFINITY",""],["LINEBREAK",""],["LINE_WIDTH",""],["MAX_BLANKS",""],["NEWLINE",""]],"enum":[["Breaks","Determines formatting for a group."],["Token",""]],"struct":[["BufElt",""],["PrintStackEntry",""],["Printer",""]]};

@@ -1,0 +1,92 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="High-level intermediate representation (HIR) for `pomelo`."><meta name="keywords" content="rust, rustlang, rust-lang, pomelo_hir"><title>pomelo_hir - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceSerif4-Regular-1f7d512b176f0f72.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceSerif4-Bold-124a1ca42af929b6.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../static.files/rustdoc-6827029ac823cab7.css" id="mainThemeStyle"><link rel="stylesheet" id="themeStyle" href="../static.files/light-ebce58d0a40c3431.css"><link rel="stylesheet" disabled href="../static.files/dark-f23faae4a2daf9a6.css"><link rel="stylesheet" disabled href="../static.files/ayu-8af5e100b21cd173.css"><script id="default-settings" ></script><script src="../static.files/storage-d43fa987303ecbbb.js"></script><script defer src="../crates.js"></script><script defer src="../static.files/main-c55e1eb52e1886b4.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../pomelo_hir/index.html"><div class="logo-container"><img class="rust-logo" src="../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></div></a><h2></h2></nav><nav class="sidebar"><a class="sidebar-logo" href="../pomelo_hir/index.html"><div class="logo-container"><img class="rust-logo" src="../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></div></a><h2 class="location"><a href="#">Crate pomelo_hir</a></h2><div class="sidebar-elems"><ul class="block"><li class="version">Version 0.1.0</li><li><a id="all-types" href="all.html">All Items</a></li></ul><section><ul class="block"><li><a href="#modules">Modules</a></li><li><a href="#structs">Structs</a></li><li><a href="#enums">Enums</a></li><li><a href="#traits">Traits</a></li><li><a href="#functions">Functions</a></li></ul></section></div></nav><main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../static.files/wheel-5ec35bf9ca753509.svg"></a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1 class="fqn">Crate <a class="mod" href="#">pomelo_hir</a><button id="copy-path" onclick="copy_path(this)" title="Copy item path to clipboard"><img src="../static.files/clipboard-7571035ce49a181d.svg" width="19" height="18" alt="Copy item path"></button></h1><span class="out-of-band"><a class="srclink" href="../src/pomelo_hir/lib.rs.html#1-463">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><details class="rustdoc-toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>High-level intermediate representation (HIR) for <code>pomelo</code>.</p>
+<p>Similar to the <a href="https://rustc-dev-guide.rust-lang.org/hir.html">HIR in Rust</a>, the HIR mainly
+serves to desugar some derived language constructs to simplify semantic analysis.
+The lowering from the AST to HIR is implemented in <a href="lower/index.html" title="lower"><code>lower</code></a>.</p>
+<h2 id="structure-of-the-hir"><a href="#structure-of-the-hir">Structure of the HIR</a></h2>
+<p>The main entry point to the HIR is <a href="struct.File.html" title="File"><code>File</code></a>, which contains the list of top level
+declarations (<a href="hir/struct.Dec.html" title="Dec"><code>Dec</code></a>) in the file.
+Internally, the HIR is represented as a tree in an index-based arena – the idea is that this is
+hopefully a little simpler to work with than the
+<a href="https://docs.rs/rowan/latest/rowan/"><code>rowan</code></a>-based AST that is outputted at the parsing stage.
+HIR nodes (notably <a href="hir/struct.Dec.html" title="Dec"><code>Dec</code></a>, <a href="hir/struct.Expr.html" title="Expr"><code>Expr</code></a>, <a href="hir/struct.Pat.html" title="Pat"><code>Pat</code></a>, and <a href="hir/struct.Ty.html" title="Ty"><code>Ty</code></a>) are stored by a <a href="trait.FileArena.html" title="FileArena"><code>FileArena</code></a>.
+The syntactic kinds of nodes are represented by <a href="hir/enum.DecKind.html" title="DecKind"><code>DecKind</code></a>, <a href="hir/enum.ExprKind.html" title="ExprKind"><code>ExprKind</code></a>, <a href="hir/enum.PatKind.html" title="PatKind"><code>PatKind</code></a>, and
+<a href="hir/enum.TyKind.html" title="TyKind"><code>TyKind</code></a>.
+References between nodes are represented as indexes (<a href="arena/struct.Idx.html"><code>Idx&lt;T&gt;</code></a>) to nodes in
+the arena, which conveniently means that we don’t have to worry about ownership problems (see
+later notes about the tradeoff here).</p>
+<p>Basic semantic information is tracked and embedded in the HIR during lowering from the AST.
+For example, variable expressions are represented by an <code>ExprKind::Vid { longvid: (LongVId, DefLoc), .. }</code>, where <a href="identifiers/struct.LongVId.html" title="LongVId"><code>LongVId</code></a> represents an identifier and <a href="hir/enum.DefLoc.html" title="DefLoc"><code>DefLoc</code></a> is a reference to the
+declaration or pattern where the identifier is declared.
+Type constructors (<a href="identifiers/enum.TyCon.html" title="TyCon"><code>TyCon</code></a>) similarly come with a reference to their declaration.
+(Note: this needs to be tested a lot more!)</p>
+<p>The symbol table is held in the <a href="lower/context/struct.LoweringCtxt.html"><code>LoweringCtxt</code></a>, accessible through calling
+<a href="lower/context/struct.LoweringCtxt.html#method.resolver"><code>LoweringCtxt::resolver</code></a>.
+Besides being used to annotate the HIR with name resolution data, we also use this to distinguish
+between infix expressions vs function applications.
+This is not done in the parsing stage because it requires tracking which identifiers have been
+declared <code>infix</code>/<code>infixr</code>/<code>nonfix</code>.
+The implementation uses Pratt parsing and is located in the <code>lower::infix</code> module
+(also done to distinguish infix vs constructed patterns).</p>
+<p>The HIR does not currently have a way to go from a declaration to all of its references, which
+is something that will be important for common IDE actions.
+This could be baked in at the lowering stage as well by annotating variable declarations with
+a list of usages.
+For now, this is implemented separately in <a href="../pomelo_ty/index.html"><code>pomelo_ty</code></a>.</p>
+<h2 id="lowering-strategy-and-tradeoffs"><a href="#lowering-strategy-and-tradeoffs">Lowering strategy and tradeoffs</a></h2>
+<p>Currently, the HIR is lowered in one pass and is contained all in a single graph.
+This is nice and simple, and also makes sense because the declarations in an SML
+file are sequential (in contrast to, e.g., a Rust module where the items may appear in any
+order).</p>
+<h4 id="comparison-to-rustc-and-rust-analyzer"><a href="#comparison-to-rustc-and-rust-analyzer">Comparison to <code>rustc</code> and <code>rust-analyzer</code></a></h4>
+<p>I was confused about this for a while, so it might be worth writing a little more (at least
+to help me remember why I did it this way).
+The monolithic structure of the HIR here is very different to how things are done in
+<code>rustc</code> and <code>rust-analyzer</code>, the two compilers I’ve spent the most time looking at for inspiration.
+Both <code>rustc</code> and <code>rust-analyzer</code> make a strong conceptual division between <code>Item</code>s and <code>Body</code>s.
+An <a href="https://doc.rust-lang.org/reference/items.html"><code>Item</code></a> is anything that can appear at the
+top level of a module (<code>fn</code>, <code>struct</code>, <code>enum</code>, <code>const</code>, <code>mod</code>, etc.), while a <code>Body</code> is the
+stuff inside of the <code>Item</code> that might need to be type checked (i.e., expressions live inside of bodies).
+As mentioned previously, the order of <code>Items</code> in a file doesn’t affect the meaning of a
+Rust program (unlike in SML).</p>
+<p>For example, we might have the following Rust function declaration in a module,</p>
+
+<div class="example-wrap ignore"><div class='tooltip'>ⓘ</div><pre class="rust rust-example-rendered"><code><span class="kw">pub fn </span>foo(x: Bar) -&gt; Baz {
+    <span class="kw">let </span>y = <span class="number">0</span>;
+    <span class="kw">let </span>z = <span class="string">&quot;something&quot;</span>;
+    Baz::new()
+}</code></pre></div>
+<p>The <code>Item</code> here is the <code>fn</code> declaration, which we can lookup to resolve the name <code>foo</code>,
+as well as lookup the functions signature, etc.</p>
+<p>Meanwhile, the <code>Body</code> is all the stuff inside.
+Note that <code>Item</code>s define names that are visible within the entire module,
+while a declaration in a <code>Body</code>s only has scope within that <code>Body</code>.
+In addition, we need to run type inference and checking on the contents of the <code>Body</code>,
+but not on <code>Item</code>’s signature.
+Importantly, changing the <code>Body</code> of one <code>Item</code> cannot impact the type-checking of the <code>Body</code> of
+a different <code>Item</code>.</p>
+<p>This all means that there is a pretty natural split between item declarations and expressions
+in Rust.
+If separate <code>Item</code>s are stored independently, then we take advantage of the fact that typing
+within one <code>Body</code> doesn’t effect another <code>Body</code>, and we don’t have to completely reanalyze the file
+every time it is edited.</p>
+<p>However, this actually doesn’t make too much sense for SML, since changing the order of top-level
+declarations in a file can substantially change the program’s meaning.
+At the very least, we probably have to redo type-checking on the entire file below the
+point where it was edited, so it’s probably not too much extra cost to redo the parsing and lowering of
+the entire file to HIR.</p>
+<h4 id="a-note-about-immutability"><a href="#a-note-about-immutability">A note about immutability</a></h4>
+<p>Currently, this only covers the pure functional subset of Core SML.
+This is convenient because immutability makes it easy to have the HIR be static single assignment (SSA).
+Each variable usage (syntactically a <a href="identifiers/enum.VId.html" title="VId"><code>VId</code></a>) is annotated with a <a href="hir/enum.DefLoc.html" title="DefLoc"><code>DefLoc</code></a> that points to its
+declaration.
+The combination <code>(VId, DefLoc)</code> is a unique identifier that points to only one place in the
+HIR.
+If we ever try to extend this to include imperative features, it will be interesting to see how
+challenging it is to adapt the HIR.</p>
+<h2 id="todo"><a href="#todo">TODO:</a></h2>
+<p>Handle errors during HIR lowering.
+Figure out a good way to surface them.</p>
+<p>Figure out if validation passes should be run on HIR or AST.</p>
+<p>Figure out if each HIR node needs to hold the index of its parent node.</p>
+<p>Figure out logging for this stage and probably parsing too.</p>
+</div></details><h2 id="reexports" class="small-section-header"><a href="#reexports">Re-exports</a></h2><div class="item-table"><div class="item-row"><div class="item-left import-item"><code>pub use <a class="mod" href="builtins/index.html" title="mod pomelo_hir::builtins">builtins</a>::*;</code></div></div><div class="item-row"><div class="item-left import-item"><code>pub use <a class="mod" href="hir/index.html" title="mod pomelo_hir::hir">hir</a>::*;</code></div></div><div class="item-row"><div class="item-left import-item"><code>pub use <a class="mod" href="identifiers/index.html" title="mod pomelo_hir::identifiers">identifiers</a>::*;</code></div></div></div><h2 id="modules" class="small-section-header"><a href="#modules">Modules</a></h2><div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="mod" href="arena/index.html" title="pomelo_hir::arena mod">arena</a></div><div class="item-right docblock-short">Basic index-based arena for holding HIR nodes.</div></div><div class="item-row"><div class="item-left module-item"><a class="mod" href="builtins/index.html" title="pomelo_hir::builtins mod">builtins</a></div><div class="item-right docblock-short">Builtin names and symbols.</div></div><div class="item-row"><div class="item-left module-item"><a class="mod" href="hir/index.html" title="pomelo_hir::hir mod">hir</a></div><div class="item-right docblock-short">Definition of the hir.</div></div><div class="item-row"><div class="item-left module-item"><a class="mod" href="identifiers/index.html" title="pomelo_hir::identifiers mod">identifiers</a></div><div class="item-right docblock-short">Representation of identifiers in the HIR.</div></div><div class="item-row"><div class="item-left module-item"><a class="mod" href="lower/index.html" title="pomelo_hir::lower mod">lower</a></div><div class="item-right docblock-short">Lowering from AST to HIR.</div></div><div class="item-row"><div class="item-left module-item"><a class="mod" href="pretty/index.html" title="pomelo_hir::pretty mod">pretty</a></div><div class="item-right docblock-short">Pretty print HIR nodes.</div></div></div><h2 id="structs" class="small-section-header"><a href="#structs">Structs</a></h2><div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.AstIdMap.html" title="pomelo_hir::AstIdMap struct">AstIdMap</a><span title="Restricted Visibility">&nbsp;🔒</span> </div><div class="item-right docblock-short">Storage for links from the HIR back to the AST.</div></div><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.File.html" title="pomelo_hir::File struct">File</a></div><div class="item-right docblock-short">Represents a desugared top-level declaration and its contents.</div></div><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.FileArenaImpl.html" title="pomelo_hir::FileArenaImpl struct">FileArenaImpl</a><span title="Restricted Visibility">&nbsp;🔒</span> </div></div><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.FileAstIdx.html" title="pomelo_hir::FileAstIdx struct">FileAstIdx</a></div><div class="item-right docblock-short">A pointer to an AST node.</div></div></div><h2 id="enums" class="small-section-header"><a href="#enums">Enums</a></h2><div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="enum" href="enum.AstId.html" title="pomelo_hir::AstId enum">AstId</a></div><div class="item-right docblock-short">A pointer from the HIR node back to its corresponding AST node.</div></div><div class="item-row"><div class="item-left module-item"><a class="enum" href="enum.NodeParent.html" title="pomelo_hir::NodeParent enum">NodeParent</a></div><div class="item-right docblock-short">Used to lookup the parent span of nodes that were generated during lowering.</div></div></div><h2 id="traits" class="small-section-header"><a href="#traits">Traits</a></h2><div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="trait" href="trait.FileArena.html" title="pomelo_hir::FileArena trait">FileArena</a></div><div class="item-right docblock-short">Interface for navigating the HIR.</div></div><div class="item-row"><div class="item-left module-item"><a class="trait" href="trait.FileArenaExt.html" title="pomelo_hir::FileArenaExt trait">FileArenaExt</a></div><div class="item-right docblock-short">Interface for building the HIR.</div></div><div class="item-row"><div class="item-left module-item"><a class="trait" href="trait.NameInterner.html" title="pomelo_hir::NameInterner trait">NameInterner</a></div><div class="item-right docblock-short">Interface for interning and generating identifiers.</div></div></div><h2 id="functions" class="small-section-header"><a href="#functions">Functions</a></h2><div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="fn" href="fn.lower_ast_to_hir.html" title="pomelo_hir::lower_ast_to_hir fn">lower_ast_to_hir</a></div><div class="item-right docblock-short">Obtain the HIR from the AST.</div></div></div></section></div></main><div id="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="pomelo_hir" data-themes="" data-resource-suffix="" data-rustdoc-version="1.67.1 (d5a82bbd2 2023-02-07)" data-search-js="search-444266647c4dba98.js" data-settings-js="settings-bebeae96e00e4617.js" data-settings-css="settings-af96d9e2fc13e081.css" ></div></body></html>

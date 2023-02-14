@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":[["FN_APPL","Maximum user-defined fixity is 9"]],"fn":[["fix_infix",""],["fix_infix_bp",""],["fixity_to_bp",""],["get_bp",""]],"trait":[["ResolveExprOrPat",""]]};

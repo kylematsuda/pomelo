@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":[["Label",""],["LongStrId",""],["LongTyCon",""],["LongVId",""],["StrId",""],["TyCon",""],["TyVar",""],["VId",""]]};

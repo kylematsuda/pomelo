@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":[["abstype_declaration",""],["datatype_declaration",""],["declaration",""],["declaration_inner",""],["exception_declaration",""],["fun_declaration",""],["infix_or_nonfix",""],["local_declaration",""],["open_declaration",""],["type_declaration",""],["val_declaration",""]]};

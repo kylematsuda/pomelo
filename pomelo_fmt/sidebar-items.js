@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":[["INDENT",""]],"fn":[["print","Pretty print the AST."]],"mod":[["buffer","Buffer implementation for Oppen algorithm."],["dec",""],["expr",""],["pat",""],["printer","Oppen-style pretty printer."],["ty",""],["util","Utility functions for working with whitespace, comments, etc."]],"trait":[["Printable",""]]};

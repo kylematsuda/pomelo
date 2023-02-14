@@ -1,0 +1,3 @@
+(function() {var implementors = {
+"pomelo_fmt":[["impl&lt;T&gt; <a class=\"trait\" href=\"https://doc.rust-lang.org/1.67.1/core/ops/index/trait.IndexMut.html\" title=\"trait core::ops::index::IndexMut\">IndexMut</a>&lt;<a class=\"primitive\" href=\"https://doc.rust-lang.org/1.67.1/std/primitive.usize.html\">usize</a>&gt; for <a class=\"struct\" href=\"pomelo_fmt/buffer/struct.Buffer.html\" title=\"struct pomelo_fmt::buffer::Buffer\">Buffer</a>&lt;T&gt;"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

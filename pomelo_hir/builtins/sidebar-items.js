@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":[["BUILTIN_INFIX",""],["BUILTIN_TYCONS",""],["BUILTIN_VALUES",""]],"enum":[["Builtin","Built-in identifiers in the HIR."]]};

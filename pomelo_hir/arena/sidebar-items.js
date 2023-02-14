@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":[["Arena","Basically a `Vec`."],["Idx","An index into an [`Arena`]."]]};

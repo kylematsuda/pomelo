@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":[["AtomicPat",""],["Pat",""]],"struct":[["ConsOrInfixPat",""],["LayeredPat",""],["ListPat",""],["PatRow",""],["RecordPat",""],["SConPat",""],["TuplePat",""],["TypedPat",""],["UnitPat",""],["VIdPat",""],["WildcardPat",""]]};

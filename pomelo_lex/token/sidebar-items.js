@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":[["LexKind","Kinds of lexical tokens."]],"struct":[["LexToken","A token is represented by a `LexKind` and a length of source code (span)."]]};

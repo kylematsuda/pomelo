@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":[["descend_flat","outer_node_kind: e.g. EXP inner_node_kind: e.g., ORELSE_EXP"],["descend_once","outer_node_kind: e.g. EXP inner_node_kind: e.g., ORELSE_EXP"],["descend_right","outer_node_kind: e.g. EXP inner_node_kind: e.g., ORELSE_EXP"],["sequential","This function does not eat trailing trivia"]]};

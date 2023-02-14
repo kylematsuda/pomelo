@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":[["LoweringCtxt","Context needed while lowering."],["Resolver","Holds the results of early name resolution"],["ScopedMap","Store names in scope and handle rollback when exiting an inner scope."]]};

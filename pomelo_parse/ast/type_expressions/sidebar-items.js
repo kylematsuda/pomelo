@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":[["Ty",""]],"struct":[["ConsTy",""],["FunTy",""],["RecordTy",""],["TupleTy",""],["TyRow",""],["TyVarTy",""]]};

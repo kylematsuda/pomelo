@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":[["Checkpoint","A wrapper for [`rowan::Checkpoint`]."],["NodeBuilder","A wrapper for [`rowan::GreenNodeBuilder`]."],["NodeGuard","A guard to avoid forgetting to call `builder.finish_node()`."],["Parser","The main interface for manipulating the lexed source."],["SyntaxTree","Output of the parsing stage."],["Token","A parsed token."]]};
