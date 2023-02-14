@@ -74,6 +74,12 @@ This module also contains the code for lowering from the AST.
 It also contains some name resolution -- usages of variables or type constructors are annotated 
 with references to the location in the HIR where their identifiers are defined.
 
+### Code formatter 
+
+[`pomelo-fmt`](https://kylematsuda.github.io/pomelo/pomelo-fmt/index.html) is an (incomplete) code formatter for Core SML.
+This uses the algorithm from ["Prettyprinting (Oppen 1980)"](https://dl.acm.org/doi/pdf/10.1145/357114.357115).
+I did this mostly just for fun, although I do also want to use this to format the pretty-printed HIR (which is itself valid SML).
+
 ### Next steps - type inference
 
 This is the part I've been looking forward to the most! Currently reading up on Hindley-Milner, etc.
