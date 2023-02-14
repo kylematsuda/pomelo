@@ -22,10 +22,6 @@ impl<T> Buffer<T> {
         index
     }
 
-    pub fn right_elem(&self) -> Option<&T> {
-        self.storage.back()
-    }
-
     pub fn left(&self) -> usize {
         self.offset
     }
@@ -41,10 +37,6 @@ impl<T> Buffer<T> {
 
     pub fn clear(&mut self) {
         self.storage.clear();
-    }
-
-    pub fn len(&self) -> usize {
-        self.storage.len()
     }
 
     pub fn is_empty(&self) -> bool {
@@ -65,4 +57,3 @@ impl<T> IndexMut<usize> for Buffer<T> {
         &mut self.storage[index.checked_sub(self.offset).unwrap()]
     }
 }
-

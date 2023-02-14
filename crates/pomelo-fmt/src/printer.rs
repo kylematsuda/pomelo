@@ -35,7 +35,7 @@ enum Token {
     },
     Begin {
         /// Indent for this group
-        indent: usize,
+        offset: isize,
         /// Consistent or inconsistent breaking for this group
         breaks: Breaks,
     },
@@ -68,13 +68,13 @@ impl From<(Token, isize)> for BufElt {
 
 #[derive(Debug, Clone)]
 pub struct PrintStackEntry {
-    offset: usize,
+    offset: isize,
     // `None` means it fits
     breaks: Option<Breaks>,
 }
 
-impl From<(usize, Option<Breaks>)> for PrintStackEntry {
-    fn from(value: (usize, Option<Breaks>)) -> Self {
+impl From<(isize, Option<Breaks>)> for PrintStackEntry {
+    fn from(value: (isize, Option<Breaks>)) -> Self {
         Self {
             offset: value.0,
             breaks: value.1,
@@ -121,12 +121,18 @@ impl Printer {
         self.scan(Token::Text(s.into()))
     }
 
-    pub fn cgroup(&mut self, indent: usize) {
-        self.scan(Token::Begin { indent, breaks: Breaks::Consistent })
+    pub fn cgroup(&mut self, indent: isize) {
+        self.scan(Token::Begin {
+            offset: indent,
+            breaks: Breaks::Consistent,
+        })
     }
 
-    pub fn igroup(&mut self, indent: usize) {
-        self.scan(Token::Begin { indent, breaks: Breaks::Inconsistent })
+    pub fn igroup(&mut self, indent: isize) {
+        self.scan(Token::Begin {
+            offset: indent,
+            breaks: Breaks::Inconsistent,
+        })
     }
 
     pub fn endgroup(&mut self) {
@@ -138,11 +144,24 @@ impl Printer {
     }
 
     pub fn zerobreak(&mut self) {
-        self.scan(Token::Break { blank_spaces: 0, overflow_indent: 0 })
+        self.scan(Token::Break {
+            blank_spaces: 0,
+            overflow_indent: 0,
+        })
     }
 
     pub fn space(&mut self) {
-        self.scan(Token::Break { blank_spaces: 1, overflow_indent: 0 })
+        self.scan(Token::Break {
+            blank_spaces: 1,
+            overflow_indent: 0,
+        })
+    }
+
+    pub fn space_indent(&mut self) {
+        self.scan(Token::Break {
+            blank_spaces: 1,
+            overflow_indent: crate::INDENT as usize,
+        })
     }
 }
 
@@ -192,10 +211,13 @@ impl Printer {
 
     fn print(&mut self, token: Token, size: isize) {
         match token {
-            Token::Begin { indent, breaks } => {
+            Token::Begin {
+                offset: indent,
+                breaks,
+            } => {
                 if size > self.space {
                     self.print_stack
-                        .push((self.space as usize - indent, Some(breaks)).into());
+                        .push((self.space - indent, Some(breaks)).into());
                 } else {
                     self.print_stack.push((0, None).into());
                 }
@@ -300,8 +322,8 @@ impl Printer {
         self.insert_indent(blank_spaces);
     }
 
-    fn add_line_break(&mut self, print_stack_offset: usize, overflow_indent: usize) {
-        self.space = print_stack_offset as isize - overflow_indent as isize;
+    fn add_line_break(&mut self, print_stack_offset: isize, overflow_indent: usize) {
+        self.space = print_stack_offset - overflow_indent as isize;
         self.insert_newline();
         self.insert_indent((self.margin - self.space) as usize);
     }
@@ -326,11 +348,11 @@ mod tests {
 
         let src = [
             Token::Begin {
-                indent: 0,
+                offset: 0,
                 breaks: Breaks::Consistent,
             },
             Token::Begin {
-                indent: 0,
+                offset: 0,
                 breaks: Breaks::Consistent,
             },
             Token::Text("f(".into()),
@@ -365,7 +387,7 @@ mod tests {
                 overflow_indent: 2,
             },
             Token::Begin {
-                indent: 2,
+                offset: 2,
                 breaks: Breaks::Inconsistent,
             },
             Token::Text("+".into()),
@@ -374,7 +396,7 @@ mod tests {
                 overflow_indent: 2,
             },
             Token::Begin {
-                indent: 0,
+                offset: 0,
                 breaks: Breaks::Consistent,
             },
             Token::Text("g(".into()),
